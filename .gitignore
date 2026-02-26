@@ -1,0 +1,50 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/**/build/
+**/android/**/.cxx/
+**/android/app/debug/
+**/android/app/release/
+**/android/key.properties
+*.jks
+*.keystore
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/build/
+**/ios/**/xcuserdata/
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.vagrant/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Cursor (project rules / local AI config)
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets (API keys, signing)
+.env
+.env.*
+!.env.example
