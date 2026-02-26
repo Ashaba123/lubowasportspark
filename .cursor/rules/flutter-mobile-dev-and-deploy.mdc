@@ -1,0 +1,31 @@
+---
+description: Flutter mobile (Android & iOS) development and app store deployment
+globs: "**/*.dart,**/pubspec.yaml,**/android/**/*,**/ios/**/*"
+alwaysApply: false
+---
+
+# Flutter Mobile: Development to App Store
+
+## Development
+
+- **Dart/Flutter**: Follow effective Dart style; use `flutter analyze` and fix lints before commit.
+- **Platform parity**: Test on both Android and iOS; use `Platform.isIOS` / `Platform.isAndroid` only when behavior must differ.
+- **Secrets**: Never commit API keys or signing credentials. Use `--dart-define` or env vars (e.g. `flutter run --dart-define=API_KEY=...`); keep signing in env or CI secrets.
+- **Dependencies**: Pin versions in `pubspec.yaml`; run `flutter pub get` and verify no unexpected changes.
+
+## Build & Release
+
+- **Versioning**: Bump version in `pubspec.yaml` (e.g. `1.2.3+4` → version name `1.2.3`, build number `4`) before each store release; keep build number strictly increasing per platform.
+- **Android**: Use app signing (upload key or Play App Signing). Build release with `flutter build appbundle` for Play Store; use `flutter build apk` only for sideload/other stores.
+- **iOS**: Archive with Xcode or `flutter build ipa`. Ensure signing & capabilities (e.g. push, entitlements) are set in Xcode for the correct scheme; use correct provisioning profile and distribution certificate.
+
+## Store Deployment
+
+- **Google Play**: Upload AAB to Play Console; fill store listing, content rating, and target audience; use internal → closed → production track as needed.
+- **App Store Connect**: Upload IPA via Xcode Organizer or Transporter; complete metadata, screenshots, and review info; submit for review after compliance and pricing.
+
+## Conventions for This Project
+
+- Prefer smallest change; keep Android/iOS native edits minimal unless required.
+- Use existing project structure (e.g. `lib/`, `android/`, `ios/`) and naming; don’t rename modules without reason.
+- For store-related config (bundle ID, package name, version): change in one place and sync (e.g. `pubspec.yaml` version; Android `build.gradle`/`AndroidManifest`; iOS `Info.plist`/Xcode project) so builds stay consistent.
