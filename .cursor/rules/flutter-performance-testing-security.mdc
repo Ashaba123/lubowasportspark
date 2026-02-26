@@ -1,0 +1,39 @@
+---
+description: Flutter performance, best practices, testing, and security
+globs: "**/*.dart,**/pubspec.yaml,**/test/**/*"
+alwaysApply: false
+---
+
+# Flutter: Performance, Testing & Security
+
+## Performance
+
+- **Build methods**: Keep `build()` lean; extract widgets to avoid unnecessary rebuilds. Use `const` constructors where possible.
+- **Lists**: Use `ListView.builder` (or `ListView.separated`) for long/scrollable lists so only visible items are built; avoid putting large lists in a single `Column` without lazy loading.
+- **Images**: Use appropriate resolution (e.g. `cacheWidth`/`cacheHeight` with `Image.network`/`Image.memory`); consider `cached_network_image` for remote images. Avoid decoding huge assets at full size.
+- **Avoid**: Heavy work on the UI isolate (e.g. large JSON parse, file I/O)—move to `compute()` or isolates when it can block the frame.
+
+## Best Practices
+
+- **Effective Dart**: Follow official style; fix all `flutter analyze` / linter issues before commit.
+- **Dependencies**: Pin versions in `pubspec.yaml`; prefer stable, maintained packages; audit periodically.
+- **Async**: Use `async`/`await` consistently; handle errors and loading states; avoid uncaught futures.
+- **Keys**: Use `Key` (e.g. `ValueKey`, `ObjectKey`) when widget identity matters for state (lists, dynamic children) so Flutter can update correctly.
+
+## Testing
+
+- **Unit tests**: Test business logic, state, and utilities in `test/`; mock external deps (APIs, storage) where appropriate.
+- **Widget tests**: Test important widgets and flows with `flutter test`; use `pumpWidget` and finders; keep tests focused and readable.
+- **Integration tests**: Use for critical user flows (e.g. login, checkout) in `integration_test/` when needed.
+- **Coverage**: Aim for meaningful coverage on core logic and state; avoid testing implementation details.
+
+## Security
+
+- **Secrets**: Never commit API keys, tokens, or signing credentials. Use `--dart-define`, env vars, or a secrets manager; exclude from version control.
+- **Storage**: Don’t store sensitive data in plain text in shared_preferences or local DB; use flutter_secure_storage (or equivalent) for tokens and secrets.
+- **Network**: Use HTTPS only; validate certificates in production. Sanitize and validate all user input and data from APIs before use or display.
+- **Auth**: Handle tokens securely (secure storage, refresh, logout invalidation); don’t log tokens or sensitive payloads.
+
+## Conventions for This Project
+
+- Apply these rules when adding or changing Dart code, tests, or dependencies; prefer the smallest change that satisfies them.
