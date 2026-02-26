@@ -7,7 +7,7 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, integrating with t
 ## System Architecture
 
 | Layer | Technology |
-|-------|------------|
+| ------- | ------------ |
 | Frontend | Flutter (Android & iOS) |
 | Backend | WordPress (REST API) |
 | Data | JSON over HTTPS |
@@ -16,6 +16,7 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, integrating with t
 ## Features
 
 ### Booking
+
 - View available futsal time slots
 - Submit booking requests from the app
 - Booking data sent to WordPress backend
@@ -24,12 +25,14 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, integrating with t
 - Booking status visible in the app
 
 ### Events
+
 - Display upcoming tournaments and promotions
 - Fetch event data from WordPress via API
 - Show event details, images, and dates
 - Auto-update when events are added on the website
 
 ### League Management (Admin)
+
 - Admin login required
 - Create leagues (unique league names)
 - Teams have unique names within a league
