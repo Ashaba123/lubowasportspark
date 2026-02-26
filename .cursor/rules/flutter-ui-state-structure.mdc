@@ -1,0 +1,31 @@
+---
+description: Flutter UI design, state management, and app structure (no generic AI aesthetics)
+globs: "**/*.dart,**/pubspec.yaml"
+alwaysApply: false
+---
+
+# Flutter App Structure, State & UI
+
+## UI Design — No Generic AI Defaults
+
+- **Avoid** generic AI-style UI: purple/blue gradients, Inter or Roboto-only, centered cards on white, predictable “template” layouts.
+- **Do** make deliberate choices: pick a distinct color palette and typography (custom or Google Fonts beyond default); define a real theme in `ThemeData` (primary, surface, typography) and use it consistently.
+- **Layout**: Prefer clear hierarchy and whitespace; use grid/list patterns that fit the content. Avoid filler placeholder text like “Lorem ipsum” in production UI—use realistic copy or clear labels.
+- **Platform**: Use `Material` or `Cupertino` (or both) consistently; match platform conventions where it helps (e.g. bottom nav on iOS, back behavior). Don’t mix styles randomly.
+
+## State Management
+
+- **Single approach**: Use one solution project-wide (e.g. Riverpod, Provider, Bloc). Don’t mix multiple state libraries without reason.
+- **Scope**: Keep state close to where it’s used; lift only when shared. Prefer small, focused providers/stores over one global blob.
+- **Async**: Handle loading/error states in the UI; don’t leave unhandled futures or silent failures.
+
+## Folder & Code Structure
+
+- **lib/** structure: Organize by feature or layer, e.g. `lib/core/` (theme, constants, utils), `lib/features/<name>/` (screens, widgets, state for that feature), `lib/shared/` (shared widgets, components). Avoid a single giant `screens/` or `widgets/` dump.
+- **Widgets**: Split large build methods into smaller named widgets; use `const` constructors where possible. Colocate widget files with the feature they belong to when they’re not shared.
+- **Naming**: Clear, consistent names—e.g. `*_screen.dart` for full screens, `*_page.dart` if you use that convention; match existing project naming.
+
+## Conventions for This Project
+
+- Follow effective Dart style and existing patterns in the repo; run `flutter analyze` and fix lints.
+- When adding UI, state, or structure, prefer the smallest change that fits these rules; don’t refactor broadly unless asked.
