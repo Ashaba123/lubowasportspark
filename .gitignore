@@ -40,6 +40,9 @@ build/
 # Cursor (project rules / local AI config)
 .cursor/
 
+# Local design reference (not for repo)
+docs/DESIGN_SYSTEM.md
+
 # OS
 .DS_Store
 Thumbs.db
