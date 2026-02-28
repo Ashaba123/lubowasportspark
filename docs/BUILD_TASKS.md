@@ -16,6 +16,7 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 - [x] Main shell: Home (logo + tagline), Events, Book, League tabs
 - [x] CI: `.github/workflows/ci.yml` (analyze, test, debug APK, iOS build — no codesign)
 - [x] Release: `.github/workflows/release-android.yml` (AAB on tag/manual)
+- [x] Glass UI (glassmorphism): shared widget; bottom nav bar and home card; performance-conscious (BackdropFilter in few places only)
 
 **Phase A status: Done**
 

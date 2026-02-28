@@ -62,6 +62,7 @@ Use greens as primary; blues for secondary and accent. Avoid ad-hoc colors; exte
 - **Cards:** Elevation or border; 8–12 radius; use surface color.
 - **App bar:** Primary color; white title and actions; optional logo in header.
 - **Forms:** Clear labels; error state and validation feedback; consistent padding.
+- **Glass (glassmorphism):** Use sparingly for performance (e.g. bottom nav, one card per screen). `GlassContainer` in `lib/shared/glass_container.dart`; or `BackdropFilter` + semi-transparent surface. Prefer design system surface/outline with opacity.
 
 ---
 

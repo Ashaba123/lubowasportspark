@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
@@ -5,6 +7,7 @@ import 'features/booking/booking_screen.dart';
 import 'features/events/events_screen.dart';
 import 'features/league/league_screen.dart';
 import 'shared/app_logo.dart';
+import 'shared/glass_container.dart';
 
 void main() {
   runApp(const LubowaSportsParkApp());
@@ -47,15 +50,25 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: _tabs,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
-          NavigationDestination(icon: Icon(Icons.calendar_today), label: 'Book'),
-          NavigationDestination(icon: Icon(Icons.emoji_events), label: 'League'),
-        ],
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
+            child: NavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedIndex: _index,
+              onDestinationSelected: (i) => setState(() => _index = i),
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+                NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
+                NavigationDestination(icon: Icon(Icons.calendar_today), label: 'Book'),
+                NavigationDestination(icon: Icon(Icons.emoji_events), label: 'League'),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -69,25 +82,34 @@ class _HomeTab extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const AppLogo(size: 160),
-              const SizedBox(height: 24),
-              Text(
-                'Play • Train • Compete',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sports • Fitness • Community',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: GlassContainer(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const AppLogo(size: 160),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Play • Train • Compete',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
                     ),
-                textAlign: TextAlign.center,
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sports • Fitness • Community',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
