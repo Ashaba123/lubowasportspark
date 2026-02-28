@@ -15,12 +15,12 @@ Backend: **WordPress REST API** at `https://lubowasportspark.com`
 | Item | Value |
 |------|--------|
 | **Namespace** | `jwt-auth/v1` |
-| **Login** | POST `/jwt-auth/v1/token` (or plugin-specific path; confirm on site) |
-| **Request** | `username`, `password` (JSON body or form) |
+| **Login** | POST `/jwt-auth/v1/token` |
+| **Request** | `Content-Type: application/json`; body: `{ "username": "<string>", "password": "<string>" }` |
 | **Response** | `{ "token": "<jwt>", ... }` — app stores token and sends as Bearer on subsequent requests |
 | **Who** | Admin login for league management |
 
-**Note:** Validate exact path from JWT Authentication for WP-API plugin (e.g. `/wp-json/jwt-auth/v1/token` or similar). On 401, app should clear token and redirect to login.
+**Confirmed.** On 401, app should clear token and redirect to login.
 
 ---
 
@@ -57,16 +57,20 @@ Backend: **WordPress REST API** at `https://lubowasportspark.com`
 
 ### 4. Leagues (custom — to be confirmed)
 
-**Admin-only (Bearer JWT required):**
+**User roles:** See [docs/USER_ROLES.md](USER_ROLES.md). In short: **League creator** = user who created the league (`created_by`). **Team leader** = user set per team (`leader_user_id`). Only admins or league creator can manage that league; only admin, league creator, or team leader can manage that team / record goals for it. **Who can create a league:** WordPress admin or any user with capability `create_lubowa_league` (assign in WordPress → Users).
+
+**League/team management (JWT — admin or league creator or team leader as per rules):**
 
 | Operation | Method | Path (suggested) | Request / Response |
 |-----------|--------|------------------|----------------------|
-| Create league | POST | e.g. `/lubowa/v1/leagues` | Body: `{ "name": "Unique League Name" }` → 201 + league object with `id`, `name`, `code` |
-| List leagues | GET | `/lubowa/v1/leagues` | → array of `{ id, name, code, ... }` |
-| Add team | POST | `/lubowa/v1/leagues/<id>/teams` | Body: `{ "name": "Team A" }` — unique per league |
-| Add player | POST | `/lubowa/v1/teams/<id>/players` | Body: `{ "name": "...", "goals": 0 }` — min 1 per team |
+| Create league | POST | `/lubowa/v1/leagues` | Body: `{ "name": "..." }` → 201 + league with `id`, `name`, `code`, `created_by` (current user). Permission: admin or `create_lubowa_league`. |
+| List leagues | GET | `/lubowa/v1/leagues` | → Leagues user can manage (admin: all; else: where `created_by` = me or I lead a team). `{ id, name, code, created_by, created_at }`. |
+| Add team | POST | `/lubowa/v1/leagues/<id>/teams` | Body: `{ "name": "Team A", "leader_user_id": null }` — optional `leader_user_id` (WP user ID) = team leader. Permission: league creator or admin. |
+| Add player | POST | `/lubowa/v1/teams/<id>/players` | Body: `{ "name": "...", "goals": 0, "user_id": null }` — optional `user_id` (WP user ID) to link app user to player for “my career goals” |
+| List team players | GET | `/lubowa/v1/teams/<id>/players` | → `[{ id, name, goals }]` — JWT required (for team leader to pick scorer) |
 | Generate fixtures | POST | e.g. `/lubowa/v1/leagues/<id>/fixtures/generate` | → list of fixtures |
-| Update match score | PATCH/PUT | e.g. `/lubowa/v1/fixtures/<id>` | Body: `{ "home_goals", "away_goals" }` and optionally update player goals |
+| Update match score | PATCH | `/lubowa/v1/fixtures/<id>` | Body: `{ "home_goals", "away_goals", "result_confirmed" }`. Set **result_confirmed: 1** to mark “Full time” (score then counts for points: win=3, draw=1, loss=0). |
+| Record goal(s) in fixture | POST | `/lubowa/v1/fixtures/<id>/goals` | Body: `{ "player_id": <int>, "goals": <int> }` — player must be in that fixture’s home or away team; increments player’s career goals and fixture score. JWT (admin / team leader) |
 | Reset/reshuffle fixtures | POST | e.g. `/lubowa/v1/leagues/<id>/fixtures/reset` | — |
 | Get league code | GET league | Included in league object | `code` used for public stats |
 
@@ -74,7 +78,17 @@ Backend: **WordPress REST API** at `https://lubowasportspark.com`
 
 | Operation | Method | Path (suggested) | Request / Response |
 |-----------|--------|------------------|----------------------|
-| Stats by league code | GET | e.g. `/lubowa/v1/leagues/public?code=<code>` or `GET /lubowa/v1/public/leagues/<code>` | → standings, results, fixtures (read-only) |
+| Stats by league code | GET | `GET /lubowa/v1/public/leagues/<code>` | → `{ league, standings, fixtures, top_scorers }`. **Standings** include `points`, `played`, `won`, `drawn`, `lost`, `goals_for`, `goals_against` (from **confirmed** results only). **Fixtures** include `result_confirmed` (0/1). |
+| Leaderboard (all leagues) | GET | `GET /lubowa/v1/public/leaderboard` | → `{ leagues: [{ id, name, code, standings, top_scorers }], top_scorers_all }` for website display. |
+
+**Player goal tracking (JWT):**
+
+| Operation | Method | Path | Request / Response |
+|-----------|--------|------|----------------------|
+| My player (career goals) | GET | `/lubowa/v1/me/player` | → `{ id, name, team_id, goals, team_name, league_id, league_name }` or 404 if no player linked. Requires JWT. |
+| Link player to user | POST | `/lubowa/v1/teams/<id>/players` | When creating player, pass `user_id` (WP user ID) to link. |
+| Link existing player to (my) account | PATCH | `/lubowa/v1/players/<id>` | Body: `{ "user_id": <wp_user_id> }`. Non-admin can only set `user_id` to own id (claim player). |
+| My league/team roles | GET | `/lubowa/v1/me/league_roles` | → `{ can_create_league: bool, managed_league_ids: [], led_team_ids: [] }`. Use in app to show “Create league”, “Leagues I manage”, “Teams I lead”. |
 
 **Action:** Confirm paths, request/response shapes, and whether league code is generated by backend or app. Document here once provided.
 
