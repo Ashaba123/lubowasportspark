@@ -14,6 +14,9 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 - [x] App theme from design system
 - [x] Shield logo in `assets/logo.png`; in-app logo widget; app icon sets (Android/iOS) via `flutter_launcher_icons`
 - [x] Main shell: Home (logo + tagline), Events, Book, League tabs
+- [x] Activities screen (align with website; list offerings e.g. Futsal, Car Wash)
+- [x] About Us screen (logo, short copy — sports, fitness, community)
+- [x] Contact screen (link to website contact / open in browser)
 - [x] CI: `.github/workflows/ci.yml` (analyze, test, debug APK, iOS build — no codesign)
 - [x] Release: `.github/workflows/release-android.yml` (AAB on tag/manual)
 - [x] Glass UI (glassmorphism): shared widget; bottom nav bar and home card; performance-conscious (BackdropFilter in few places only)

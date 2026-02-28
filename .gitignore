@@ -50,3 +50,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# WordPress plugin (keep server-only; do not upload to GitHub)
+docs/lubowa-api-with-player-goals.php

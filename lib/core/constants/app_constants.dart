@@ -11,4 +11,8 @@ class AppConstants {
   /// Paths (relative to base URL)
   static const String pathPosts = '/wp/v2/posts';
   static const String pathJwtToken = '/jwt-auth/v1/token';
+
+  /// Website (for Contact, About, external links)
+  static const String websiteUrl = 'https://lubowasportspark.com';
+  static const String websiteContactPath = '/contact';
 }

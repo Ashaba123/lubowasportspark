@@ -3,7 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/activities/activities_screen.dart';
+import 'features/about/about_screen.dart';
 import 'features/booking/booking_screen.dart';
+import 'features/contact/contact_screen.dart';
 import 'features/events/events_screen.dart';
 import 'features/league/league_screen.dart';
 import 'shared/app_logo.dart';
@@ -41,6 +44,7 @@ class _MainShellState extends State<MainShell> {
     EventsScreen(),
     BookingScreen(),
     LeagueScreen(),
+    _MoreTab(),
   ];
 
   @override
@@ -65,10 +69,51 @@ class _MainShellState extends State<MainShell> {
                 NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
                 NavigationDestination(icon: Icon(Icons.calendar_today), label: 'Book'),
                 NavigationDestination(icon: Icon(Icons.emoji_events), label: 'League'),
+                NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MoreTab extends StatelessWidget {
+  const _MoreTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('More')),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.sports_soccer),
+            title: const Text('Activities'),
+            subtitle: const Text('Futsal, Car Wash, Training, Events'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ActivitiesScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About Us'),
+            subtitle: const Text('Who we are'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.contact_mail),
+            title: const Text('Contact'),
+            subtitle: const Text('Get in touch'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ContactScreen()),
+            ),
+          ),
+        ],
       ),
     );
   }
