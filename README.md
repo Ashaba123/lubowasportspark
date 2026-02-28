@@ -41,3 +41,13 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, integrating with t
 - Automatic fixture generation
 - Admin can reset and reshuffle fixtures
 - System generates league code for public stats viewing
+
+---
+
+## Development
+
+- **API contract:** [docs/API_REQUIREMENTS.md](docs/API_REQUIREMENTS.md) — endpoints the app needs; confirm or provide booking/league URLs.
+- **Design:** [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — colors, typography, logo usage.
+- **Run:** `flutter run` (set `API_BASE_URL` via `--dart-define` or env if needed).
+- **CI:** `.github/workflows/ci.yml` — analyze + test on push/PR; debug APK build. `release-android.yml` — AAB on tag `v*` or manual.
+- **App icon:** Logo in `assets/logo.png`; regenerate with `dart run flutter_launcher_icons`.
