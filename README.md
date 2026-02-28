@@ -46,6 +46,7 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, integrating with t
 
 ## Development
 
+- **Build progress:** [docs/BUILD_TASKS.md](docs/BUILD_TASKS.md) — task list by phase (A–F); check off as you go.
 - **API contract:** [docs/API_REQUIREMENTS.md](docs/API_REQUIREMENTS.md) — endpoints the app needs; confirm or provide booking/league URLs.
 - **Design:** [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) — colors, typography, logo usage.
 - **Run:** `flutter run` (set `API_BASE_URL` via `--dart-define` or env if needed).
