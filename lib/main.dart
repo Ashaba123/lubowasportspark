@@ -9,6 +9,7 @@ import 'features/booking/booking_screen.dart';
 import 'features/contact/contact_screen.dart';
 import 'features/events/events_screen.dart';
 import 'features/league/league_screen.dart';
+import 'features/splash/splash_screen.dart';
 import 'shared/app_logo.dart';
 import 'shared/glass_container.dart';
 
@@ -24,8 +25,29 @@ class LubowaSportsParkApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lubowa Sports Park',
       theme: AppTheme.light,
-      home: const MainShell(),
+      home: const _AppRoot(),
     );
+  }
+}
+
+class _AppRoot extends StatefulWidget {
+  const _AppRoot();
+
+  @override
+  State<_AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends State<_AppRoot> {
+  bool _showSplash = true;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showSplash) {
+      return SplashScreen(
+        onDone: () => setState(() => _showSplash = false),
+      );
+    }
+    return const MainShell();
   }
 }
 
