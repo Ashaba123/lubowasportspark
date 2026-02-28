@@ -8,10 +8,9 @@ import 'features/about/about_screen.dart';
 import 'features/booking/booking_screen.dart';
 import 'features/contact/contact_screen.dart';
 import 'features/events/events_screen.dart';
+import 'features/home/home_screen.dart';
 import 'features/league/league_screen.dart';
 import 'features/splash/splash_screen.dart';
-import 'shared/app_logo.dart';
-import 'shared/glass_container.dart';
 
 void main() {
   runApp(const LubowaSportsParkApp());
@@ -62,7 +61,7 @@ class _MainShellState extends State<MainShell> {
   int _index = 0;
 
   static const _tabs = [
-    _HomeTab(),
+    HomeScreen(),
     EventsScreen(),
     BookingScreen(),
     LeagueScreen(),
@@ -136,49 +135,6 @@ class _MoreTab extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HomeTab extends StatelessWidget {
-  const _HomeTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: GlassContainer(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const AppLogo(size: 160),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Play • Train • Compete',
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sports • Fitness • Community',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,46 +1,97 @@
 import 'package:flutter/material.dart';
 
-/// Activities offered at Lubowa Sports Park — aligns with website.
-class ActivitiesScreen extends StatelessWidget {
+import '../../core/api/pages_repository.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/models/wp_page.dart';
+import '../../core/utils/html_utils.dart';
+import '../../shared/wp_page_content.dart';
+
+/// Activities — content from WordPress page (slug: activities).
+class ActivitiesScreen extends StatefulWidget {
   const ActivitiesScreen({super.key});
+
+  @override
+  State<ActivitiesScreen> createState() => _ActivitiesScreenState();
+}
+
+class _ActivitiesScreenState extends State<ActivitiesScreen> {
+  final PagesRepository _repository = PagesRepository();
+  bool _loading = true;
+  WpPage? _page;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final page = await _repository.getPageBySlug(AppConstants.slugActivities);
+      if (!mounted) return;
+      setState(() {
+        _page = page;
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final activities = [
-      _ActivityItem(title: 'Futsal', subtitle: '5-a-side football', icon: Icons.sports_soccer),
-      _ActivityItem(title: 'Car Wash', subtitle: 'LSP Car Wash on site', icon: Icons.local_car_wash),
-      _ActivityItem(title: 'Training', subtitle: 'Sessions and coaching', icon: Icons.fitness_center),
-      _ActivityItem(title: 'Events', subtitle: 'Tournaments and community events', icon: Icons.emoji_events),
-    ];
-
+    if (_loading && _page == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Activities')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null && _page == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Activities')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_error.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 16),
+                FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (_page != null) {
+      final page = _page!;
+      final title = HtmlUtils.strip(page.title).isEmpty ? 'Activities' : HtmlUtils.strip(page.title);
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: WpPageContent(page: page),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Activities')),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: activities.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) {
-          final a = activities[i];
-          return Card(
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(a.icon, color: theme.colorScheme.primary),
-              ),
-              title: Text(a.title, style: theme.textTheme.titleMedium),
-              subtitle: Text(a.subtitle, style: theme.textTheme.bodySmall),
-            ),
-          );
-        },
-      ),
+      body: const Center(child: Text('No content available.')),
     );
   }
-}
-
-class _ActivityItem {
-  const _ActivityItem({required this.title, required this.subtitle, required this.icon});
-  final String title;
-  final String subtitle;
-  final IconData icon;
 }

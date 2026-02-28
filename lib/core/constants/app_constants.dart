@@ -10,7 +10,15 @@ class AppConstants {
 
   /// Paths (relative to base URL)
   static const String pathPosts = '/wp/v2/posts';
+  static const String pathPages = '/wp/v2/pages';
   static const String pathJwtToken = '/jwt-auth/v1/token';
+
+  /// WordPress page slugs for app screens (match site URLs: /, /activities/, /about-us/, /contact/, /events1/).
+  static const String slugFrontPage = 'home';
+  static const String slugActivities = 'activities';
+  static const String slugEventsPage = 'events1';
+  static const String slugAbout = 'about-us';
+  static const String slugContact = 'contact';
 
   /// Website (for Contact, About, external links)
   static const String websiteUrl = 'https://lubowasportspark.com';

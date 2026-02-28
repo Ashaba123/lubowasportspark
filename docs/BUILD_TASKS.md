@@ -30,9 +30,9 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 
 ### Events
 
-- [ ] Fetch events from `wp/v2/posts` (list)
-- [ ] Event detail screen (title, content, image, date)
-- [ ] Pull-to-refresh on events list
+- [x] Fetch events from `wp/v2/posts` (list)
+- [x] Event detail screen (title, content, image, date)
+- [x] Pull-to-refresh on events list
 - [ ] Optional: filter by category if backend uses one (document in API_REQUIREMENTS)
 
 ### Booking
@@ -64,7 +64,7 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 - [ ] Screen to enter league code
 - [ ] View standings and results (read-only) using public endpoint
 
-**Phase B status: Not started** (screens are placeholders until endpoints/contract confirmed)
+**Phase B status: In progress** (Events: list + detail + pull-to-refresh done)
 
 ---
 

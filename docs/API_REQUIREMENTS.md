@@ -9,6 +9,7 @@ Backend: **WordPress REST API** at `https://lubowasportspark.com`
 **Data sources (MVP):**
 - **Bookings & Leagues** — custom **Lubowa API** (same plugin: `lubowa/v1`). Bookings and all league/team/fixture/player endpoints live in this API.
 - **Events** — WordPress **posts** (`wp/v2/posts`). The **website events page** uses this endpoint; events are regular posts; list/detail via WP REST.
+- **Home, Activities, About, Contact** — WordPress **pages** (`wp/v2/pages`). App fetches by slug so content matches the website; slugs are configured in the app (e.g. `home`, `activities`, `about`, `contact`).
 
 ---
 
@@ -43,6 +44,21 @@ The **website** has an events page; data comes from WordPress **posts**. Same en
 | **Who** | Public (no auth) |
 
 **Open point:** If the events page filters by category or custom post type, document the category ID or CPT slug and add to query params here.
+
+---
+
+### 2b. Pages (Home, Activities, About, Contact)
+
+App screens that mirror the website use the same WordPress **pages** as the site.
+
+| Item | Value |
+|------|--------|
+| **Namespace** | `wp/v2` |
+| **By slug** | GET `/wp/v2/pages?slug=<slug>&_embed=1` |
+| **Response** | Same as post: `id`, `title` (object with `rendered`), `content` (object with `rendered`), `featured_media`, `_embedded["wp:featuredmedia"]` for image URL |
+| **Who** | Public (no auth) |
+
+**App slugs** (match site): `home` (front page, /), `activities` (/activities/), `events1` (/events1/), `about-us` (/about-us/), `contact` (/contact/). App Events tab uses wp/v2/posts for the event list; optional: show intro/header from page `events1` above the list.
 
 ---
 
