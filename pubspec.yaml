@@ -33,7 +33,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   connectivity_plus: ^6.1.0
   dio: ^5.7.0
-  flutter_widget_from_html: 0.17.1
+  flutter_widget_from_html: ^0.16.1
   url_launcher: ^6.3.0
   google_fonts: ^6.2.1
 
