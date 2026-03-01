@@ -1,160 +1,145 @@
 import 'package:flutter/material.dart';
 
-import '../../core/api/pages_repository.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../core/models/wp_page.dart';
 import '../../shared/app_logo.dart';
-import '../../shared/glass_container.dart';
-import '../../shared/wp_page_content.dart';
 
-/// Home tab: content from WordPress front page. Fallback to tagline if fetch fails.
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+/// Home tab: logo + tagline + 3–4 action cards. Mobile-first.
+/// [onNavigateToTab] switches bottom nav (1=Events, 2=Book, 3=League, 4=More).
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key, this.onNavigateToTab});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final PagesRepository _repository = PagesRepository();
-  WpPage? _page;
-  bool _loading = true;
-  Object? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    if (!await hasNetworkConnectivity()) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = NoConnectivityException();
-      });
-      return;
-    }
-    try {
-      final page = await _repository.getPageBySlug(AppConstants.slugFrontPage);
-      if (!mounted) return;
-      setState(() {
-        _page = page;
-        _loading = false;
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e;
-      });
-    }
-  }
+  final void Function(int tabIndex)? onNavigateToTab;
 
   @override
   Widget build(BuildContext context) {
-    if (_loading && _page == null) {
-      return Scaffold(
-        body: Center(
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               const AppLogo(size: 120),
+              const SizedBox(height: 16),
+              Text(
+                'Play • Train • Compete',
+                style: theme.textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Sports • Fitness • Community',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              if (onNavigateToTab != null) ...[
+                _ActionCard(
+                  icon: Icons.event,
+                  title: 'Events',
+                  subtitle: 'Upcoming and past events',
+                  onTap: () => onNavigateToTab!(1),
+                ),
+                const SizedBox(height: 12),
+                _ActionCard(
+                  icon: Icons.calendar_today,
+                  title: 'Book',
+                  subtitle: 'Reserve the pitch or facilities',
+                  onTap: () => onNavigateToTab!(2),
+                ),
+                const SizedBox(height: 12),
+                _ActionCard(
+                  icon: Icons.emoji_events,
+                  title: 'League',
+                  subtitle: 'View standings or manage leagues',
+                  onTap: () => onNavigateToTab!(3),
+                ),
+                const SizedBox(height: 12),
+                _ActionCard(
+                  icon: Icons.more_horiz,
+                  title: 'More',
+                  subtitle: 'Activities, About us, Contact',
+                  onTap: () => onNavigateToTab!(4),
+                ),
+              ],
               const SizedBox(height: 24),
-              const CircularProgressIndicator(),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hours', style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Monday – Friday · 6AM – 10PM\nSaturday – Sunday · 7AM – 11PM',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-      );
-    }
-    if (_page != null) {
-      return Scaffold(
-        body: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: AppLogo(size: 140),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: GlassContainer(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: WpPageContent(page: _page!),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    return _buildFallback(context);
+      ),
+    );
   }
+}
 
-  Widget _buildFallback(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: GlassContainer(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppLogo(size: 160),
-                    const SizedBox(height: 24),
+                    Text(title, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
                     Text(
-                      'Play • Train • Compete',
-                      style: Theme.of(context).textTheme.titleLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sports • Fitness • Community',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        userFriendlyApiErrorMessage(_error),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                        textAlign: TextAlign.center,
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
-            ),
+              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+            ],
           ),
         ),
       ),

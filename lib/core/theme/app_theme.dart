@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Theme aligned with docs/DESIGN_SYSTEM.md — Lubowa Sports Park.
+/// Typography: Poppins (single family for cross-platform consistency).
 class AppTheme {
   AppTheme._();
 
@@ -29,13 +31,27 @@ class AppTheme {
       outline: outline,
     );
 
+    final base = GoogleFonts.poppinsTextTheme();
+    final textTheme = TextTheme(
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 24, fontWeight: FontWeight.bold, color: onSurface),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w600, color: onSurface),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 18, fontWeight: FontWeight.w600, color: onSurface),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, color: onSurface),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 16, color: onSurface),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 14, color: onSurface),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 14, color: onSurfaceVariant),
+      labelLarge: base.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w500),
+    );
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      appBarTheme: const AppBarTheme(
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
         backgroundColor: primary,
         foregroundColor: onPrimary,
         elevation: 0,
+        titleTextStyle: textTheme.titleLarge?.copyWith(color: onPrimary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -58,7 +74,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-      textTheme: _textTheme,
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -67,12 +82,4 @@ class AppTheme {
       ),
     );
   }
-
-  static const TextTheme _textTheme = TextTheme(
-    headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: onSurface),
-    titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: onSurface),
-    bodyLarge: TextStyle(fontSize: 16, color: onSurface),
-    bodyMedium: TextStyle(fontSize: 14, color: onSurface),
-    labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-  );
 }

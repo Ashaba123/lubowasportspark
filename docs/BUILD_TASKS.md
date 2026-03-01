@@ -37,34 +37,34 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 
 ### Booking
 
-- [ ] Booking form: date, time slot, contact (name, phone, email), notes
-- [ ] Submit to backend (custom endpoint when available)
-- [ ] Show “request sent” / success state
-- [ ] Optional: “My bookings” or status list if API supports it
+- [x] Booking form: date, time slot, contact (name, phone, email), notes
+- [x] Submit to backend (custom endpoint when available)
+- [x] Show “request sent” / success state
+- [x] Optional: “My bookings” or status list if API supports it
 
 ### League (roles & management)
 
-- [ ] **User roles:** Backend supports league creator (`created_by`), team leader (`leader_user_id`). See [docs/USER_ROLES.md](USER_ROLES.md). Optional: in WordPress assign `create_lubowa_league` to a role so non-admins can create leagues.
-- [ ] Login (JWT); GET `/me/league_roles` → show “Create league” if `can_create_league`; “Leagues I manage” and “Teams I lead”.
-- [ ] Create league (if allowed) → user becomes league manager for that league
-- [ ] Add teams (optional: set team leader via API or WordPress admin)
-- [ ] Add players (league manager or team leader for that team)
-- [ ] Generate fixtures / enter scores (league manager or admin)
-- [ ] Record goals in fixture (league manager or team leader for that team)
-- [ ] Mark fixture **Full time** (PATCH `result_confirmed: 1`) so result counts for points (W=3, D=1, L=0); standings rank by points
-- [ ] Reset fixtures; copy league code for public stats
+- [x] **User roles:** Backend supports league creator (`created_by`), team leader (`leader_user_id`). See [docs/USER_ROLES.md](USER_ROLES.md). Optional: in WordPress assign `create_lubowa_league` to a role so non-admins can create leagues.
+- [x] Login (JWT); GET `/me/league_roles` → show “Create league” if `can_create_league`; “Leagues I manage” and “Teams I lead”.
+- [x] Create league (if allowed) → user becomes league manager for that league
+- [x] Add teams (optional: set team leader via API or WordPress admin)
+- [x] Add players (league manager or team leader for that team)
+- [x] Generate fixtures / enter scores (league manager or admin)
+- [x] Record goals in fixture (league manager or team leader for that team)
+- [x] Mark fixture **Full time** (PATCH `result_confirmed: 1`) so result counts for points (W=3, D=1, L=0); standings rank by points
+- [x] Reset fixtures; copy league code for public stats
 
 ### League (player goals / career)
 - [ ] Link logged-in user to player: set `user_id` when creating player (POST with `user_id`) or PATCH `/lubowa/v1/players/<id>` with `{ "user_id": <mine> }` to claim existing player
-- [ ] GET `/lubowa/v1/me/player` (JWT): show “My career goals” for logged-in player
-- [ ] Team leader flow: list team players (GET `/lubowa/v1/teams/<id>/players`), then POST `/lubowa/v1/fixtures/<id>/goals` (player_id, goals) for a player in that fixture
+- [x] GET `/lubowa/v1/me/player` (JWT): show “My career goals” for logged-in player
+- [x] Team leader flow: list team players (GET `/lubowa/v1/teams/<id>/players`), then POST `/lubowa/v1/fixtures/<id>/goals` (player_id, goals) for a player in that fixture
 
 ### League (public)
 
-- [ ] Screen to enter league code
-- [ ] View standings and results (read-only) using public endpoint
+- [x] Screen to enter league code
+- [x] View standings and results (read-only) using public endpoint
 
-**Phase B status: In progress** (Events: list + detail + pull-to-refresh done)
+**Phase B status: Done** (Events, Booking, League public + manage + login; link player to user optional)
 
 ---
 

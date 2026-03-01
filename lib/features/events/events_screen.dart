@@ -104,7 +104,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         itemCount: 1 + _posts.length,
         itemBuilder: (context, index) {
           if (index == 0) {
@@ -112,20 +112,53 @@ class _EventsScreenState extends State<EventsScreen> {
           }
           final post = _posts[index - 1];
           final title = HtmlUtils.strip(post.title);
-          return ListTile(
-            leading: post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty
-                ? Image.network(
-                    post.featuredMediaUrl!,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.event),
-                  )
-                : const Icon(Icons.event),
-            title: Text(title.isEmpty ? 'Event #${post.id}' : title, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: post.date.isNotEmpty ? Text(_formatDate(post.date)) : null,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => EventDetailScreen(post: post)),
+          final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
+          return Card(
+            clipBehavior: Clip.antiAlias,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => EventDetailScreen(post: post)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasImage)
+                    Image.network(
+                      post.featuredMediaUrl!,
+                      height: 140,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _eventPlaceholder(140),
+                    )
+                  else
+                    _eventPlaceholder(100),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title.isEmpty ? 'Event #${post.id}' : title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (post.date.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatDate(post.date),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -133,29 +166,27 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  Widget _eventPlaceholder(double height) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Icon(Icons.event, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+    );
+  }
+
   Widget _buildEventsIntro() {
     final theme = Theme.of(context);
-    if (_eventsPage == null) return const SizedBox.shrink();
-    final page = _eventsPage!;
-    final title = HtmlUtils.strip(page.title);
-    final content = HtmlUtils.strip(page.content);
-    if (title.isEmpty && content.isEmpty) return const SizedBox.shrink();
+    if (_eventsPage == null) return const SizedBox(height: 4);
+    final content = HtmlUtils.strip(_eventsPage!.content);
+    if (content.isEmpty) return const SizedBox(height: 4);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (title.isNotEmpty)
-                Text(title, style: theme.textTheme.titleLarge),
-              if (title.isNotEmpty && content.isNotEmpty) const SizedBox(height: 8),
-              if (content.isNotEmpty)
-                Text(content, style: theme.textTheme.bodyMedium),
-            ],
-          ),
-        ),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        content,
+        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

@@ -2,6 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'core/api/api_client.dart';
+import 'core/api/app_api_provider.dart';
+import 'core/auth/token_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/activities/activities_screen.dart';
 import 'features/about/about_screen.dart';
@@ -11,20 +14,36 @@ import 'features/events/events_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/league/league_screen.dart';
 import 'features/splash/splash_screen.dart';
+import 'shared/textured_background.dart';
 
 void main() {
   runApp(const LubowaSportsParkApp());
 }
 
-class LubowaSportsParkApp extends StatelessWidget {
+class LubowaSportsParkApp extends StatefulWidget {
   const LubowaSportsParkApp({super.key});
 
   @override
+  State<LubowaSportsParkApp> createState() => _LubowaSportsParkAppState();
+}
+
+class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
+  late final InMemoryTokenStorage _tokenStorage = InMemoryTokenStorage();
+  late final ApiClient _apiClient = createAppApiClient(
+    tokenGetter: () => _tokenStorage.currentToken,
+    onUnauthorized: () => _tokenStorage.clear(),
+  );
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Lubowa Sports Park',
-      theme: AppTheme.light,
-      home: const _AppRoot(),
+    return AppApiProvider(
+      apiClient: _apiClient,
+      tokenStorage: _tokenStorage,
+      child: MaterialApp(
+        title: 'Lubowa Sports Park',
+        theme: AppTheme.light,
+        home: const _AppRoot(),
+      ),
     );
   }
 }
@@ -60,20 +79,24 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  static const _tabs = [
-    HomeScreen(),
-    EventsScreen(),
-    BookingScreen(),
-    LeagueScreen(),
-    _MoreTab(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final tabs = [
+      HomeScreen(onNavigateToTab: (i) => setState(() => _index = i)),
+      const EventsScreen(),
+      const BookingScreen(),
+      const LeagueScreen(),
+      const _MoreTab(),
+    ];
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _tabs,
+      body: Stack(
+        children: [
+          const TexturedBackground(),
+          IndexedStack(
+            index: _index,
+            children: tabs,
+          ),
+        ],
       ),
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(

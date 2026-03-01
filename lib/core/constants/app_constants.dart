@@ -17,6 +17,13 @@ class AppConstants {
   static const String pathPages = '/wp/v2/pages';
   static const String pathJwtToken = '/jwt-auth/v1/token';
 
+  /// Lubowa API (bookings, leagues)
+  static const String pathLubowaBookings = '/lubowa/v1/bookings';
+  static const String pathLubowaLeagues = '/lubowa/v1/leagues';
+  static const String pathLubowaPublicLeague = '/lubowa/v1/public/leagues';
+  static const String pathLubowaMeRoles = '/lubowa/v1/me/league_roles';
+  static const String pathLubowaMePlayer = '/lubowa/v1/me/player';
+
   /// WordPress page slugs for app screens (match site URLs: /, /activities/, /about-us/, /contact/, /events1/).
   static const String slugFrontPage = 'home';
   static const String slugActivities = 'activities';

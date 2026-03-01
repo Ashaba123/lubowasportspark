@@ -7,8 +7,12 @@ abstract class TokenStorage {
 }
 
 /// In-memory token holder. Use for bootstrap; replace with secure impl for auth.
+/// [currentToken] is synchronous for use in API interceptor.
 class InMemoryTokenStorage implements TokenStorage {
   String? _token;
+
+  /// Synchronous token for API client interceptor. Use after [setToken] or [getToken].
+  String? get currentToken => _token;
 
   @override
   Future<String?> getToken() async => _token;
