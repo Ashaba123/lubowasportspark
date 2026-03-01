@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/pages_repository.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/api_error_message.dart';
+import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import '../../shared/wp_page_content.dart';
@@ -35,6 +37,14 @@ class _ContactScreenState extends State<ContactScreen> {
       _loading = true;
       _error = null;
     });
+    if (!await hasNetworkConnectivity()) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = NoConnectivityException();
+      });
+      return;
+    }
     try {
       final page = await _repository.getPageBySlug(AppConstants.slugContact);
       if (!mounted) return;
@@ -77,7 +87,7 @@ class _ContactScreenState extends State<ContactScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_error.toString(), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                Text(userFriendlyApiErrorMessage(_error), textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
               ],

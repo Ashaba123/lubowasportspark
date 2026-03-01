@@ -7,7 +7,7 @@ import 'models/wp_post.dart';
 /// Fetches events (WordPress posts) from wp/v2/posts. Public, no auth.
 class EventsRepository {
   EventsRepository({ApiClient? apiClient})
-      : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.defaultApiBaseUrl).dio;
+      : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.apiBaseUrl).dio;
 
   final Dio _dio;
 

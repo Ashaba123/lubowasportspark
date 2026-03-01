@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/pages_repository.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/api_error_message.dart';
+import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../shared/app_logo.dart';
 import '../../shared/glass_container.dart';
@@ -32,6 +34,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _loading = true;
       _error = null;
     });
+    if (!await hasNetworkConnectivity()) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = NoConnectivityException();
+      });
+      return;
+    }
     try {
       final page = await _repository.getPageBySlug(AppConstants.slugFrontPage);
       if (!mounted) return;
@@ -128,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (_error != null) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'Could not load latest from website.',
+                        userFriendlyApiErrorMessage(_error),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.error,
                             ),

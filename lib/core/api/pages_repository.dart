@@ -7,7 +7,7 @@ import 'api_client.dart';
 /// Fetches WordPress pages (wp/v2/pages). Used for Home, Activities, About, Contact.
 class PagesRepository {
   PagesRepository({ApiClient? apiClient})
-      : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.defaultApiBaseUrl).dio;
+      : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.apiBaseUrl).dio;
 
   final Dio _dio;
 

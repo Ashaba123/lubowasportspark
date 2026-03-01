@@ -8,6 +8,10 @@ class AppConstants {
   /// Key for dart-define / env: API_BASE_URL
   static const String apiBaseUrlKey = 'API_BASE_URL';
 
+  /// API base URL used by the app. Override at build: --dart-define=API_BASE_URL=https://...
+  static String get apiBaseUrl =>
+      String.fromEnvironment(apiBaseUrlKey, defaultValue: defaultApiBaseUrl);
+
   /// Paths (relative to base URL)
   static const String pathPosts = '/wp/v2/posts';
   static const String pathPages = '/wp/v2/pages';

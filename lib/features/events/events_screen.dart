@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api/pages_repository.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/api_error_message.dart';
+import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import 'event_detail_screen.dart';
@@ -36,6 +38,14 @@ class _EventsScreenState extends State<EventsScreen> {
       _loading = true;
       _error = null;
     });
+    if (!await hasNetworkConnectivity()) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(NoConnectivityException());
+      });
+      return;
+    }
     try {
       final results = await Future.wait([
         _repository.getPosts(),
@@ -52,7 +62,7 @@ class _EventsScreenState extends State<EventsScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = userFriendlyApiErrorMessage(e);
       });
     }
   }
