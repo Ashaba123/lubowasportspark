@@ -81,11 +81,11 @@ class _LeagueScreenState extends State<LeagueScreen> {
         _publicData = data;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = userFriendlyApiErrorMessage(e);
+        _error = '${userFriendlyApiErrorMessage(e)}\n\nRaw (share if needed): $e\n$stack';
       });
     }
   }
@@ -123,7 +123,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              SelectableText(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
             ],
             if (_publicData != null) ...[
               const SizedBox(height: 16),

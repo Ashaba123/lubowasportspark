@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/app_api_provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/auth/auth_repository.dart';
 import '../../core/auth/token_storage.dart';
 import '../../core/utils/api_error_message.dart';
@@ -100,6 +102,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: _loading
                     ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('Log in'),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: () async {
+                    final uri = Uri.parse('${AppConstants.websiteUrl}/contact');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  child: const Text('Don\'t have an account? Sign up or contact us on our website'),
+                ),
               ),
             ],
           ),

@@ -271,7 +271,7 @@ class _BookingScreenState extends State<BookingScreen> {
             Text('Time slot', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
-              value: _selectedTimeSlot,
+              initialValue: _selectedTimeSlot,
               decoration: const InputDecoration(hintText: 'Select time'),
               items: _timeSlots.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) => setState(() => _selectedTimeSlot = v),
@@ -363,11 +363,11 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
         _bookings = list;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = userFriendlyApiErrorMessage(e);
+        _error = '${userFriendlyApiErrorMessage(e)}\n\nRaw error (share this if needed):\n$e\n$stack';
       });
     }
   }
@@ -391,7 +391,10 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              SelectableText(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+              ),
             ],
             const SizedBox(height: 16),
             FilledButton(

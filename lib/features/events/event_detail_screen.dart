@@ -5,7 +5,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/utils/html_utils.dart';
 import 'models/wp_post.dart';
 
-/// Event (WP post) detail: title, date, featured image, HTML content.
+/// Event (WP post) detail: title, date, featured image, HTML content. Designed for clarity and hierarchy.
 class EventDetailScreen extends StatelessWidget {
   const EventDetailScreen({super.key, required this.post});
 
@@ -17,42 +17,89 @@ class EventDetailScreen extends StatelessWidget {
     final title = HtmlUtils.strip(post.title);
     final dateStr = post.date.isNotEmpty ? _tryFormatDate(post.date) : '';
     final html = HtmlUtils.sanitizeForRender(post.content);
+    final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: Text(title.isEmpty ? 'Event' : title)),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty)
-              Image.network(
-                post.featuredMediaUrl!,
-                height: 200,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox(height: 200),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: hasImage
+                  ? Image.network(
+                      post.featuredMediaUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _placeholder(context),
+                    )
+                  : _placeholder(context),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (dateStr.isNotEmpty)
-                    Text(dateStr, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
-                  if (dateStr.isNotEmpty) const SizedBox(height: 12),
-                  if (html.isEmpty)
-                    const SizedBox.shrink()
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 18, color: theme.colorScheme.onPrimaryContainer),
+                          const SizedBox(width: 8),
+                          Text(
+                            dateStr,
+                            style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (dateStr.isNotEmpty) const SizedBox(height: 16),
+                  Text(
+                    title.isEmpty ? 'Event' : title,
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 24),
+                  if (html.isNotEmpty)
+                    Card(
+                      elevation: 0,
+                      color: theme.colorScheme.surfaceContainerLow,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: HtmlWidget(
+                          html,
+                          textStyle: theme.textTheme.bodyLarge,
+                          baseUrl: Uri.parse('${AppConstants.websiteUrl}/'),
+                        ),
+                      ),
+                    )
                   else
-                    HtmlWidget(
-                      html,
-                      textStyle: theme.textTheme.bodyLarge,
-                      baseUrl: Uri.parse('${AppConstants.websiteUrl}/'),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No further details for this event.',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
                     ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholder(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(Icons.event, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }

@@ -35,7 +35,7 @@ class BookingSubmitResponse {
 
   factory BookingSubmitResponse.fromJson(Map<String, dynamic> json) =>
       BookingSubmitResponse(
-        id: json['id'] as int,
+        id: BookingItem._toInt(json['id']),
         status: (json['status'] as String?) ?? 'pending',
       );
 }
@@ -58,8 +58,15 @@ class BookingItem {
   final String status;
   final String? createdAt;
 
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
   factory BookingItem.fromJson(Map<String, dynamic> json) => BookingItem(
-        id: json['id'] as int,
+        id: _toInt(json['id']),
         date: (json['date'] as String?) ?? '',
         timeSlot: (json['time_slot'] as String?) ?? '',
         contactName: (json['contact_name'] as String?) ?? '',

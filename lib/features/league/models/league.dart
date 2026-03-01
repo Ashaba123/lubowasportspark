@@ -16,14 +16,28 @@ class LeagueModel {
   final int? createdBy;
   final String? createdAt;
 
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
+  }
+
   factory LeagueModel.fromJson(Map<String, dynamic> json) => LeagueModel(
-        id: json['id'] as int,
+        id: _toInt(json['id']),
         name: (json['name'] as String?) ?? '',
         code: (json['code'] as String?) ?? '',
-        legs: json['legs'] as int? ?? 1,
-        createdBy: json['created_by'] as int?,
+        legs: _toInt(json['legs']) == 0 ? 1 : _toInt(json['legs']),
+        createdBy: _optionalInt(json['created_by']),
         createdAt: json['created_at'] as String?,
       );
+
+  static int? _optionalInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
 }
 
 /// Team (minimal).
@@ -35,9 +49,9 @@ class TeamModel {
   final int? leaderUserId;
 
   factory TeamModel.fromJson(Map<String, dynamic> json) => TeamModel(
-        id: json['id'] as int,
+        id: LeagueModel._toInt(json['id']),
         name: (json['name'] as String?) ?? '',
-        leaderUserId: json['leader_user_id'] as int?,
+        leaderUserId: LeagueModel._optionalInt(json['leader_user_id']),
       );
 }
 
@@ -51,10 +65,10 @@ class PlayerModel {
   final int? userId;
 
   factory PlayerModel.fromJson(Map<String, dynamic> json) => PlayerModel(
-        id: json['id'] as int,
+        id: LeagueModel._toInt(json['id']),
         name: (json['name'] as String?) ?? '',
-        goals: json['goals'] as int? ?? 0,
-        userId: json['user_id'] as int?,
+        goals: LeagueModel._optionalInt(json['goals']) ?? 0,
+        userId: LeagueModel._optionalInt(json['user_id']),
       );
 }
 
@@ -89,18 +103,18 @@ class FixtureModel {
   final int? sortOrder;
 
   factory FixtureModel.fromJson(Map<String, dynamic> json) => FixtureModel(
-        id: json['id'] as int,
-        homeTeamId: json['home_team_id'] as int,
-        awayTeamId: json['away_team_id'] as int,
+        id: LeagueModel._toInt(json['id']),
+        homeTeamId: LeagueModel._toInt(json['home_team_id']),
+        awayTeamId: LeagueModel._toInt(json['away_team_id']),
         homeTeamName: json['home_team_name'] as String?,
         awayTeamName: json['away_team_name'] as String?,
-        homeGoals: json['home_goals'] as int?,
-        awayGoals: json['away_goals'] as int?,
+        homeGoals: LeagueModel._optionalInt(json['home_goals']),
+        awayGoals: LeagueModel._optionalInt(json['away_goals']),
         matchDate: json['match_date'] as String?,
         matchTime: json['match_time'] as String?,
         startedAt: json['started_at'] == true || json['started_at'] == 1,
-        resultConfirmed: json['result_confirmed'] as int? ?? 0,
-        sortOrder: json['sort_order'] as int?,
+        resultConfirmed: LeagueModel._optionalInt(json['result_confirmed']) ?? 0,
+        sortOrder: LeagueModel._optionalInt(json['sort_order']),
       );
 
   bool get isFullTime => resultConfirmed == 1;
@@ -125,12 +139,12 @@ class StandingsRow {
   final int lost;
 
   factory StandingsRow.fromJson(Map<String, dynamic> json) => StandingsRow(
-        teamId: json['team_id'] as int,
+        teamId: LeagueModel._toInt(json['team_id']),
         teamName: (json['team_name'] as String?) ?? '',
-        points: json['points'] as int? ?? 0,
-        won: json['won'] as int? ?? 0,
-        drawn: json['drawn'] as int? ?? 0,
-        lost: json['lost'] as int? ?? 0,
+        points: LeagueModel._optionalInt(json['points']) ?? 0,
+        won: LeagueModel._optionalInt(json['won']) ?? 0,
+        drawn: LeagueModel._optionalInt(json['drawn']) ?? 0,
+        lost: LeagueModel._optionalInt(json['lost']) ?? 0,
       );
 }
 
@@ -144,9 +158,9 @@ class TopScorerEntry {
   final String? teamName;
 
   factory TopScorerEntry.fromJson(Map<String, dynamic> json) => TopScorerEntry(
-        playerId: json['player_id'] as int,
+        playerId: LeagueModel._toInt(json['player_id']),
         playerName: (json['player_name'] as String?) ?? '',
-        goals: json['goals'] as int? ?? 0,
+        goals: LeagueModel._optionalInt(json['goals']) ?? 0,
         teamName: json['team_name'] as String?,
       );
 }
@@ -219,8 +233,8 @@ class LeagueRoles {
     final led = json['led_team_ids'] as List<dynamic>?;
     return LeagueRoles(
       canCreateLeague: json['can_create_league'] == true,
-      managedLeagueIds: managed?.map((e) => e as int).toList() ?? [],
-      ledTeamIds: led?.map((e) => e as int).toList() ?? [],
+      managedLeagueIds: managed?.map((e) => LeagueModel._toInt(e)).where((v) => v != 0).toList() ?? [],
+      ledTeamIds: led?.map((e) => LeagueModel._toInt(e)).where((v) => v != 0).toList() ?? [],
     );
   }
 }
@@ -246,12 +260,12 @@ class MePlayer {
   final String? leagueName;
 
   factory MePlayer.fromJson(Map<String, dynamic> json) => MePlayer(
-        id: json['id'] as int,
+        id: LeagueModel._toInt(json['id']),
         name: (json['name'] as String?) ?? '',
-        teamId: json['team_id'] as int,
-        goals: json['goals'] as int? ?? 0,
+        teamId: LeagueModel._toInt(json['team_id']),
+        goals: LeagueModel._optionalInt(json['goals']) ?? 0,
         teamName: json['team_name'] as String?,
-        leagueId: json['league_id'] as int?,
+        leagueId: LeagueModel._optionalInt(json['league_id']),
         leagueName: json['league_name'] as String?,
       );
 }
