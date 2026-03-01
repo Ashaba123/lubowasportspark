@@ -92,6 +92,8 @@ class _LeagueScreenState extends State<LeagueScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('League')),
       body: SingleChildScrollView(
@@ -99,62 +101,94 @@ class _LeagueScreenState extends State<LeagueScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('View by code', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _codeController,
-                    decoration: const InputDecoration(
-                      hintText: 'League code',
-                      border: OutlineInputBorder(),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('View by code', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _codeController,
+                            decoration: const InputDecoration(
+                              hintText: 'League code',
+                            ),
+                            textCapitalization: TextCapitalization.characters,
+                            onSubmitted: (_) => _loadByCode(),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: _loading ? null : _loadByCode,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(88, 48),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: _loading
+                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Text('View'),
+                        ),
+                      ],
                     ),
-                    textCapitalization: TextCapitalization.characters,
-                    onSubmitted: (_) => _loadByCode(),
-                  ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _loading ? null : _loadByCode,
-                  child: _loading ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('View'),
-                ),
-              ],
+              ),
             ),
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              SelectableText(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
-            ],
             if (_publicData != null) ...[
               const SizedBox(height: 16),
               _PublicLeagueContent(data: _publicData!),
             ],
             const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text('Manage leagues', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (_leagueRoles != null)
-              _ManageSection(
-                leagueRoles: _leagueRoles!,
-                mePlayer: _mePlayer,
-                repository: _repository,
-                onLogout: _logout,
-                onRefresh: _loadManageContent,
-              )
-            else
-              OutlinedButton.icon(
-                onPressed: _loadingRoles
-                    ? null
-                    : () async {
-                        final ok = await Navigator.of(context).push<bool>(
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        );
-                        if (ok == true && mounted) _loadManageContent();
-                      },
-                icon: _loadingRoles ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.login),
-                label: const Text('Log in to create and manage leagues'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Manage leagues', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    if (_leagueRoles != null)
+                      _ManageSection(
+                        leagueRoles: _leagueRoles!,
+                        mePlayer: _mePlayer,
+                        repository: _repository,
+                        onLogout: _logout,
+                        onRefresh: _loadManageContent,
+                      )
+                    else
+                      FilledButton.icon(
+                        onPressed: _loadingRoles
+                            ? null
+                            : () async {
+                                final ok = await Navigator.of(context).push<bool>(
+                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                );
+                                if (ok == true && mounted) _loadManageContent();
+                              },
+                        icon: _loadingRoles
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.login),
+                        label: const Text('Log in to create and manage leagues'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                  ],
+                ),
               ),
+            ),
           ],
         ),
       ),
@@ -170,64 +204,150 @@ class _PublicLeagueContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(data.league.name, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 12),
-        if (data.standings.isNotEmpty) ...[
-          Text('Standings', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Table(
-            columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(0.6), 2: FlexColumnWidth(0.6), 3: FlexColumnWidth(0.6), 4: FlexColumnWidth(0.6)},
-            children: [
-              TableRow(
-                decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest),
-                children: const [
-                  Padding(padding: EdgeInsets.all(6), child: Text('Team', style: TextStyle(fontWeight: FontWeight.w600))),
-                  Padding(padding: EdgeInsets.all(6), child: Text('P', style: TextStyle(fontWeight: FontWeight.w600))),
-                  Padding(padding: EdgeInsets.all(6), child: Text('W', style: TextStyle(fontWeight: FontWeight.w600))),
-                  Padding(padding: EdgeInsets.all(6), child: Text('D', style: TextStyle(fontWeight: FontWeight.w600))),
-                  Padding(padding: EdgeInsets.all(6), child: Text('L', style: TextStyle(fontWeight: FontWeight.w600))),
-                ],
-              ),
-              ...data.standings.map((row) => TableRow(
-                children: [
-                  Padding(padding: const EdgeInsets.all(6), child: Text(row.teamName, overflow: TextOverflow.ellipsis)),
-                  Padding(padding: const EdgeInsets.all(6), child: Text('${row.points}')),
-                  Padding(padding: const EdgeInsets.all(6), child: Text('${row.won}')),
-                  Padding(padding: const EdgeInsets.all(6), child: Text('${row.drawn}')),
-                  Padding(padding: const EdgeInsets.all(6), child: Text('${row.lost}')),
-                ],
-              )),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (data.fixtures.isNotEmpty) ...[
-          Text('Fixtures', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          ...data.fixtures.take(20).map((f) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(f.homeTeamName ?? 'Team ${f.homeTeamId}', overflow: TextOverflow.ellipsis)),
-                Text(' ${f.homeGoals ?? 0} - ${f.awayGoals ?? 0} ', style: theme.textTheme.bodySmall),
-                Expanded(child: Text(f.awayTeamName ?? 'Team ${f.awayTeamId}', overflow: TextOverflow.ellipsis, textAlign: TextAlign.end)),
+                Text(data.league.name, style: theme.textTheme.titleLarge),
               ],
             ),
-          )),
-          if (data.fixtures.length > 20) Padding(padding: const EdgeInsets.only(top: 4), child: Text('+ ${data.fixtures.length - 20} more', style: theme.textTheme.bodySmall)),
+          ),
+        ),
+        if (data.standings.isNotEmpty) ...[
           const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Standings', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Table(
+                    columnWidths: const {
+                      0: FlexColumnWidth(2),
+                      1: FlexColumnWidth(0.6),
+                      2: FlexColumnWidth(0.6),
+                      3: FlexColumnWidth(0.6),
+                      4: FlexColumnWidth(0.6),
+                    },
+                    children: [
+                      TableRow(
+                        decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('Team', style: theme.textTheme.labelLarge),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('P', style: theme.textTheme.labelLarge),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('W', style: theme.textTheme.labelLarge),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('D', style: theme.textTheme.labelLarge),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text('L', style: theme.textTheme.labelLarge),
+                          ),
+                        ],
+                      ),
+                      ...data.standings.map((row) => TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(row.teamName, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
+                          ),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.points}', style: theme.textTheme.bodyMedium)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.won}', style: theme.textTheme.bodyMedium)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.drawn}', style: theme.textTheme.bodyMedium)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.lost}', style: theme.textTheme.bodyMedium)),
+                        ],
+                      )),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        if (data.fixtures.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Fixtures', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  ...data.fixtures.take(20).map((f) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            f.homeTeamName ?? 'Team ${f.homeTeamId}',
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                        Text(
+                          ' ${f.homeGoals ?? 0} - ${f.awayGoals ?? 0} ',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                        Expanded(
+                          child: Text(
+                            f.awayTeamName ?? 'Team ${f.awayTeamId}',
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                  if (data.fixtures.length > 20)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('+ ${data.fixtures.length - 20} more', style: theme.textTheme.bodySmall),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
         if (data.topScorers.isNotEmpty) ...[
-          Text('Top scorers', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          ...data.topScorers.take(10).map((s) => ListTile(
-            dense: true,
-            title: Text(s.playerName),
-            trailing: Text('${s.goals} goals'),
-          )),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Top scorers', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  ...data.topScorers.take(10).map((s) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(s.playerName, style: theme.textTheme.bodyMedium),
+                    trailing: Text('${s.goals} goals', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.primary)),
+                  )),
+                ],
+              ),
+            ),
+          ),
         ],
       ],
     );

@@ -160,44 +160,89 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildLanding() {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Text(
             'Book at Lubowa Sports Park',
             style: theme.textTheme.headlineMedium,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
-            'Reserve the pitch, courts, or facilities for your game or event. '
-            'Choose a date and time that works for you and we\'ll get back to you to confirm.',
-            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            'Reserve the pitch, courts, or facilities. Choose a date and time that works for you.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          Text('Quick book', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickBookCard(
+                  icon: Icons.schedule,
+                  label: 'Available now',
+                  filled: true,
+                  onTap: () {
+                    setState(() {
+                      _selectedDate = DateTime.now();
+                      _selectedTimeSlot = null;
+                      _view = _BookView.form;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickBookCard(
+                  icon: Icons.calendar_today,
+                  label: 'Schedule',
+                  filled: false,
+                  onTap: () => setState(() => _view = _BookView.form),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Icon(Icons.calendar_today, size: 48, color: theme.colorScheme.primary),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Use the menu above to make a booking or view your existing bookings.',
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: () => setState(() => _view = _BookView.form),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Make a booking'),
-                  ),
-                ],
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.list_alt, color: colorScheme.primary, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('My bookings', style: theme.textTheme.titleMedium),
+                          Text(
+                            'View or manage your reservations',
+                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
               ),
             ),
           ),
@@ -251,40 +296,72 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildForm() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Date', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 4),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate ?? DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
+            Card(
+              child: InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate ?? DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) setState(() => _selectedDate = date);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, color: colorScheme.primary, size: 24),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Date', style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
+                            const SizedBox(height: 2),
+                            Text(
+                              _selectedDate == null
+                                  ? 'Select date'
+                                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Time slot', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _timeSlots.map((slot) {
+                final selected = _selectedTimeSlot == slot;
+                return FilterChip(
+                  selected: selected,
+                  label: Text(slot),
+                  onSelected: (v) => setState(() => _selectedTimeSlot = v ? slot : null),
+                  selectedColor: colorScheme.primaryContainer,
+                  checkmarkColor: colorScheme.primary,
                 );
-                if (date != null) setState(() => _selectedDate = date);
-              },
-              icon: const Icon(Icons.calendar_today),
-              label: Text(_selectedDate == null
-                  ? 'Select date'
-                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
+              }).toList(),
             ),
-            const SizedBox(height: 16),
-            Text('Time slot', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              value: _selectedTimeSlot,
-              decoration: const InputDecoration(hintText: 'Select time'),
-              items: _timeSlots.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (v) => setState(() => _selectedTimeSlot = v),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             TextFormField(
               controller: _nameCtrl,
               decoration: const InputDecoration(labelText: 'Name', hintText: 'Your name'),
@@ -313,11 +390,15 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(_error!, style: TextStyle(color: colorScheme.error)),
             ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _submitting ? null : _submit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
               child: _submitting
                   ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Submit request'),
@@ -328,6 +409,58 @@ class _BookingScreenState extends State<BookingScreen> {
               child: const Text('Cancel'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickBookCard extends StatelessWidget {
+  const _QuickBookCard({
+    required this.icon,
+    required this.label,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Material(
+      color: filled ? colorScheme.primary : colorScheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: filled ? null : Border.all(color: colorScheme.primary, width: 1.5),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: filled ? colorScheme.onPrimary : colorScheme.primary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: filled ? colorScheme.onPrimary : colorScheme.primary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -389,6 +522,8 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('My bookings')),
       body: Padding(
@@ -396,27 +531,41 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _emailCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                hintText: 'Email used when booking',
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _emailCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        hintText: 'Email used when booking',
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _loading ? null : _load,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: _loading
+                          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Load my bookings'),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              SelectableText(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-              ),
-            ],
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _loading ? null : _load,
-              child: _loading
-                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Load my bookings'),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -424,18 +573,19 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
                   ? Center(
                       child: Text(
                         _loading ? 'Loading...' : 'Enter your email and tap Load.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                       ),
                     )
-                  : ListView.builder(
+                  : ListView.separated(
                       itemCount: _bookings.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (_, i) {
                         final b = _bookings[i];
-                        return ListTile(
-                          title: Text(b.contactName),
-                          subtitle: Text('${b.date} ${b.timeSlot} · ${b.status}'),
+                        return _BookingCard(
+                          booking: b,
+                          onViewDetails: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
+                          ),
                         );
                       },
                     ),
@@ -443,6 +593,153 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  const _BookingCard({required this.booking, required this.onViewDetails});
+
+  final BookingItem booking;
+  final VoidCallback onViewDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isUpcoming = booking.status.toLowerCase() == 'pending' || booking.status.toLowerCase() == 'confirmed';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Lubowa Sports Park',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                if (isUpcoming)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Upcoming',
+                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onPrimary),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      booking.status,
+                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${booking.date} · ${booking.timeSlot} – 1 hour',
+              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onViewDetails,
+              child: const Text('View details'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingDetailScreen extends StatelessWidget {
+  const _BookingDetailScreen({required this.booking});
+
+  final BookingItem booking;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Booking details')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailRow(label: 'Court', value: 'Lubowa Sports Park'),
+                    const SizedBox(height: 12),
+                    _DetailRow(label: 'Date', value: booking.date),
+                    const SizedBox(height: 12),
+                    _DetailRow(label: 'Time', value: booking.timeSlot),
+                    const SizedBox(height: 12),
+                    _DetailRow(label: 'Duration', value: '1 hour'),
+                    const SizedBox(height: 12),
+                    _DetailRow(label: 'Contact', value: booking.contactName),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+        Expanded(
+          child: Text(value, style: theme.textTheme.bodyMedium),
+        ),
+      ],
     );
   }
 }
@@ -457,15 +754,25 @@ class _MyBookingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('My bookings')),
       body: bookings.isEmpty
-          ? const Center(child: Text('No bookings found for this email.'))
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+          ? Center(
+              child: Text(
+                'No bookings found for this email.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
               itemCount: bookings.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (_, i) {
                 final b = bookings[i];
-                return ListTile(
-                  title: Text(b.contactName),
-                  subtitle: Text('${b.date} ${b.timeSlot} · ${b.status}'),
+                return _BookingCard(
+                  booking: b,
+                  onViewDetails: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
+                  ),
                 );
               },
             ),

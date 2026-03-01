@@ -7,7 +7,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
     required this.onDone,
-    this.duration = const Duration(milliseconds: 2200),
+    this.duration = const Duration(milliseconds: 3800),
   });
 
   final VoidCallback onDone;

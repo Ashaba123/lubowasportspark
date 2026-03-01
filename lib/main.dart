@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'core/api/api_client.dart';
 import 'core/api/app_api_provider.dart';
 import 'core/auth/token_storage.dart';
+import 'core/onboarding/onboarding_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'features/activities/activities_screen.dart';
 import 'features/about/about_screen.dart';
@@ -13,6 +14,7 @@ import 'features/contact/contact_screen.dart';
 import 'features/events/events_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/league/league_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'shared/textured_background.dart';
 
@@ -57,13 +59,35 @@ class _AppRoot extends StatefulWidget {
 
 class _AppRootState extends State<_AppRoot> {
   bool _showSplash = true;
+  bool _showOnboarding = false;
+
+  static const _splashDuration = Duration(milliseconds: 3800);
+
+  void _onSplashDone() async {
+    final completed = await OnboardingStorage.hasCompleted();
+    if (!mounted) return;
+    setState(() {
+      _showSplash = false;
+      _showOnboarding = !completed;
+    });
+  }
+
+  void _onOnboardingDone() async {
+    await OnboardingStorage.setCompleted();
+    if (!mounted) return;
+    setState(() => _showOnboarding = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
       return SplashScreen(
-        onDone: () => setState(() => _showSplash = false),
+        onDone: _onSplashDone,
+        duration: _splashDuration,
       );
+    }
+    if (_showOnboarding) {
+      return OnboardingScreen(onDone: _onOnboardingDone);
     }
     return const MainShell();
   }
