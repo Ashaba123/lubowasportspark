@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import 'booking_repository.dart';
@@ -16,7 +17,7 @@ class BookingScreen extends StatefulWidget {
 enum _BookView { landing, form, success }
 
 class _BookingScreenState extends State<BookingScreen> {
-  final _repository = BookingRepository();
+  BookingRepository? _repository;
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -36,6 +37,12 @@ class _BookingScreenState extends State<BookingScreen> {
   ];
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
@@ -45,6 +52,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _submit() async {
+    if (_repository == null) return;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
       setState(() => _error = 'Please select a date.');
@@ -71,7 +79,7 @@ class _BookingScreenState extends State<BookingScreen> {
         contactEmail: _emailCtrl.text.trim(),
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
-      await _repository.submit(request);
+      await _repository!.submit(request);
       if (!mounted) return;
       setState(() {
         _submitting = false;
@@ -88,10 +96,10 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<List<BookingItem>> _loadMyBookings(String email) async {
-    if (email.trim().isEmpty) return [];
+    if (email.trim().isEmpty || _repository == null) return [];
     setState(() => _loadingBookings = true);
     try {
-      final list = await _repository.getByEmail(email.trim());
+      final list = await _repository!.getByEmail(email.trim());
       if (!mounted) return [];
       setState(() {
         _myBookings = list;
@@ -335,10 +343,16 @@ class _MyBookingsEntryScreen extends StatefulWidget {
 
 class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
   final _emailCtrl = TextEditingController();
-  final _repository = BookingRepository();
+  BookingRepository? _repository;
   List<BookingItem> _bookings = [];
   bool _loading = false;
   String? _error;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+  }
 
   @override
   void dispose() {
@@ -347,6 +361,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
   }
 
   Future<void> _load() async {
+    if (_repository == null) return;
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
       setState(() => _error = 'Enter your email.');
@@ -357,7 +372,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
       _loading = true;
     });
     try {
-      final list = await _repository.getByEmail(email);
+      final list = await _repository!.getByEmail(email);
       if (!mounted) return;
       setState(() {
         _bookings = list;

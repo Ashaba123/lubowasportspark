@@ -4,26 +4,32 @@ import '../constants/app_constants.dart';
 
 /// Single HTTP client for WordPress REST API. Base URL from [baseUrl];
 /// JWT sent via [AuthInterceptor]. On 401, [onUnauthorized] is invoked.
+/// Pass [dio] in tests to use a mock/stub Dio.
 class ApiClient {
   ApiClient({
     String? baseUrl,
     String? Function()? tokenGetter,
     void Function()? onUnauthorized,
+    Dio? dio,
   })  : _baseUrl = baseUrl ?? AppConstants.defaultApiBaseUrl,
         _tokenGetter = tokenGetter,
         _onUnauthorized = onUnauthorized {
-    _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    ));
-    _dio.interceptors.add(
-      AuthInterceptor(
-        tokenGetter: _tokenGetter,
-        onUnauthorized: _onUnauthorized,
-      ),
-    );
+    if (dio != null) {
+      _dio = dio;
+    } else {
+      _dio = Dio(BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      ));
+      _dio.interceptors.add(
+        AuthInterceptor(
+          tokenGetter: _tokenGetter,
+          onUnauthorized: _onUnauthorized,
+        ),
+      );
+    }
   }
 
   final String _baseUrl;

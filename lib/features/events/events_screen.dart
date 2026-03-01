@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/api/app_api_provider.dart';
 import '../../core/api/pages_repository.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/api_error_message.dart';
@@ -19,21 +20,26 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  final EventsRepository _repository = EventsRepository();
-  final PagesRepository _pagesRepository = PagesRepository();
+  EventsRepository? _repository;
+  PagesRepository? _pagesRepository;
   List<WpPost> _posts = [];
   WpPage? _eventsPage;
   bool _loading = true;
   String? _error;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_repository == null) {
+      final api = AppApiProvider.apiClientOf(context);
+      _repository = EventsRepository(apiClient: api);
+      _pagesRepository = PagesRepository(apiClient: api);
+      _load();
+    }
   }
 
   Future<void> _load() async {
-    if (!mounted) return;
+    if (!mounted || _repository == null || _pagesRepository == null) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -48,8 +54,8 @@ class _EventsScreenState extends State<EventsScreen> {
     }
     try {
       final results = await Future.wait([
-        _repository.getPosts(),
-        _pagesRepository.getPageBySlug(AppConstants.slugEventsPage),
+        _repository!.getPosts(),
+        _pagesRepository!.getPageBySlug(AppConstants.slugEventsPage),
       ]);
       if (!mounted) return;
       setState(() {
