@@ -279,7 +279,7 @@ class _BookingScreenState extends State<BookingScreen> {
             Text('Time slot', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
-              initialValue: _selectedTimeSlot,
+              value: _selectedTimeSlot,
               decoration: const InputDecoration(hintText: 'Select time'),
               items: _timeSlots.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (v) => setState(() => _selectedTimeSlot = v),
