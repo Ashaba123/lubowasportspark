@@ -33,6 +33,16 @@ class HomeScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 24),
+              Text(
+                'Lubowa Sports Park is a modern multi-sport facility offering '
+                'football, padel, fitness training, events, and community '
+                'activities for all ages.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 32),
               if (onNavigateToTab != null) ...[
                 _ActionCard(
