@@ -95,6 +95,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('League')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -519,23 +520,75 @@ class _LeagueListScreenState extends State<_LeagueListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_error != null) return Scaffold(appBar: AppBar(title: const Text('My leagues')), body: Center(child: Text(_error!)));
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.filterManaged ? 'Leagues I manage' : 'Teams I lead')),
-      body: ListView.builder(
-        itemCount: _leagues.length,
-        itemBuilder: (_, i) {
-          final l = _leagues[i];
-          return ListTile(
-            title: Text(l.name),
-            subtitle: Text('Code: ${l.code}'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
+    final title = widget.filterManaged ? 'Leagues I manage' : 'Teams I lead';
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: 16),
+                Text(_error!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        ),
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: _leagues.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.emoji_events_outlined, size: 56, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.filterManaged ? 'No leagues yet' : 'No teams yet',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.filterManaged
+                          ? 'Leagues you create will appear here.'
+                          : 'Teams you lead will appear here.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ListView.builder(
+              itemCount: _leagues.length,
+              itemBuilder: (_, i) {
+                final l = _leagues[i];
+                return ListTile(
+                  title: Text(l.name),
+                  subtitle: Text('Code: ${l.code}'),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

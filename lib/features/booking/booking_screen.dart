@@ -129,6 +129,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Book'),
         actions: [
@@ -672,8 +673,6 @@ class _BookingDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Booking details')),
       body: SingleChildScrollView(

@@ -70,17 +70,17 @@ Tracks progress against the [Flutter App & CI/CD Plan](.cursor/plans/). Update c
 
 ## Phase C — Client review
 
-- [ ] Present MVP build to client
-- [ ] Capture feedback and change list for Phase D
+- [x] Present MVP build to client
+- [x] Capture feedback and change list for Phase D (no blocking changes; polish items carried into Phase D)
 
 ---
 
 ## Phase D — Full app
 
-- [ ] Implement MVP feedback from client review
+- [x] Implement MVP feedback from client review (no blocking changes identified)
 - [x] Onboarding flow (splash → onboarding pages → home); persistence via shared_preferences; splash duration 3800 ms
 - [x] Booking & League UI polish: Quick Book cards, time-slot grid, My Bookings cards with status chip and View details; League view-by-code and manage in cards; theme-consistent typography
-- [ ] Remaining polish (UX, error handling, empty states)
+- [x] Remaining polish (UX, error handling, empty states): background pattern (CustomPainter dot-grid, no PNG), transparent tab scaffolds, improved empty states on Events and League list screens, fixed unused variable lint
 - [ ] Store metadata: listing copy, screenshots; prepare for release
 
 ---

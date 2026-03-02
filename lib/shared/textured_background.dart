@@ -1,51 +1,56 @@
 import 'package:flutter/material.dart';
 
-/// Background layer: surface colour with Design 1 pattern as subtle corner accents.
-/// Keeps centre clear for content (hierarchy, restraint). Uses theme colours.
+/// Full-screen background: surface colour with a subtle staggered dot-grid
+/// drawn via CustomPainter. Eliminates the PNG asset dependency while keeping
+/// the decorative pattern subordinate to content (opacity ~8%).
 class TexturedBackground extends StatelessWidget {
   const TexturedBackground({super.key});
 
-  static const String _patternAsset = 'assets/background_pattern_1.png';
-
-  /// Opacity for pattern (keeps it secondary to content).
-  static const double _patternOpacity = 0.12;
-
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Stack(
-          children: [
-            ColoredBox(color: scheme.surface),
-            // Full-screen pattern layer so the PNG is visible on all screens.
-            Positioned.fill(
-              child: _CornerPattern(asset: _patternAsset, opacity: _patternOpacity),
-            ),
-          ],
-        );
-      },
+    final color = Theme.of(context).colorScheme.primary;
+    final surface = Theme.of(context).colorScheme.surface;
+    return ColoredBox(
+      color: surface,
+      child: CustomPaint(
+        painter: _DotGridPainter(color: color),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }
 
-class _CornerPattern extends StatelessWidget {
-  const _CornerPattern({required this.asset, required this.opacity});
+class _DotGridPainter extends CustomPainter {
+  const _DotGridPainter({required this.color});
 
-  final String asset;
-  final double opacity;
+  final Color color;
+
+  static const double _spacing = 28.0;
+  static const double _radius = 1.5;
+  static const double _opacity = 0.08;
 
   @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: opacity,
-      child: Image.asset(
-        asset,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: _opacity)
+      ..style = PaintingStyle.fill;
+
+    final cols = (size.width / _spacing).ceil() + 1;
+    final rows = (size.height / _spacing).ceil() + 1;
+
+    for (int row = 0; row < rows; row++) {
+      // Stagger odd rows by half a cell for a hex-like grid
+      final xOffset = row.isOdd ? _spacing / 2 : 0.0;
+      for (int col = 0; col < cols; col++) {
+        canvas.drawCircle(
+          Offset(col * _spacing + xOffset, row * _spacing),
+          _radius,
+          paint,
+        );
+      }
+    }
   }
+
+  @override
+  bool shouldRepaint(_DotGridPainter old) => old.color != color;
 }
