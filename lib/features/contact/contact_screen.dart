@@ -9,6 +9,26 @@ class ContactScreen extends StatelessWidget {
 
   static String get _websiteUrl => AppConstants.websiteUrl;
 
+  Future<void> _launchEmail() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'info@lubowasportspark.com',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _launchPhone() async {
+    final uri = Uri(
+      scheme: 'tel',
+      path: '+256781773771',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
   Future<void> _openWebsite(BuildContext context) async {
     final uri = Uri.parse(_websiteUrl);
     if (await canLaunchUrl(uri)) {
@@ -32,10 +52,57 @@ class ContactScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Lubowa Sports Park\nKampala, Uganda',
-              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              'Reach us using the details below.',
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.location_on_outlined),
+                title: Text(
+                  'Location',
+                  style: theme.textTheme.titleMedium,
+                ),
+                subtitle: Text(
+                  'Lubowa, Kigo Road',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.email_outlined),
+                title: Text(
+                  'Email',
+                  style: theme.textTheme.titleMedium,
+                ),
+                subtitle: Text(
+                  'info@lubowasportspark.com',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                onTap: () => _launchEmail(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.call_outlined),
+                title: Text(
+                  'Call',
+                  style: theme.textTheme.titleMedium,
+                ),
+                subtitle: Text(
+                  '+256-781-773771 / +256-705-616868',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                onTap: () => _launchPhone(),
+              ),
+            ),
             Text(
               'Hours',
               style: theme.textTheme.titleLarge,
