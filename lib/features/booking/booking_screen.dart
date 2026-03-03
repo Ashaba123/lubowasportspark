@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
+import '../../shared/app_logo.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
 
-/// Book tab: landing (title + message) by default; menu: Bookings / Make a booking.
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
 
@@ -14,7 +14,7 @@ class BookingScreen extends StatefulWidget {
   State<BookingScreen> createState() => _BookingScreenState();
 }
 
-enum _BookView { landing, form, success }
+enum _BookingStep { service, dateTime, details, success }
 
 class _BookingScreenState extends State<BookingScreen> {
   BookingRepository? _repository;
@@ -24,16 +24,30 @@ class _BookingScreenState extends State<BookingScreen> {
   final _emailCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
-  _BookView _view = _BookView.landing;
+  _BookingStep _step = _BookingStep.service;
   DateTime? _selectedDate;
   String? _selectedTimeSlot;
+  String? _selectedService;
   bool _submitting = false;
   String? _error;
-  List<BookingItem> _myBookings = [];
-  bool _loadingBookings = false;
 
   static const _timeSlots = [
-    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+  ];
+
+  static const _services = [
+    'Football pitch',
+    'Event Space',
+    'Padel',
   ];
 
   @override
@@ -71,19 +85,22 @@ class _BookingScreenState extends State<BookingScreen> {
       _submitting = true;
     });
     try {
+      final notesText = _notesCtrl.text.trim();
       final request = BookingRequest(
-        date: '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+        date:
+            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
         timeSlot: _selectedTimeSlot!,
         contactName: _nameCtrl.text.trim(),
         contactPhone: _phoneCtrl.text.trim(),
         contactEmail: _emailCtrl.text.trim(),
-        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        service: _selectedService,
+        notes: notesText.isEmpty ? null : notesText,
       );
       await _repository!.submit(request);
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _view = _BookView.success;
+        _step = _BookingStep.success;
         _error = null;
       });
     } catch (e) {
@@ -95,30 +112,13 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  Future<List<BookingItem>> _loadMyBookings(String email) async {
-    if (email.trim().isEmpty || _repository == null) return [];
-    setState(() => _loadingBookings = true);
-    try {
-      final list = await _repository!.getByEmail(email.trim());
-      if (!mounted) return [];
-      setState(() {
-        _myBookings = list;
-        _loadingBookings = false;
-      });
-      return _myBookings;
-    } catch (_) {
-      if (!mounted) return [];
-      setState(() => _loadingBookings = false);
-      return [];
-    }
-  }
-
-  void _resetForm() {
+  void _resetFlow() {
     setState(() {
-      _view = _BookView.landing;
+      _step = _BookingStep.service;
       _error = null;
       _selectedDate = null;
       _selectedTimeSlot = null;
+      _selectedService = null;
       _nameCtrl.clear();
       _phoneCtrl.clear();
       _emailCtrl.clear();
@@ -133,33 +133,36 @@ class _BookingScreenState extends State<BookingScreen> {
       appBar: AppBar(
         title: const Text('Book'),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.menu),
-            onSelected: (value) {
-              if (value == 'bookings') {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
-                );
-              } else {
-                setState(() => _view = _BookView.form);
-              }
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'My bookings',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'bookings', child: Text('Bookings')),
-              const PopupMenuItem(value: 'make', child: Text('Make a booking')),
-            ],
           ),
         ],
       ),
-      body: _view == _BookView.landing
-          ? _buildLanding()
-          : _view == _BookView.success
-              ? _buildSuccess()
-              : _buildForm(),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: () {
+          switch (_step) {
+            case _BookingStep.service:
+              return _buildServiceStep();
+            case _BookingStep.dateTime:
+              return _buildDateTimeStep();
+            case _BookingStep.details:
+              return _buildDetailsStep();
+            case _BookingStep.success:
+              return _buildSuccessStep();
+          }
+        }(),
+      ),
     );
   }
 
-  Widget _buildLanding() {
+  Widget _buildServiceStep() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
@@ -169,45 +172,50 @@ class _BookingScreenState extends State<BookingScreen> {
         children: [
           const SizedBox(height: 16),
           Text(
-            'Book at Lubowa Sports Park',
-            style: theme.textTheme.headlineMedium,
+            'Book. Play. Enjoy.',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.primary,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Reserve the pitch, courts, or facilities. Choose a date and time that works for you.',
-            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            'Pick a service.',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 32),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedService,
+            decoration: const InputDecoration(
+              labelText: 'Service',
+              hintText: 'Choose what you want to book',
+            ),
+            items: _services
+                .map(
+                  (s) => DropdownMenuItem<String>(
+                    value: s,
+                    child: Text(s),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setState(() => _selectedService = value),
+          ),
           const SizedBox(height: 24),
-          Text('Quick book', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickBookCard(
-                  icon: Icons.schedule,
-                  label: 'Available now',
-                  filled: true,
-                  onTap: () {
-                    setState(() {
-                      _selectedDate = DateTime.now();
-                      _selectedTimeSlot = null;
-                      _view = _BookView.form;
-                    });
+          FilledButton(
+            onPressed: _selectedService == null
+                ? null
+                : () {
+                    setState(() => _step = _BookingStep.dateTime);
                   },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _QuickBookCard(
-                  icon: Icons.calendar_today,
-                  label: 'Schedule',
-                  filled: false,
-                  onTap: () => setState(() => _view = _BookView.form),
-                ),
-              ),
-            ],
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Next'),
           ),
           const SizedBox(height: 24),
           Card(
@@ -228,14 +236,14 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                       child: Icon(Icons.list_alt, color: colorScheme.primary, size: 28),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(height: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('My bookings', style: theme.textTheme.titleMedium),
                           Text(
-                            'View or manage your reservations',
+                            'View your upcoming sessions.',
                             style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                           ),
                         ],
@@ -252,51 +260,112 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildSuccess() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 64),
-            const SizedBox(height: 16),
-            Text('Request sent', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              'Your booking request has been submitted. We\'ll get back to you soon.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+  Widget _buildDateTimeStep() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _selectedService ?? 'Choose date & time',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate ?? DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (date != null) setState(() => _selectedDate = date);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: colorScheme.primary, size: 24),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Date',
+                            style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _selectedDate == null
+                                ? 'Select date'
+                                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _resetForm,
-              icon: const Icon(Icons.home),
-              label: const Text('Back to Book'),
-            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Time slot', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _timeSlots.map((slot) {
+              final selected = _selectedTimeSlot == slot;
+              return FilterChip(
+                selected: selected,
+                label: Text(slot),
+                onSelected: (v) => setState(() => _selectedTimeSlot = v ? slot : null),
+                selectedColor: colorScheme.primaryContainer,
+                checkmarkColor: colorScheme.primary,
+              );
+            }).toList(),
+          ),
+          if (_error != null) ...[
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _emailCtrl.text.trim().isEmpty
-                  ? null
-                  : () async {
-                      final list = await _loadMyBookings(_emailCtrl.text.trim());
-                      if (!mounted) return;
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => _MyBookingsScreen(bookings: list)),
-                      );
-                    },
-              icon: _loadingBookings
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.list),
-              label: const Text('My bookings'),
-            ),
+            Text(_error!, style: TextStyle(color: colorScheme.error)),
           ],
-        ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _step = _BookingStep.service),
+                  child: const Text('Back'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _selectedDate == null || _selectedTimeSlot == null
+                      ? null
+                      : () => setState(() => _step = _BookingStep.details),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Next'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildDetailsStep() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
@@ -306,63 +375,35 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: InkWell(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate ?? DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (date != null) setState(() => _selectedDate = date);
-                },
-                borderRadius: BorderRadius.circular(12),
+            if (_selectedService != null || _selectedDate != null || _selectedTimeSlot != null) ...[
+              Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.calendar_today, color: colorScheme.primary, size: 24),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Date', style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
-                            const SizedBox(height: 2),
-                            Text(
-                              _selectedDate == null
-                                  ? 'Select date'
-                                  : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                              style: theme.textTheme.titleMedium,
-                            ),
-                          ],
+                      if (_selectedService != null)
+                        Text(
+                          _selectedService!,
+                          style: theme.textTheme.titleMedium,
                         ),
-                      ),
-                      Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                      if (_selectedDate != null || _selectedTimeSlot != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            if (_selectedDate != null)
+                              '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                            if (_selectedTimeSlot != null) _selectedTimeSlot!,
+                          ].join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text('Time slot', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _timeSlots.map((slot) {
-                final selected = _selectedTimeSlot == slot;
-                return FilterChip(
-                  selected: selected,
-                  label: Text(slot),
-                  onSelected: (v) => setState(() => _selectedTimeSlot = v ? slot : null),
-                  selectedColor: colorScheme.primaryContainer,
-                  checkmarkColor: colorScheme.primary,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
+            ],
             TextFormField(
               controller: _nameCtrl,
               decoration: const InputDecoration(labelText: 'Name', hintText: 'Your name'),
@@ -386,7 +427,10 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _notesCtrl,
-              decoration: const InputDecoration(labelText: 'Notes (optional)', hintText: 'Any special requests'),
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                hintText: 'Any special requests',
+              ),
               maxLines: 2,
             ),
             if (_error != null) ...[
@@ -394,20 +438,70 @@ class _BookingScreenState extends State<BookingScreen> {
               Text(_error!, style: TextStyle(color: colorScheme.error)),
             ],
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _submitting ? null : _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: _submitting
-                  ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Submit request'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _step = _BookingStep.dateTime),
+                    child: const Text('Back'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _submitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: _submitting
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Submit booking'),
+                  ),
+                ),
+              ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuccessStep() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 64),
+            const SizedBox(height: 16),
+            Text('Booking submitted', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => setState(() => _view = _BookView.landing),
-              child: const Text('Cancel'),
+            Text(
+              'Your booking request has been sent. We\'ll confirm with you shortly.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _resetFlow,
+              icon: const Icon(Icons.home),
+              label: const Text('Book another'),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                );
+              },
+              icon: const Icon(Icons.list_alt),
+              label: const Text('My bookings'),
             ),
           ],
         ),
@@ -416,57 +510,8 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 }
 
-class _QuickBookCard extends StatelessWidget {
-  const _QuickBookCard({
-    required this.icon,
-    required this.label,
-    required this.filled,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Material(
-      color: filled ? colorScheme.primary : colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: filled ? null : Border.all(color: colorScheme.primary, width: 1.5),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: filled ? colorScheme.onPrimary : colorScheme.primary,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: filled ? colorScheme.onPrimary : colorScheme.primary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Quick book card was used in the previous landing layout; kept here as a
+// reference component if we reintroduce quick actions in the future.
 
 class _MyBookingsEntryScreen extends StatefulWidget {
   const _MyBookingsEntryScreen();
@@ -478,7 +523,6 @@ class _MyBookingsEntryScreen extends StatefulWidget {
 class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
   final _emailCtrl = TextEditingController();
   BookingRepository? _repository;
-  List<BookingItem> _bookings = [];
   bool _loading = false;
   String? _error;
 
@@ -509,9 +553,13 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
       final list = await _repository!.getByEmail(email);
       if (!mounted) return;
       setState(() {
-        _bookings = list;
         _loading = false;
       });
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => _MyBookingsScreen(bookings: list, email: email),
+        ),
+      );
     } catch (e, stack) {
       if (!mounted) return;
       setState(() {
@@ -568,29 +616,6 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _bookings.isEmpty
-                  ? Center(
-                      child: Text(
-                        _loading ? 'Loading...' : 'Enter your email and tap Load.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                      ),
-                    )
-                  : ListView.separated(
-                      itemCount: _bookings.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, i) {
-                        final b = _bookings[i];
-                        return _BookingCard(
-                          booking: b,
-                          onViewDetails: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
-                          ),
-                        );
-                      },
-                    ),
-            ),
           ],
         ),
       ),
@@ -608,7 +633,6 @@ class _BookingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isUpcoming = booking.status.toLowerCase() == 'pending' || booking.status.toLowerCase() == 'confirmed';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -617,47 +641,25 @@ class _BookingCard extends StatelessWidget {
           children: [
             Row(
               children: [
+                Icon(Icons.event, color: colorScheme.primary),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    'Lubowa Sports Park',
-                    style: theme.textTheme.titleMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        booking.service?.isNotEmpty == true ? booking.service! : 'Booking',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${booking.date} · ${booking.timeSlot}',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                   ),
                 ),
-                if (isUpcoming)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Upcoming',
-                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onPrimary),
-                    ),
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      booking.status,
-                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                  ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${booking.date} · ${booking.timeSlot} – 1 hour',
-              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: onViewDetails,
-              child: const Text('View details'),
             ),
           ],
         ),
@@ -686,7 +688,10 @@ class _BookingDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DetailRow(label: 'Court', value: 'Lubowa Sports Park'),
+                    _DetailRow(
+                      label: 'Service',
+                      value: booking.service?.isNotEmpty == true ? booking.service! : 'Booking',
+                    ),
                     const SizedBox(height: 12),
                     _DetailRow(label: 'Date', value: booking.date),
                     const SizedBox(height: 12),
@@ -744,9 +749,10 @@ class _DetailRow extends StatelessWidget {
 }
 
 class _MyBookingsScreen extends StatelessWidget {
-  const _MyBookingsScreen({required this.bookings});
+  const _MyBookingsScreen({required this.bookings, required this.email});
 
   final List<BookingItem> bookings;
+  final String email;
 
   @override
   Widget build(BuildContext context) {
@@ -754,11 +760,17 @@ class _MyBookingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('My bookings')),
       body: bookings.isEmpty
           ? Center(
-              child: Text(
-                'No bookings found for this email.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AppLogo(size: 120),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No bookings Yet',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             )
           : ListView.separated(

@@ -25,6 +25,6 @@ void main() {
     await tester.pump(); // didChangeDependencies
 
     expect(find.text('Book'), findsOneWidget);
-    expect(find.text('Book at Lubowa Sports Park'), findsOneWidget);
+    expect(find.text('Book. Play. Enjoy.'), findsOneWidget);
   });
 }

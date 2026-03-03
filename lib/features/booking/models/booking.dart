@@ -6,6 +6,7 @@ class BookingRequest {
     required this.contactName,
     required this.contactPhone,
     required this.contactEmail,
+    this.service,
     this.notes,
   });
 
@@ -14,6 +15,8 @@ class BookingRequest {
   final String contactName;
   final String contactPhone;
   final String contactEmail;
+  /// Optional service being booked (e.g. football pitch, event space, padel).
+  final String? service;
   final String? notes;
 
   Map<String, dynamic> toJson() => {
@@ -22,6 +25,7 @@ class BookingRequest {
         'contact_name': contactName,
         'contact_phone': contactPhone,
         'contact_email': contactEmail,
+        if (service != null && service!.isNotEmpty) 'service': service,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
       };
 }
@@ -48,6 +52,7 @@ class BookingItem {
     required this.timeSlot,
     required this.contactName,
     required this.status,
+    this.service,
     this.createdAt,
   });
 
@@ -56,6 +61,8 @@ class BookingItem {
   final String timeSlot;
   final String contactName;
   final String status;
+  /// Optional service name if provided by the backend.
+  final String? service;
   final String? createdAt;
 
   static int _toInt(dynamic v) {
@@ -71,6 +78,7 @@ class BookingItem {
         timeSlot: (json['time_slot'] as String?) ?? '',
         contactName: (json['contact_name'] as String?) ?? '',
         status: (json['status'] as String?) ?? 'pending',
+        service: json['service'] as String?,
         createdAt: json['created_at'] as String?,
       );
 }
