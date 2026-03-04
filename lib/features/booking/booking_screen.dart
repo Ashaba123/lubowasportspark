@@ -221,7 +221,8 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           const SizedBox(height: 32),
           DropdownButtonFormField<String>(
-            initialValue: _selectedService,
+            // ignore: deprecated_member_use
+            value: _selectedService,
             decoration: const InputDecoration(
               labelText: 'Service',
               hintText: 'Choose a Service',
