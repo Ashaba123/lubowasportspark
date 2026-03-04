@@ -3,34 +3,26 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_constants.dart';
 
-/// Contact: static contact info, hours, and button to open website.
+/// Contact: static contact info, hours, and button to open the contact page.
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
 
-  static String get _websiteUrl => AppConstants.websiteUrl;
-
   Future<void> _launchEmail() async {
-    final uri = Uri(
-      scheme: 'mailto',
-      path: 'info@lubowasportspark.com',
-    );
+    final uri = Uri(scheme: 'mailto', path: 'info@lubowasportspark.com');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
   }
 
   Future<void> _launchPhone() async {
-    final uri = Uri(
-      scheme: 'tel',
-      path: '+256781773771',
-    );
+    final uri = Uri(scheme: 'tel', path: '+256781773771');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
   }
 
-  Future<void> _openWebsite(BuildContext context) async {
-    final uri = Uri.parse(_websiteUrl);
+  Future<void> _openContactPage() async {
+    final uri = Uri.parse('${AppConstants.websiteUrl}${AppConstants.websiteContactPath}');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -39,84 +31,75 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final hPadding = screenWidth >= 600 ? 48.0 : 24.0;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Contact')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Get in touch',
-              style: theme.textTheme.titleLarge,
-            ),
+            Text('Get in touch', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               'Reach us using the details below.',
-              style: theme.textTheme.bodyLarge
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.location_on_outlined),
-                title: Text(
-                  'Location',
-                  style: theme.textTheme.titleMedium,
-                ),
+                leading: Icon(Icons.location_on_outlined, color: colorScheme.primary),
+                title: Text('Location', style: theme.textTheme.titleMedium),
                 subtitle: Text(
                   'Lubowa, Kigo Road',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.email_outlined),
-                title: Text(
-                  'Email',
-                  style: theme.textTheme.titleMedium,
+                leading: Icon(Icons.email_outlined, color: colorScheme.primary),
+                title: Text('Email', style: theme.textTheme.titleMedium),
+                subtitle: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'info@lubowasportspark.com',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    maxLines: 1,
+                  ),
                 ),
-                subtitle: Text(
-                  'info@lubowasportspark.com',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-                onTap: () => _launchEmail(),
+                onTap: _launchEmail,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.call_outlined),
-                title: Text(
-                  'Call',
-                  style: theme.textTheme.titleMedium,
-                ),
+                leading: Icon(Icons.call_outlined, color: colorScheme.primary),
+                title: Text('Call', style: theme.textTheme.titleMedium),
                 subtitle: Text(
                   '+256-781-773771 / +256-705-616868',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
-                onTap: () => _launchPhone(),
+                onTap: _launchPhone,
               ),
             ),
-            Text(
-              'Hours',
-              style: theme.textTheme.titleLarge,
-            ),
+            const SizedBox(height: 24),
+            Text('Hours', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               'Monday – Friday · 6AM – 10PM\nSaturday – Sunday · 7AM – 11PM',
-              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: () => _openWebsite(context),
-              icon: const Icon(Icons.open_in_browser),
-              label: const Text('Open website'),
+              onPressed: _openContactPage,
+              icon: const Icon(Icons.contact_support_outlined),
+              label: const Text('Contact Us'),
             ),
           ],
         ),

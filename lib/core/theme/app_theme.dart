@@ -47,6 +47,15 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
+      navigationBarTheme: NavigationBarThemeData(
+        indicatorColor: primary,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Colors.white);
+          }
+          return const IconThemeData(color: Color(0xFF757575));
+        }),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: primary,
         foregroundColor: onPrimary,
