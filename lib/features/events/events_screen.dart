@@ -139,6 +139,7 @@ class _EventsScreenState extends State<EventsScreen> {
       );
     }
     return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -164,13 +165,13 @@ class _EventsScreenState extends State<EventsScreen> {
                   if (hasImage)
                     Image.network(
                       post.featuredMediaUrl!,
-                      height: 140,
+                      height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _eventPlaceholder(140),
+                      errorBuilder: (_, __, ___) => _eventPlaceholder(180),
                     )
                   else
-                    _eventPlaceholder(100),
+                    _eventPlaceholder(120),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -231,7 +232,8 @@ class _EventsScreenState extends State<EventsScreen> {
   static String _formatDate(String iso) {
     try {
       final d = DateTime.parse(iso);
-      return '${d.day}/${d.month}/${d.year}';
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
       return iso;
     }

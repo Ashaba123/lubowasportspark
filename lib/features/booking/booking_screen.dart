@@ -613,7 +613,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
       });
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => _MyBookingsScreen(bookings: list, email: email),
+          builder: (_) => _MyBookingsScreen(initialBookings: list, email: email),
         ),
       );
     } catch (e, stack) {
@@ -822,17 +822,56 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _MyBookingsScreen extends StatelessWidget {
-  const _MyBookingsScreen({required this.bookings, required this.email});
+class _MyBookingsScreen extends StatefulWidget {
+  const _MyBookingsScreen({required this.initialBookings, required this.email});
 
-  final List<BookingItem> bookings;
+  final List<BookingItem> initialBookings;
   final String email;
 
   @override
+  State<_MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends State<_MyBookingsScreen> {
+  late List<BookingItem> _bookings;
+  BookingRepository? _repository;
+
+  @override
+  void initState() {
+    super.initState();
+    _bookings = widget.initialBookings;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+  }
+
+  Future<void> _refresh() async {
+    if (_repository == null) return;
+    try {
+      final list = await _repository!.getByEmail(widget.email);
+      if (!mounted) return;
+      setState(() => _bookings = list);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('My bookings')),
-      body: bookings.isEmpty
+      appBar: AppBar(
+        title: const Text('My bookings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: _refresh,
+          ),
+        ],
+      ),
+      body: _bookings.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -844,22 +883,32 @@ class _MyBookingsScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _refresh,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                  ),
                 ],
               ),
             )
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: bookings.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final b = bookings[i];
-                return _BookingCard(
-                  booking: b,
-                  onViewDetails: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
-                  ),
-                );
-              },
+          : RefreshIndicator(
+              color: cs.primary,
+              onRefresh: _refresh,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                itemCount: _bookings.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, i) {
+                  final b = _bookings[i];
+                  return _BookingCard(
+                    booking: b,
+                    onViewDetails: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }

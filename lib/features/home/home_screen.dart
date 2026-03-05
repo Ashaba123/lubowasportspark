@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
           child: Column(
             children: [
               const AppLogo(size: 120),
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Text(
                 'Lubowa Sports Park is a modern multi-sport facility offering '
                 'football, padel, fitness training, events, and community '
@@ -44,20 +44,44 @@ class HomeScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
+              // Hours strip — small and scannable
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.schedule, size: 16, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mon–Fri 6AM–10PM  ·  Sat–Sun 7AM–11PM',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
               if (onNavigateToTab != null) ...[
+                // Book is the primary CTA — accent gradient treatment
+                _ActionCard(
+                  icon: Icons.calendar_today,
+                  title: 'Book Now',
+                  subtitle: 'Reserve the pitch or facilities',
+                  onTap: () => onNavigateToTab!(2),
+                  isAccent: true,
+                ),
+                const SizedBox(height: 12),
                 _ActionCard(
                   icon: Icons.event,
                   title: 'Events',
                   subtitle: 'Upcoming and past events',
                   onTap: () => onNavigateToTab!(1),
-                ),
-                const SizedBox(height: 12),
-                _ActionCard(
-                  icon: Icons.calendar_today,
-                  title: 'Book',
-                  subtitle: 'Reserve the pitch or facilities',
-                  onTap: () => onNavigateToTab!(2),
                 ),
                 const SizedBox(height: 12),
                 _ActionCard(
@@ -68,31 +92,12 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _ActionCard(
-                  icon: Icons.more_horiz,
+                  icon: Icons.grid_view,
                   title: 'More',
                   subtitle: 'Activities, About us, Contact',
                   onTap: () => onNavigateToTab!(4),
                 ),
               ],
-              const SizedBox(height: 24),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Hours', style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Monday – Friday · 6AM – 10PM\nSaturday – Sunday · 7AM – 11PM',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -107,17 +112,89 @@ class _ActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isAccent = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isAccent;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    if (isAccent) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [cs.primary, cs.secondary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: cs.primary.withValues(alpha: 0.35),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            splashColor: Colors.white.withValues(alpha: 0.1),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.85)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Card(
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -128,10 +205,10 @@ class _ActionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  color: cs.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+                child: Icon(icon, color: cs.primary, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -143,13 +220,13 @@ class _ActionCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
             ],
           ),
         ),

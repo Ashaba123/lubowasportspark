@@ -107,7 +107,8 @@ class EventDetailScreen extends StatelessWidget {
   static String _tryFormatDate(String iso) {
     try {
       final d = DateTime.parse(iso);
-      return '${d.day}/${d.month}/${d.year}';
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
       return iso;
     }

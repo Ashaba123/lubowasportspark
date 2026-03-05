@@ -61,7 +61,7 @@ class _AppRootState extends State<_AppRoot> {
   bool _showSplash = true;
   bool _showOnboarding = false;
 
-  static const _splashDuration = Duration(milliseconds: 3800);
+  static const _splashDuration = Duration(milliseconds: 2200);
 
   void _onSplashDone() async {
     final completed = await OnboardingStorage.hasCompleted();
@@ -113,6 +113,7 @@ class _MainShellState extends State<MainShell> {
       const _MoreTab(),
     ];
     return Scaffold(
+      extendBody: true,
       body: Stack(
         children: [
           const TexturedBackground(),
@@ -122,23 +123,27 @@ class _MainShellState extends State<MainShell> {
           ),
         ],
       ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
-            child: NavigationBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              selectedIndex: _index,
-              onDestinationSelected: (i) => setState(() => _index = i),
-              destinations: const [
-                NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
-                NavigationDestination(icon: Icon(Icons.calendar_today), label: 'Book'),
-                NavigationDestination(icon: Icon(Icons.emoji_events), label: 'League'),
-                NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
-              ],
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
+              child: NavigationBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedIndex: _index,
+                onDestinationSelected: (i) => setState(() => _index = i),
+                destinations: const [
+                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+                  NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Events'),
+                  NavigationDestination(icon: Icon(Icons.calendar_today_outlined), selectedIcon: Icon(Icons.calendar_today), label: 'Book'),
+                  NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'League'),
+                  NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view), label: 'More'),
+                ],
+              ),
             ),
           ),
         ),
@@ -152,37 +157,109 @@ class _MoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('More')),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-          ListTile(
-            leading: const Icon(Icons.sports_soccer),
-            title: const Text('Activities'),
-            subtitle: const Text('Futsal, Car Wash, Training, Events'),
+          _MoreCard(
+            icon: Icons.sports_soccer,
+            title: 'Activities',
+            subtitle: 'Futsal, Car Wash, Training, Events',
+            iconColor: cs.primary,
+            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ActivitiesScreen()),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('About Us'),
-            subtitle: const Text('Who we are'),
+          const SizedBox(height: 12),
+          _MoreCard(
+            icon: Icons.info_outline,
+            title: 'About Us',
+            subtitle: 'Who we are and what we stand for',
+            iconColor: cs.secondary,
+            iconBg: cs.secondary.withValues(alpha: 0.12),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const AboutScreen()),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.contact_mail),
-            title: const Text('Contact'),
-            subtitle: const Text('Get in touch'),
+          const SizedBox(height: 12),
+          _MoreCard(
+            icon: Icons.contact_mail_outlined,
+            title: 'Contact',
+            subtitle: 'Get in touch with us',
+            iconColor: cs.primary,
+            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ContactScreen()),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MoreCard extends StatelessWidget {
+  const _MoreCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.iconColor,
+    required this.iconBg,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color iconColor;
+  final Color iconBg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: 26),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -39,7 +39,7 @@ class AppTheme {
       titleSmall: base.titleSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, color: onSurface),
       bodyLarge: base.bodyLarge?.copyWith(fontSize: 16, color: onSurface),
       bodyMedium: base.bodyMedium?.copyWith(fontSize: 14, color: onSurface),
-      bodySmall: base.bodySmall?.copyWith(fontSize: 14, color: onSurfaceVariant),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: onSurfaceVariant),
       labelLarge: base.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w500),
     );
 

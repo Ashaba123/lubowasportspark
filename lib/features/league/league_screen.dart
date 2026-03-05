@@ -20,7 +20,6 @@ class _LeagueScreenState extends State<LeagueScreen> {
   final _codeController = TextEditingController();
   bool _loading = false;
   String? _error;
-  PublicLeagueResponse? _publicData;
   LeagueRoles? _leagueRoles;
   MePlayer? _mePlayer;
   bool _loadingRoles = false;
@@ -72,15 +71,14 @@ class _LeagueScreenState extends State<LeagueScreen> {
     setState(() {
       _error = null;
       _loading = true;
-      _publicData = null;
     });
     try {
       final data = await _repository.getPublicLeague(code);
       if (!mounted) return;
-      setState(() {
-        _publicData = data;
-        _loading = false;
-      });
+      setState(() => _loading = false);
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => PublicLeagueScreen(data: data)),
+      );
     } catch (e, stack) {
       if (!mounted) return;
       setState(() {
@@ -96,38 +94,61 @@ class _LeagueScreenState extends State<LeagueScreen> {
     final colorScheme = theme.colorScheme;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('League')),
+      appBar: AppBar(title: const Text('Leagues')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.primary,
+                    colorScheme.primaryContainer,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('View by code', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
+                    Text(
+                      'Public league stats',
+                      style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter a league code to see standings, fixtures, and top scorers. No login needed.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimary.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: _codeController,
                             decoration: const InputDecoration(
-                              hintText: 'League code',
+                              hintText: 'League code (e.g. L755V9)',
+                              filled: true,
                             ),
                             textCapitalization: TextCapitalization.characters,
                             onSubmitted: (_) => _loadByCode(),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        FilledButton(
+                        FilledButton.tonal(
                           onPressed: _loading ? null : _loadByCode,
                           style: FilledButton.styleFrom(
                             minimumSize: const Size(88, 48),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            foregroundColor: colorScheme.primary,
+                            backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
                           ),
                           child: _loading
                               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
@@ -146,10 +167,6 @@ class _LeagueScreenState extends State<LeagueScreen> {
                 ),
               ),
             ),
-            if (_publicData != null) ...[
-              const SizedBox(height: 16),
-              _PublicLeagueContent(data: _publicData!),
-            ],
             const SizedBox(height: 24),
             Card(
               child: Padding(
@@ -157,8 +174,37 @@ class _LeagueScreenState extends State<LeagueScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Manage leagues', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.account_circle, color: colorScheme.primary),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Login to manage a league', style: theme.textTheme.titleMedium),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Ask the Lubowa Sports Park staff to create a login for you. '
+                                'Use that account to create leagues, add teams and players, and generate fixtures.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     if (_leagueRoles != null)
                       _ManageSection(
                         leagueRoles: _leagueRoles!,
@@ -180,10 +226,10 @@ class _LeagueScreenState extends State<LeagueScreen> {
                         icon: _loadingRoles
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Icon(Icons.login),
-                        label: const Text('Log in to create and manage leagues'),
+                        label: const Text('Login'),
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                   ],
@@ -192,6 +238,56 @@ class _LeagueScreenState extends State<LeagueScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Public league view for non-logged-in users.
+class PublicLeagueScreen extends StatelessWidget {
+  const PublicLeagueScreen({super.key, required this.data});
+
+  final PublicLeagueResponse data;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(data.league.name),
+        subtitle: const Text('Public league view'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.league.name,
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Code: ${data.league.code}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Anyone can view this league using the code in the app – no login required.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _PublicLeagueContent(data: data),
+        ],
       ),
     );
   }
@@ -232,50 +328,59 @@ class _PublicLeagueContent extends StatelessWidget {
                   const SizedBox(height: 8),
                   Table(
                     columnWidths: const {
-                      0: FlexColumnWidth(2),
-                      1: FlexColumnWidth(0.6),
+                      0: FixedColumnWidth(28),
+                      1: FlexColumnWidth(2),
                       2: FlexColumnWidth(0.6),
                       3: FlexColumnWidth(0.6),
                       4: FlexColumnWidth(0.6),
+                      5: FlexColumnWidth(0.6),
                     },
                     children: [
                       TableRow(
                         decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text('Team', style: theme.textTheme.labelLarge),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text('P', style: theme.textTheme.labelLarge),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text('W', style: theme.textTheme.labelLarge),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text('D', style: theme.textTheme.labelLarge),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text('L', style: theme.textTheme.labelLarge),
-                          ),
+                          const Padding(padding: EdgeInsets.all(8), child: SizedBox.shrink()),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('Team', style: theme.textTheme.labelLarge)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('P', style: theme.textTheme.labelLarge)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('W', style: theme.textTheme.labelLarge)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('D', style: theme.textTheme.labelLarge)),
+                          Padding(padding: const EdgeInsets.all(8), child: Text('L', style: theme.textTheme.labelLarge)),
                         ],
                       ),
-                      ...data.standings.map((row) => TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(row.teamName, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
-                          ),
-                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.points}', style: theme.textTheme.bodyMedium)),
-                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.won}', style: theme.textTheme.bodyMedium)),
-                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.drawn}', style: theme.textTheme.bodyMedium)),
-                          Padding(padding: const EdgeInsets.all(8), child: Text('${row.lost}', style: theme.textTheme.bodyMedium)),
-                        ],
-                      )),
+                      ...data.standings.asMap().entries.map((entry) {
+                        final rank = entry.key;
+                        final row = entry.value;
+                        final rankColor = switch (rank) {
+                          0 => const Color(0xFFFFD700),
+                          1 => const Color(0xFFC0C0C0),
+                          2 => const Color(0xFFCD7F32),
+                          _ => null,
+                        };
+                        final rowBg = rank < 3 ? rankColor?.withValues(alpha: 0.08) : null;
+                        return TableRow(
+                          decoration: rowBg != null ? BoxDecoration(color: rowBg) : null,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                              child: rankColor != null
+                                  ? Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(color: rankColor, shape: BoxShape.circle),
+                                    )
+                                  : Text('${rank + 1}', style: theme.textTheme.bodySmall),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(row.teamName, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
+                            ),
+                            Padding(padding: const EdgeInsets.all(8), child: Text('${row.points}', style: theme.textTheme.bodyMedium)),
+                            Padding(padding: const EdgeInsets.all(8), child: Text('${row.won}', style: theme.textTheme.bodyMedium)),
+                            Padding(padding: const EdgeInsets.all(8), child: Text('${row.drawn}', style: theme.textTheme.bodyMedium)),
+                            Padding(padding: const EdgeInsets.all(8), child: Text('${row.lost}', style: theme.textTheme.bodyMedium)),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ],

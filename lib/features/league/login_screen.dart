@@ -69,8 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Log in')),
+      appBar: AppBar(title: const Text('Login')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -78,9 +82,50 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Card(
+                margin: const EdgeInsets.only(bottom: 24),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.emoji_events, color: colorScheme.primary),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Login to manage your league',
+                              style: textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Ask the Lubowa Sports Park staff at the counter to create a user account for you. '
+                        'Use that username and password here to create leagues, add teams and players, and update fixtures each week.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               TextFormField(
                 controller: _usernameCtrl,
-                decoration: const InputDecoration(labelText: 'Username'),
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  helperText: 'This is the WordPress username the staff created for you',
+                ),
                 textInputAction: TextInputAction.next,
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
@@ -94,7 +139,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                ),
               ],
               const SizedBox(height: 24),
               FilledButton(
@@ -112,7 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       await launchUrl(uri, mode: LaunchMode.externalApplication);
                     }
                   },
-                  child: const Text('Don\'t have an account? Sign up or contact us on our website'),
+                  child: const Text(
+                    'Don\'t have a login yet? Ask the park staff to create one for you or contact us on the website.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ],

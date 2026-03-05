@@ -51,12 +51,17 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          gradient: LinearGradient(
+            colors: [cs.primary, cs.secondary],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
         child: SafeArea(
           child: AnimatedBuilder(
@@ -79,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     'Lubowa Sports Park',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
                     textAlign: TextAlign.center,
