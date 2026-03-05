@@ -146,29 +146,160 @@ class _MainShellState extends State<MainShell> {
           ),
         ],
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      bottomNavigationBar: _GradientNavBar(
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
+        isDark: widget.isDark,
+      ),
+    );
+  }
+}
+
+class _GradientNavBar extends StatelessWidget {
+  const _GradientNavBar({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.isDark,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final bool isDark;
+
+  static const _destinations = [
+    (icon: Icons.home_outlined,         filled: Icons.home,          label: 'Home'),
+    (icon: Icons.event_outlined,        filled: Icons.event,         label: 'Events'),
+    (icon: Icons.calendar_today_outlined, filled: Icons.calendar_today, label: 'Book'),
+    (icon: Icons.emoji_events_outlined, filled: Icons.emoji_events,  label: 'League'),
+    (icon: Icons.grid_view_outlined,    filled: Icons.grid_view,     label: 'More'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    // Gradient stops: deep green → teal, subtler in dark mode
+    final gradStart = isDark
+        ? const Color(0xFF1B3A1F)   // dark forest
+        : const Color(0xFF2E7D32);  // brand primary
+    final gradEnd = isDark
+        ? const Color(0xFF0D3330)   // dark teal
+        : const Color(0xFF00695C);  // secondary teal
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: PhysicalModel(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(32),
+        elevation: 16,
+        shadowColor: gradStart.withValues(alpha: isDark ? 0.4 : 0.45),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
-              child: NavigationBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                selectedIndex: _index,
-                onDestinationSelected: (i) => setState(() => _index = i),
-                destinations: const [
-                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-                  NavigationDestination(icon: Icon(Icons.event_outlined), selectedIcon: Icon(Icons.event), label: 'Events'),
-                  NavigationDestination(icon: Icon(Icons.calendar_today_outlined), selectedIcon: Icon(Icons.calendar_today), label: 'Book'),
-                  NavigationDestination(icon: Icon(Icons.emoji_events_outlined), selectedIcon: Icon(Icons.emoji_events), label: 'League'),
-                  NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view), label: 'More'),
-                ],
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    gradStart.withValues(alpha: isDark ? 0.92 : 0.96),
+                    gradEnd.withValues(alpha: isDark ? 0.92 : 0.96),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.12),
+                  width: 1,
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(_destinations.length, (i) {
+                      final dest = _destinations[i];
+                      final selected = i == selectedIndex;
+                      return _NavItem(
+                        icon: dest.icon,
+                        filledIcon: dest.filled,
+                        label: dest.label,
+                        selected: selected,
+                        textTheme: tt,
+                        onTap: () => onDestinationSelected(i),
+                      );
+                    }),
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.filledIcon,
+    required this.label,
+    required this.selected,
+    required this.textTheme,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData filledIcon;
+  final String label;
+  final bool selected;
+  final TextTheme textTheme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: selected ? 14 : 12,
+          vertical: 6,
+        ),
+        decoration: selected
+            ? BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                selected ? filledIcon : icon,
+                key: ValueKey(selected),
+                color: Colors.white.withValues(alpha: selected ? 1.0 : 0.65),
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: (textTheme.labelSmall ?? const TextStyle()).copyWith(
+                color: Colors.white.withValues(alpha: selected ? 1.0 : 0.65),
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                fontSize: 10,
+              ),
+              child: Text(label),
+            ),
+          ],
         ),
       ),
     );
