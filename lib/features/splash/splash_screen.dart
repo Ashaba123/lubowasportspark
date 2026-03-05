@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const AppLogo(size: 160),
+                  const AppLogo(size: 160, removeWhiteBg: true),
                   const SizedBox(height: 24),
                   Text(
                     'Lubowa Sports Park',
