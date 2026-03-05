@@ -254,38 +254,35 @@ class PublicLeagueScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(data.league.name),
-        subtitle: const Text('Public league view'),
-      ),
+      appBar: AppBar(title: Text(data.league.name)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text(
-                    data.league.name,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Code: ${data.league.code}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Anyone can view this league using the code in the app – no login required.',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                  Icon(Icons.lock_open, color: colorScheme.primary, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Code: ${data.league.code}', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Public view — no login required.',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           _PublicLeagueContent(data: data),
         ],
       ),
@@ -305,27 +302,16 @@ class _PublicLeagueContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(data.league.name, style: theme.textTheme.titleLarge),
-              ],
-            ),
-          ),
-        ),
         if (data.standings.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          Text('Standings', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Standings', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
                   Table(
                     columnWidths: const {
                       0: FixedColumnWidth(28),
@@ -389,15 +375,15 @@ class _PublicLeagueContent extends StatelessWidget {
           ),
         ],
         if (data.fixtures.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
+          Text('Fixtures', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Fixtures', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
                   ...data.fixtures.take(20).map((f) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Row(
@@ -435,20 +421,34 @@ class _PublicLeagueContent extends StatelessWidget {
           ),
         ],
         if (data.topScorers.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
+          Text('Top scorers', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Top scorers', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  ...data.topScorers.take(10).map((s) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(s.playerName, style: theme.textTheme.bodyMedium),
-                    trailing: Text('${s.goals} goals', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.primary)),
+                  ...data.topScorers.take(10).map((s) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_outline, size: 20, color: colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(s.playerName, style: theme.textTheme.bodyMedium),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('${s.goals} goals', style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.primary)),
+                        ),
+                      ],
+                    ),
                   )),
                 ],
               ),
@@ -477,6 +477,8 @@ class _ManageSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -485,37 +487,101 @@ class _ManageSection extends StatelessWidget {
             onPressed: () => _showCreateLeagueDialog(context),
             icon: const Icon(Icons.add),
             label: const Text('Create league'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         if (leagueRoles.managedLeagueIds.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.emoji_events),
-            title: const Text('Leagues I manage'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: true, managedIds: leagueRoles.managedLeagueIds)),
+          const SizedBox(height: 12),
+          Card(
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: true, managedIds: leagueRoles.managedLeagueIds)),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.emoji_events, color: colorScheme.primary),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Leagues I manage', style: theme.textTheme.titleMedium),
+                          Text('Open to add teams, players, and fixtures', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
         if (leagueRoles.ledTeamIds.isNotEmpty) ...[
-          ListTile(
-            leading: const Icon(Icons.groups),
-            title: const Text('Teams I lead'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: false, ledTeamIds: leagueRoles.ledTeamIds)),
+          const SizedBox(height: 8),
+          Card(
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: false, ledTeamIds: leagueRoles.ledTeamIds)),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.groups, color: colorScheme.secondary),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Teams I lead', style: theme.textTheme.titleMedium),
+                          Text('Manage players and record goals', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
-        if (mePlayer != null)
-          ListTile(
-            leading: const Icon(Icons.star),
-            title: Text('My career goals: ${mePlayer!.goals}'),
-            subtitle: Text(mePlayer!.teamName ?? ''),
+        if (mePlayer != null) ...[
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.star, color: colorScheme.primary),
+              title: Text('My career goals: ${mePlayer!.goals}', style: theme.textTheme.titleSmall),
+              subtitle: Text(mePlayer!.teamName ?? ''),
+            ),
           ),
-        const SizedBox(height: 8),
+        ],
+        const SizedBox(height: 16),
         OutlinedButton.icon(
           onPressed: onLogout,
           icon: const Icon(Icons.logout),
           label: const Text('Log out'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
         ),
       ],
     );
@@ -652,48 +718,78 @@ class _LeagueListScreenState extends State<_LeagueListScreen> {
         ),
       );
     }
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: _leagues.isEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.emoji_events_outlined, size: 56, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.filterManaged ? 'No leagues yet' : 'No teams yet',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.filterManaged
-                          ? 'Leagues you create will appear here.'
-                          : 'Teams you lead will appear here.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : ListView.builder(
-              itemCount: _leagues.length,
-              itemBuilder: (_, i) {
-                final l = _leagues[i];
-                return ListTile(
-                  title: Text(l.name),
-                  subtitle: Text('Code: ${l.code}'),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: _leagues.isEmpty
+            ? ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  const SizedBox(height: 48),
+                  Icon(Icons.emoji_events_outlined, size: 64, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(height: 24),
+                  Text(
+                    widget.filterManaged ? 'No leagues yet' : 'No teams yet',
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
                   ),
-                );
-              },
-            ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.filterManaged
+                        ? 'Create a league from the Leagues tab, or ask park staff to add you as a league manager.'
+                        : 'You\'ll see leagues here once you\'re set as a team leader.',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                itemCount: _leagues.length,
+                itemBuilder: (_, i) {
+                  final l = _leagues[i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.emoji_events, color: colorScheme.primary, size: 28),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l.name, style: theme.textTheme.titleMedium),
+                                  const SizedBox(height: 2),
+                                  Text('Code: ${l.code}', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
     );
   }
 }
@@ -741,63 +837,131 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: Text(widget.league.name)), body: const Center(child: CircularProgressIndicator()));
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.league.name)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: Text(widget.league.name)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Code: ${widget.league.code}', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text('Teams (${_teams.length})', style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              TextButton.icon(
-                onPressed: () => _showAddTeam(context),
-                icon: const Icon(Icons.add),
-                label: const Text('Add team'),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.league.name, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 4),
+                    Text('Code: ${widget.league.code}', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                  ],
+                ),
               ),
-            ],
-          ),
-          ..._teams.map((t) => ListTile(title: Text(t.name), onTap: () => _openTeam(context, t))),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text('Fixtures', style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              TextButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    await widget.repository.generateFixtures(widget.league.id);
-                    if (mounted) _load();
-                  } catch (e) {
-                    messenger.showSnackBar(SnackBar(content: Text('$e')));
-                  }
-                },
-                child: const Text('Generate'),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text('Teams', style: theme.textTheme.titleLarge),
+                const SizedBox(width: 8),
+                Text('(${_teams.length})', style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                const Spacer(),
+                FilledButton.tonalIcon(
+                  onPressed: () => _showAddTeam(context),
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text('Add team'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  ..._teams.map((t) => ListTile(
+                        leading: Icon(Icons.groups_outlined, color: colorScheme.primary),
+                        title: Text(t.name, style: theme.textTheme.bodyLarge),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openTeam(context, t),
+                      )),
+                  if (_teams.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text('Add at least 2 teams to generate fixtures.', style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    ),
+                ],
               ),
-              TextButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    await widget.repository.resetFixtures(widget.league.id);
-                    if (mounted) _load();
-                  } catch (e) {
-                    messenger.showSnackBar(SnackBar(content: Text('$e')));
-                  }
-                },
-                child: const Text('Reset'),
-              ),
-            ],
-          ),
-          ..._fixtures.map((f) => ListTile(
-                title: Text('${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}'),
-                subtitle: Text('${f.homeGoals ?? 0} - ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}'),
-                onTap: () => _openFixture(context, f),
-              )),
-        ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text('Fixtures', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await widget.repository.generateFixtures(widget.league.id);
+                      if (mounted) _load();
+                      if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
+                    } catch (e) {
+                      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
+                    }
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Generate'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await widget.repository.resetFixtures(widget.league.id);
+                      if (mounted) _load();
+                      if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
+                    } catch (e) {
+                      messenger.showSnackBar(SnackBar(content: Text('$e')));
+                    }
+                  },
+                  icon: const Icon(Icons.clear),
+                  label: const Text('Reset'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'You (league creator) or park staff can generate fixtures. Needs at least 2 teams.',
+              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: _fixtures.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'No fixtures yet. Add teams then tap Generate.',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    )
+                  : Column(
+                      children: _fixtures.map((f) => ListTile(
+                            title: Text(
+                              '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                            subtitle: Text('${f.homeGoals ?? 0} – ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}'),
+                            trailing: const Icon(Icons.edit_outlined),
+                            onTap: () => _openFixture(context, f),
+                          )).toList(),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -888,23 +1052,85 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
     }
   }
 
+  void _openPlayer(BuildContext context, PlayerModel player) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PlayerViewScreen(
+          player: player,
+          teamName: widget.team.name,
+          leagueName: widget.league.name,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(appBar: AppBar(title: Text(widget.team.name)), body: const Center(child: CircularProgressIndicator()));
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.team.name)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: Text(widget.team.name)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Players (${_players.length}/8)', style: Theme.of(context).textTheme.titleSmall),
-          ..._players.map((p) => ListTile(title: Text(p.name), trailing: Text('${p.goals} goals'))),
-          if (_players.length < 8)
-            TextButton.icon(
-              onPressed: () => _showAddPlayer(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Add player'),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.groups, color: colorScheme.primary, size: 32),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.team.name, style: theme.textTheme.titleLarge),
+                          Text('${_players.length}/8 players', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-        ],
+            const SizedBox(height: 16),
+            Text('Players', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  ..._players.map((p) => ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: colorScheme.primaryContainer,
+                          child: Text('${p.goals}', style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.primary)),
+                        ),
+                        title: Text(p.name, style: theme.textTheme.bodyLarge),
+                        subtitle: Text('${p.goals} goals', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => _openPlayer(context, p),
+                      )),
+                ],
+              ),
+            ),
+            if (_players.length < 8) ...[
+              const SizedBox(height: 16),
+              FilledButton.tonalIcon(
+                onPressed: () => _showAddPlayer(context),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Add player'),
+                style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -940,6 +1166,105 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
+  }
+}
+
+/// Single player view: name, team, league, goals.
+class _PlayerViewScreen extends StatelessWidget {
+  const _PlayerViewScreen({
+    required this.player,
+    required this.teamName,
+    required this.leagueName,
+  });
+
+  final PlayerModel player;
+  final String teamName;
+  final String leagueName;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(player.name)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: colorScheme.primaryContainer,
+                    child: Text(
+                      '${player.goals}',
+                      style: theme.textTheme.headlineMedium?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(player.name, style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text('Goals', style: theme.textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(Icons.groups_outlined, color: colorScheme.primary),
+                  title: const Text('Team'),
+                  subtitle: Text(teamName),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(Icons.emoji_events_outlined, color: colorScheme.primary),
+                  title: const Text('League'),
+                  subtitle: Text(leagueName),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _StatChip(value: '${player.goals}', label: 'Goals', theme: theme, colorScheme: colorScheme),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.value, required this.label, required this.theme, required this.colorScheme});
+
+  final String value;
+  final String label;
+  final ThemeData theme;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, style: theme.textTheme.headlineSmall?.copyWith(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(label, style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+      ],
+    );
   }
 }
 
@@ -1014,44 +1339,89 @@ class _FixtureEditScreenState extends State<_FixtureEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Edit fixture')),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('${widget.fixture.homeTeamName ?? "Home"} vs ${widget.fixture.awayTeamName ?? "Away"}', style: Theme.of(context).textTheme.titleLarge),
-            if (widget.fixture.isFullTime)
-              const Padding(padding: EdgeInsets.only(top: 8), child: Text('Full time — score locked')),
-            if (!widget.fixture.isFullTime) ...[
-              const SizedBox(height: 16),
-              Row(
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _homeCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Home goals'),
-                    ),
+                  Text(
+                    '${widget.fixture.homeTeamName ?? "Home"} vs ${widget.fixture.awayTeamName ?? "Away"}',
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      controller: _awayCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Away goals'),
+                  if (widget.fixture.isFullTime) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('Full time — score locked', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.primary)),
                     ),
-                  ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 24),
-              FilledButton(onPressed: _saving ? null : _save, child: const Text('Save score')),
-              const SizedBox(height: 8),
-              OutlinedButton(onPressed: _saving ? null : _markFullTime, child: const Text('Mark full time')),
-            ],
+            ),
+          ),
+          if (!widget.fixture.isFullTime) ...[
+            const SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _homeCtrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          labelText: widget.fixture.homeTeamName ?? 'Home',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('–', style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _awayCtrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          labelText: widget.fixture.awayTeamName ?? 'Away',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              child: _saving ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save score'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _saving ? null : _markFullTime,
+              style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              child: const Text('Mark full time'),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

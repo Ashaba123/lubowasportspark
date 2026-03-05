@@ -18,7 +18,7 @@ void main() {
     mockDio = MockDio();
   });
 
-  testWidgets('LeagueScreen shows League app bar and View by code', (WidgetTester tester) async {
+  testWidgets('LeagueScreen shows Leagues app bar and public view by code', (WidgetTester tester) async {
     await tester.pumpWidget(
       wrapWithAppProviders(
         apiClient: createTestApiClient(dio: mockDio),
@@ -26,8 +26,8 @@ void main() {
       ),
     );
 
-    expect(find.text('League'), findsOneWidget);
-    expect(find.text('View by code'), findsOneWidget);
+    expect(find.text('Leagues'), findsOneWidget);
+    expect(find.text('Public league stats'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('View'), findsOneWidget);
   });
@@ -54,6 +54,6 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
 
-    expect(find.text('League'), findsOneWidget);
+    expect(find.text('Leagues'), findsOneWidget);
   });
 }

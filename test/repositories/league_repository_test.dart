@@ -106,5 +106,94 @@ void main() {
             data: {'name': 'New League', 'legs': 2},
           )).called(1);
     });
+
+    test('getTeams calls GET /lubowa/v1/leagues/{id}/teams', () async {
+      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
+        (_) async => responseOk<List<dynamic>>([]),
+      );
+
+      await repository.getTeams(1);
+
+      verify(() => mockDio.get<List<dynamic>>(
+            '${AppConstants.pathLubowaLeagues}/1/teams',
+          )).called(1);
+    });
+
+    test('addTeam calls POST /lubowa/v1/leagues/{id}/teams', () async {
+      when(() => mockDio.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+          )).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'id': 10,
+          'name': 'Team A',
+          'leader_user_id': null,
+        }),
+      );
+
+      await repository.addTeam(1, name: 'Team A');
+
+      verify(() => mockDio.post<Map<String, dynamic>>(
+            '${AppConstants.pathLubowaLeagues}/1/teams',
+            data: {'name': 'Team A'},
+          )).called(1);
+    });
+
+    test('getTeamPlayers calls GET /lubowa/v1/teams/{id}/players', () async {
+      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
+        (_) async => responseOk<List<dynamic>>([]),
+      );
+
+      await repository.getTeamPlayers(5);
+
+      verify(() => mockDio.get<List<dynamic>>(
+            '/lubowa/v1/teams/5/players',
+          )).called(1);
+    });
+
+    test('addPlayer calls POST /lubowa/v1/teams/{id}/players', () async {
+      when(() => mockDio.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+          )).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'id': 20,
+          'name': 'Player 1',
+          'goals': 0,
+          'user_id': null,
+        }),
+      );
+
+      await repository.addPlayer(5, name: 'Player 1');
+
+      verify(() => mockDio.post<Map<String, dynamic>>(
+            '/lubowa/v1/teams/5/players',
+            data: {'name': 'Player 1', 'goals': 0},
+          )).called(1);
+    });
+
+    test('generateFixtures calls POST /lubowa/v1/leagues/{id}/fixtures/generate', () async {
+      when(() => mockDio.post<List<dynamic>>(any())).thenAnswer(
+        (_) async => responseOk<List<dynamic>>([]),
+      );
+
+      await repository.generateFixtures(1);
+
+      verify(() => mockDio.post<List<dynamic>>(
+            '${AppConstants.pathLubowaLeagues}/1/fixtures/generate',
+          )).called(1);
+    });
+
+    test('getFixtures calls GET /lubowa/v1/leagues/{id}/fixtures', () async {
+      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
+        (_) async => responseOk<List<dynamic>>([]),
+      );
+
+      await repository.getFixtures(1);
+
+      verify(() => mockDio.get<List<dynamic>>(
+            '${AppConstants.pathLubowaLeagues}/1/fixtures',
+          )).called(1);
+    });
   });
 }
