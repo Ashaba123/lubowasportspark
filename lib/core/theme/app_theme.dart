@@ -43,28 +43,81 @@ class AppTheme {
       labelLarge: base.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w500),
     );
 
+    return _buildTheme(colorScheme: colorScheme, textTheme: textTheme, isDark: false);
+  }
+
+  static ThemeData get dark {
+    const darkSurface = Color(0xFF1A1A1A);
+    const darkCard = Color(0xFF242424);
+    const darkOnSurface = Color(0xFFE8E8E8);
+    const darkOnSurfaceVariant = Color(0xFFAAAAAA);
+
+    final colorScheme = ColorScheme.dark(
+      primary: primaryLight,           // lighter green reads well on dark
+      primaryContainer: primary,
+      secondary: const Color(0xFF26A69A),
+      secondaryContainer: const Color(0xFF00695C),
+      surface: darkSurface,
+      surfaceContainerHighest: const Color(0xFF2C2C2C),
+      onPrimary: onPrimary,
+      onSurface: darkOnSurface,
+      onSurfaceVariant: darkOnSurfaceVariant,
+      outline: const Color(0xFF3A3A3A),
+    );
+
+    final base = GoogleFonts.poppinsTextTheme();
+    final textTheme = TextTheme(
+      headlineMedium: base.headlineMedium?.copyWith(fontSize: 24, fontWeight: FontWeight.bold, color: darkOnSurface),
+      titleLarge: base.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w600, color: darkOnSurface),
+      titleMedium: base.titleMedium?.copyWith(fontSize: 18, fontWeight: FontWeight.w600, color: darkOnSurface),
+      titleSmall: base.titleSmall?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, color: darkOnSurface),
+      bodyLarge: base.bodyLarge?.copyWith(fontSize: 16, color: darkOnSurface),
+      bodyMedium: base.bodyMedium?.copyWith(fontSize: 14, color: darkOnSurface),
+      bodySmall: base.bodySmall?.copyWith(fontSize: 12, color: darkOnSurfaceVariant),
+      labelLarge: base.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w500, color: darkOnSurface),
+    );
+
+    return _buildTheme(
+      colorScheme: colorScheme,
+      textTheme: textTheme,
+      isDark: true,
+      cardColor: darkCard,
+      inputFill: darkCard,
+    );
+  }
+
+  static ThemeData _buildTheme({
+    required ColorScheme colorScheme,
+    required TextTheme textTheme,
+    required bool isDark,
+    Color? cardColor,
+    Color? inputFill,
+  }) {
+    final effectiveCard = cardColor ?? surface;
+    final effectiveInput = inputFill ?? surface;
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
+      scaffoldBackgroundColor: isDark ? const Color(0xFF121212) : background,
       navigationBarTheme: NavigationBarThemeData(
-        indicatorColor: primary,
+        indicatorColor: colorScheme.primary,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: Colors.white);
           }
-          return const IconThemeData(color: Color(0xFF757575));
+          return IconThemeData(color: colorScheme.onSurfaceVariant);
         }),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: primary,
+        backgroundColor: colorScheme.primary,
         foregroundColor: onPrimary,
         elevation: 0,
         titleTextStyle: textTheme.titleLarge?.copyWith(color: onPrimary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: colorScheme.primary,
           foregroundColor: onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -72,22 +125,25 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primary,
+          foregroundColor: colorScheme.primary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       cardTheme: CardThemeData(
-        color: surface,
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: effectiveCard,
+        elevation: isDark ? 0 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: isDark ? BorderSide(color: const Color(0xFF3A3A3A), width: 0.5) : BorderSide.none,
+        ),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         filled: true,
-        fillColor: surface,
+        fillColor: effectiveInput,
       ),
     );
   }

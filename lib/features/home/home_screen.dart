@@ -5,21 +5,31 @@ import '../../shared/app_logo.dart';
 /// Home tab: logo + tagline + 3–4 action cards. Mobile-first.
 /// [onNavigateToTab] switches bottom nav (1=Events, 2=Book, 3=League, 4=More).
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, this.onNavigateToTab});
+  const HomeScreen({
+    super.key,
+    this.onNavigateToTab,
+    this.onToggleTheme,
+    this.isDark = false,
+  });
 
   final void Function(int tabIndex)? onNavigateToTab;
+  final VoidCallback? onToggleTheme;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
-          child: Column(
-            children: [
-              const AppLogo(size: 120),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
+              child: Column(
+                children: [
+                  const AppLogo(size: 120),
               const SizedBox(height: 16),
               Text(
                 'Play • Train • Compete',
@@ -100,6 +110,42 @@ class HomeScreen extends StatelessWidget {
               ],
             ],
           ),
+        ),
+            // Dark-mode toggle — top-right corner
+            if (onToggleTheme != null)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Tooltip(
+                  message: isDark ? 'Switch to light mode' : 'Switch to dark mode',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onToggleTheme,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder: (child, animation) =>
+                              ScaleTransition(scale: animation, child: child),
+                          child: Icon(
+                            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                            key: ValueKey(isDark),
+                            color: cs.onSurface,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

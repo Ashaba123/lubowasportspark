@@ -36,6 +36,14 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
     onUnauthorized: () => _tokenStorage.clear(),
   );
 
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void _toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppApiProvider(
@@ -44,14 +52,22 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
       child: MaterialApp(
         title: 'Lubowa Sports Park',
         theme: AppTheme.light,
-        home: const _AppRoot(),
+        darkTheme: AppTheme.dark,
+        themeMode: _themeMode,
+        home: _AppRoot(
+          onToggleTheme: _toggleTheme,
+          isDark: _themeMode == ThemeMode.dark,
+        ),
       ),
     );
   }
 }
 
 class _AppRoot extends StatefulWidget {
-  const _AppRoot();
+  const _AppRoot({required this.onToggleTheme, required this.isDark});
+
+  final VoidCallback onToggleTheme;
+  final bool isDark;
 
   @override
   State<_AppRoot> createState() => _AppRootState();
@@ -89,12 +105,15 @@ class _AppRootState extends State<_AppRoot> {
     if (_showOnboarding) {
       return OnboardingScreen(onDone: _onOnboardingDone);
     }
-    return const MainShell();
+    return MainShell(onToggleTheme: widget.onToggleTheme, isDark: widget.isDark);
   }
 }
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  const MainShell({super.key, required this.onToggleTheme, required this.isDark});
+
+  final VoidCallback onToggleTheme;
+  final bool isDark;
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -106,7 +125,11 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      HomeScreen(onNavigateToTab: (i) => setState(() => _index = i)),
+      HomeScreen(
+        onNavigateToTab: (i) => setState(() => _index = i),
+        onToggleTheme: widget.onToggleTheme,
+        isDark: widget.isDark,
+      ),
       const EventsScreen(),
       const BookingScreen(),
       const LeagueScreen(),
