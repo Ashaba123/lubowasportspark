@@ -4,6 +4,7 @@ import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/app_logo.dart';
+import '../../shared/page_transitions.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
 
@@ -167,7 +168,7 @@ class _BookingScreenState extends State<BookingScreen> {
             tooltip: 'My bookings',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
               );
             },
           ),
@@ -254,7 +255,7 @@ class _BookingScreenState extends State<BookingScreen> {
           Card(
             child: InkWell(
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
               ),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -553,7 +554,7 @@ class _BookingScreenState extends State<BookingScreen> {
             TextButton.icon(
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                  fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
                 );
               },
               icon: const Icon(Icons.list_alt),
@@ -612,7 +613,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
         _loading = false;
       });
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
+        fadeSlideRoute(
           builder: (_) => _MyBookingsScreen(initialBookings: list, email: email),
         ),
       );
@@ -904,7 +905,7 @@ class _MyBookingsScreenState extends State<_MyBookingsScreen> {
                   return _BookingCard(
                     booking: b,
                     onViewDetails: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => _BookingDetailScreen(booking: b)),
+                      fadeSlideRoute(builder: (_) => _BookingDetailScreen(booking: b)),
                     ),
                   );
                 },

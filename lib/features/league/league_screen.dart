@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
+import '../../shared/page_transitions.dart';
 import 'models/league.dart';
 import 'league_repository.dart';
 import 'login_screen.dart';
@@ -77,7 +78,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => PublicLeagueScreen(data: data)),
+        fadeSlideRoute(builder: (_) => PublicLeagueScreen(data: data)),
       );
     } catch (e, stack) {
       if (!mounted) return;
@@ -219,7 +220,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                             ? null
                             : () async {
                                 final ok = await Navigator.of(context).push<bool>(
-                                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                                  fadeSlideRoute(builder: (_) => const LoginScreen()),
                                 );
                                 if (ok == true && mounted) _loadManageContent();
                               },
@@ -497,7 +498,7 @@ class _ManageSection extends StatelessWidget {
           Card(
             child: InkWell(
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: true, managedIds: leagueRoles.managedLeagueIds)),
+                fadeSlideRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: true, managedIds: leagueRoles.managedLeagueIds)),
               ),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -534,7 +535,7 @@ class _ManageSection extends StatelessWidget {
           Card(
             child: InkWell(
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: false, ledTeamIds: leagueRoles.ledTeamIds)),
+                fadeSlideRoute(builder: (_) => _LeagueListScreen(repository: repository, filterManaged: false, ledTeamIds: leagueRoles.ledTeamIds)),
               ),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -755,7 +756,7 @@ class _LeagueListScreenState extends State<_LeagueListScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
+                        fadeSlideRoute(builder: (_) => _LeagueDetailScreen(league: l, repository: widget.repository)),
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
@@ -968,7 +969,7 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
 
   void _openTeam(BuildContext context, TeamModel team) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      fadeSlideRoute(
         builder: (_) => _TeamDetailScreen(league: widget.league, team: team, repository: widget.repository),
       ),
     );
@@ -1009,7 +1010,7 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
 
   void _openFixture(BuildContext context, FixtureModel fixture) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      fadeSlideRoute(
         builder: (_) => _FixtureEditScreen(fixture: fixture, repository: widget.repository, onSaved: _load),
       ),
     );
@@ -1054,7 +1055,7 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
 
   void _openPlayer(BuildContext context, PlayerModel player) {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      fadeSlideRoute(
         builder: (_) => _PlayerViewScreen(
           player: player,
           teamName: widget.team.name,

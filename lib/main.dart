@@ -7,6 +7,7 @@ import 'core/api/app_api_provider.dart';
 import 'core/auth/token_storage.dart';
 import 'core/onboarding/onboarding_storage.dart';
 import 'core/theme/app_theme.dart';
+import 'shared/page_transitions.dart';
 import 'features/activities/activities_screen.dart';
 import 'features/about/about_screen.dart';
 import 'features/booking/booking_screen.dart';
@@ -140,10 +141,20 @@ class _MainShellState extends State<MainShell> {
       body: Stack(
         children: [
           const TexturedBackground(),
-          IndexedStack(
-            index: _index,
-            children: tabs,
-          ),
+          // AnimatedOpacity on each child keeps all tabs alive (IndexedStack
+          // behaviour) while cross-fading when the selected index changes.
+          ...tabs.asMap().entries.map((entry) {
+            final visible = entry.key == _index;
+            return AnimatedOpacity(
+              opacity: visible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: IgnorePointer(
+                ignoring: !visible,
+                child: entry.value,
+              ),
+            );
+          }),
         ],
       ),
       bottomNavigationBar: _GradientNavBar(
@@ -326,7 +337,7 @@ class _MoreTab extends StatelessWidget {
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ActivitiesScreen()),
+              fadeSlideRoute(builder: (_) => const ActivitiesScreen()),
             ),
           ),
           const SizedBox(height: 12),
@@ -337,7 +348,7 @@ class _MoreTab extends StatelessWidget {
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AboutScreen()),
+              fadeSlideRoute(builder: (_) => const AboutScreen()),
             ),
           ),
           const SizedBox(height: 12),
@@ -348,7 +359,7 @@ class _MoreTab extends StatelessWidget {
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ContactScreen()),
+              fadeSlideRoute(builder: (_) => const ContactScreen()),
             ),
           ),
         ],

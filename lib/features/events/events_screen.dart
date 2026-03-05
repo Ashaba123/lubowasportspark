@@ -7,6 +7,7 @@ import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
+import '../../shared/page_transitions.dart';
 import 'event_detail_screen.dart';
 import 'events_repository.dart';
 import 'models/wp_post.dart';
@@ -151,12 +152,15 @@ class _EventsScreenState extends State<EventsScreen> {
           final post = _posts[index - 1];
           final title = HtmlUtils.strip(post.title);
           final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
-          return Card(
+          return FadeSlideIn(
+            delay: Duration(milliseconds: 60 * index),
+            duration: const Duration(milliseconds: 380),
+            child: Card(
             clipBehavior: Clip.antiAlias,
             margin: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => EventDetailScreen(post: post)),
+                fadeSlideRoute(builder: (_) => EventDetailScreen(post: post)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,6 +202,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 ],
               ),
             ),
+          ),
           );
         },
       ),
