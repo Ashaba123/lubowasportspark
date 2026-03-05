@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// Fade + slight upward slide page route. Use everywhere instead of [MaterialPageRoute].
@@ -55,6 +57,7 @@ class _FadeSlideInState extends State<FadeSlideIn>
   late final AnimationController _controller;
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -69,7 +72,7 @@ class _FadeSlideInState extends State<FadeSlideIn>
     if (widget.delay == Duration.zero) {
       _controller.forward();
     } else {
-      Future.delayed(widget.delay, () {
+      _delayTimer = Timer(widget.delay, () {
         if (mounted) _controller.forward();
       });
     }
@@ -77,6 +80,7 @@ class _FadeSlideInState extends State<FadeSlideIn>
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

@@ -12,9 +12,13 @@ void main() {
       ),
     );
 
+    // Advance past all FadeSlideIn delays (max 450 ms) then settle animations.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
     expect(find.text('Play • Train • Compete'), findsOneWidget);
     expect(find.text('Sports • Fitness • Community'), findsOneWidget);
-    // Action cards — scroll to ensure they are in the widget tree
+    // Action cards
     expect(find.text('Events'), findsOneWidget);
     expect(find.text('League'), findsOneWidget);
   });
@@ -27,6 +31,10 @@ void main() {
         home: HomeScreen(onNavigateToTab: (i) => tab = i),
       ),
     );
+
+    // Wait for cards to animate in before tapping.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Events'));
     await tester.pump();
