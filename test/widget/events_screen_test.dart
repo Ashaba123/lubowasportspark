@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/events/events_screen.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
 
 import '../helpers/test_api_helpers.dart';
 
@@ -63,7 +63,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     final hasEvents = find.text('Events').evaluate().isNotEmpty;
-    final hasLoading = find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+    final hasLoading = find.byType(FootballLoader).evaluate().isNotEmpty;
     final hasRetry = find.text('Retry').evaluate().isNotEmpty;
     final hasEventOrEmpty = find.text('Test Event').evaluate().isNotEmpty || find.text('No events right now.').evaluate().isNotEmpty;
     expect(hasEvents, true);

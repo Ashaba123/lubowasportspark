@@ -7,6 +7,7 @@ import '../../core/auth/auth_repository.dart';
 import '../../core/auth/token_storage.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
+import '../../shared/football_loader.dart';
 
 /// JWT login. On success stores token and pops with true.
 class LoginScreen extends StatefulWidget {
@@ -148,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
               FilledButton(
                 onPressed: _loading ? null : _submit,
                 child: _loading
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const FootballLoader(size: 22)
                     : const Text('Log in'),
               ),
               const SizedBox(height: 16),

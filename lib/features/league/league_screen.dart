@@ -4,6 +4,7 @@ import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/page_transitions.dart';
+import '../../shared/football_loader.dart';
 import 'models/league.dart';
 import 'league_repository.dart';
 import 'login_screen.dart';
@@ -152,7 +153,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                             backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
                           ),
                           child: _loading
-                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const FootballLoader(size: 22)
                               : const Text('View'),
                         ),
                       ],
@@ -225,7 +226,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                                 if (ok == true && mounted) _loadManageContent();
                               },
                         icon: _loadingRoles
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            ? const FootballLoader(size: 20)
                             : const Icon(Icons.login),
                         label: const Text('Login'),
                         style: FilledButton.styleFrom(
@@ -696,7 +697,7 @@ class _LeagueListScreenState extends State<_LeagueListScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: FootballLoader()),
       );
     }
     if (_error != null) {
@@ -843,7 +844,7 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.league.name)),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: FootballLoader()),
       );
     }
     return Scaffold(
@@ -1072,7 +1073,7 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.team.name)),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: FootballLoader()),
       );
     }
     return Scaffold(
@@ -1413,7 +1414,7 @@ class _FixtureEditScreenState extends State<_FixtureEditScreen> {
             FilledButton(
               onPressed: _saving ? null : _save,
               style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-              child: _saving ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Save score'),
+              child: _saving ? const FootballLoader(size: 22) : const Text('Save score'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(

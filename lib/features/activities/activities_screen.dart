@@ -7,6 +7,7 @@ import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import '../../shared/wp_page_content.dart';
+import '../../shared/football_loader.dart';
 
 /// Activities — content from WordPress page (slug: activities).
 class ActivitiesScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     if (_loading && _page == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Activities')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: FootballLoader()),
       );
     }
     if (_error != null && _page == null) {
@@ -94,7 +95,53 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
           onRefresh: _load,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: WpPageContent(page: page),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Explore the activities available at Lubowa Sports Park.\nDesigned for sports, leisure, and convenience.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const _ActivityHighlightCard(
+                    icon: Icons.sports_soccer,
+                    title: 'Futsal',
+                    subtitle: 'Quality pitches for casual games, training, and leagues.',
+                  ),
+                  const _ActivityHighlightCard(
+                    icon: Icons.local_car_wash,
+                    title: 'Car Wash',
+                    subtitle: 'Convenient car wash services while you train or relax.',
+                  ),
+                  const _ActivityHighlightCard(
+                    icon: Icons.fitness_center,
+                    title: 'Training',
+                    subtitle: 'Coaching and fitness sessions for different ages and levels.',
+                  ),
+                  const _ActivityHighlightCard(
+                    icon: Icons.event,
+                    title: 'Events',
+                    subtitle: 'Host corporate, social, and community events in our spaces.',
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: WpPageContent(page: page),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );
@@ -102,6 +149,63 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Activities')),
       body: const Center(child: Text('No content available.')),
+    );
+  }
+}
+
+class _ActivityHighlightCard extends StatelessWidget {
+  const _ActivityHighlightCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import '../../shared/wp_page_content.dart';
+import '../../shared/football_loader.dart';
 
 /// About Us — content from WordPress page (slug: about).
 class AboutScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _AboutScreenState extends State<AboutScreen> {
     if (_loading && _page == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('About Us')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: FootballLoader()),
       );
     }
     if (_error != null && _page == null) {
@@ -94,7 +95,59 @@ class _AboutScreenState extends State<AboutScreen> {
           onRefresh: _load,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: WpPageContent(page: page),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'More than just a sports park.',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sports, fitness, and community in one modern destination.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const _AboutInfoCard(
+                    title: 'Community & Experience',
+                    subtitle:
+                        'Whether you are here to play, train, relax, or socialize, Lubowa Sports Park is designed to bring people together.',
+                    icon: Icons.groups,
+                  ),
+                  const _AboutInfoCard(
+                    title: 'Sports, Fitness & Training',
+                    subtitle:
+                        'From futsal and leagues to training sessions and fitness activities, there is something for every level.',
+                    icon: Icons.sports,
+                  ),
+                  const _AboutInfoCard(
+                    title: 'Family-Friendly Environment',
+                    subtitle:
+                        'Safe, welcoming spaces for families, friends, and teams to spend quality time on and off the pitch.',
+                    icon: Icons.emoji_people,
+                  ),
+                  const SizedBox(height: 24),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: WpPageContent(page: page),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       );
@@ -102,6 +155,63 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('About Us')),
       body: const Center(child: Text('No content available.')),
+    );
+  }
+}
+
+class _AboutInfoCard extends StatelessWidget {
+  const _AboutInfoCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

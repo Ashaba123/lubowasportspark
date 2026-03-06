@@ -96,10 +96,19 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _placeholder(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Center(
-        child: Icon(Icons.event, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Opacity(
+        opacity: 0.9,
+        child: Image.asset(
+          'assets/logo.png',
+          height: 72,
+          fit: BoxFit.contain,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+          colorBlendMode: BlendMode.srcIn,
+        ),
       ),
     );
   }

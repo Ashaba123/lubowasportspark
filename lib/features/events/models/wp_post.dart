@@ -30,7 +30,14 @@ class WpPost {
     final media = (featuredMedia != null && featuredMedia.isNotEmpty)
         ? featuredMedia[0] as Map<String, dynamic>?
         : null;
-    final sourceUrl = media?['source_url'] as String?;
+
+    // Some setups (Jetpack, locked-down media API) do not expose full
+    // featured media objects via `_embedded.wp:featuredmedia`, which means
+    // `source_url` is missing. In those cases WordPress exposes
+    // `jetpack_featured_media_url` on the post itself. Prefer the embedded
+    // URL when available, but gracefully fall back to the Jetpack field.
+    String? sourceUrl = media?['source_url'] as String?;
+    sourceUrl ??= json['jetpack_featured_media_url'] as String?;
 
     return WpPost(
       id: json['id'] as int,

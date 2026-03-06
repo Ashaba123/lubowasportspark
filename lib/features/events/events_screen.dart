@@ -8,6 +8,7 @@ import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import '../../shared/page_transitions.dart';
+import '../../shared/football_loader.dart';
 import 'event_detail_screen.dart';
 import 'events_repository.dart';
 import 'models/wp_post.dart';
@@ -85,7 +86,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildBody() {
     if (_loading && _posts.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: FootballLoader());
     }
     if (_error != null && _posts.isEmpty) {
       return Center(
@@ -152,57 +153,59 @@ class _EventsScreenState extends State<EventsScreen> {
           final post = _posts[index - 1];
           final title = HtmlUtils.strip(post.title);
           final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
+          final dateText = post.date.isNotEmpty ? _formatDate(post.date) : null;
           return FadeSlideIn(
             delay: Duration(milliseconds: 60 * index),
             duration: const Duration(milliseconds: 380),
             child: Card(
-            clipBehavior: Clip.antiAlias,
-            margin: const EdgeInsets.only(bottom: 12),
-            child: InkWell(
-              onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(builder: (_) => EventDetailScreen(post: post)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (hasImage)
-                    Image.network(
-                      post.featuredMediaUrl!,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _eventPlaceholder(180),
-                    )
-                  else
-                    _eventPlaceholder(120),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title.isEmpty ? 'Event #${post.id}' : title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (post.date.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+              clipBehavior: Clip.antiAlias,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: InkWell(
+                onTap: () => Navigator.of(context).push(
+                  fadeSlideRoute(builder: (_) => EventDetailScreen(post: post)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasImage)
+                      Stack(
+                        children: [
+                          Image.network(
+                            post.featuredMediaUrl!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _eventPlaceholder(180),
+                          ),
+                          if (dateText != null)
+                            Positioned(
+                              left: 12,
+                              top: 12,
+                              child: _EventDateChip(text: dateText),
+                            ),
+                        ],
+                      )
+                    else
+                      _eventPlaceholder(140),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            _formatDate(post.date),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
+                            title.isEmpty ? 'Event #${post.id}' : title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           );
         },
       ),
@@ -210,11 +213,22 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _eventPlaceholder(double height) {
+    final theme = Theme.of(context);
     return Container(
       height: height,
       width: double.infinity,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Icon(Icons.event, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Opacity(
+        opacity: 0.9,
+        child: Image.asset(
+          'assets/logo.png',
+          height: 64,
+          fit: BoxFit.contain,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+          colorBlendMode: BlendMode.srcIn,
+        ),
+      ),
     );
   }
 
@@ -242,5 +256,37 @@ class _EventsScreenState extends State<EventsScreen> {
     } catch (_) {
       return iso;
     }
+  }
+}
+
+class _EventDateChip extends StatelessWidget {
+  const _EventDateChip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.calendar_today, size: 16, color: theme.colorScheme.onPrimaryContainer),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

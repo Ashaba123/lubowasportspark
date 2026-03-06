@@ -5,6 +5,7 @@ import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/app_logo.dart';
 import '../../shared/page_transitions.dart';
+import '../../shared/football_loader.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
 
@@ -512,11 +513,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                     child: _submitting
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? const FootballLoader(size: 22)
                         : const Text('Submit'),
                   ),
                 ),
@@ -671,7 +668,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       child: _loading
-                          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const FootballLoader(size: 22)
                           : const Text('Load my bookings'),
                     ),
                   ],

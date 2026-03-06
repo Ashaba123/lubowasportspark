@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lubowa_sports_park/main.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -20,7 +20,7 @@ void main() {
     // Home shows either content (tagline), error (Retry), or loading; in test env connectivity/API may fail or hang.
     final hasTagline = find.text('Play • Train • Compete').evaluate().isNotEmpty;
     final hasRetry = find.text('Retry').evaluate().isNotEmpty;
-    final hasLoading = find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
+    final hasLoading = find.byType(FootballLoader).evaluate().isNotEmpty;
     expect(hasTagline || hasRetry || hasLoading, true);
   });
 }
