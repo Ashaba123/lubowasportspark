@@ -72,6 +72,34 @@ class PlayerModel {
       );
 }
 
+/// Logged goal operation for a fixture (for PATCH/DELETE of individual goal resources).
+class GoalLogEntry {
+  const GoalLogEntry({
+    required this.id,
+    required this.fixtureId,
+    required this.teamId,
+    required this.playerId,
+    required this.goals,
+    this.createdAt,
+  });
+
+  final int id;
+  final int fixtureId;
+  final int teamId;
+  final int playerId;
+  final int goals;
+  final String? createdAt;
+
+  factory GoalLogEntry.fromJson(Map<String, dynamic> json) => GoalLogEntry(
+        id: LeagueModel._toInt(json['id']),
+        fixtureId: LeagueModel._toInt(json['fixture_id']),
+        teamId: LeagueModel._toInt(json['team_id']),
+        playerId: LeagueModel._toInt(json['player_id']),
+        goals: LeagueModel._optionalInt(json['goals']) ?? 0,
+        createdAt: json['created_at'] as String?,
+      );
+}
+
 /// Fixture (match).
 class FixtureModel {
   const FixtureModel({

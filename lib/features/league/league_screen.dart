@@ -178,11 +178,12 @@ class _LeagueScreenState extends State<LeagueScreen> {
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: () async {
-                        final ok = await Navigator.of(context).push<bool>(
+                        final navigator = Navigator.of(context);
+                        final ok = await navigator.push<bool>(
                           fadeSlideRoute(builder: (_) => const LoginScreen()),
                         );
                         if (ok == true && mounted) {
-                          await Navigator.of(context).push(
+                          await navigator.push(
                             fadeSlideRoute(
                               builder: (_) => LeagueManageScreen(repository: _repository),
                             ),
@@ -257,13 +258,17 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
   }
 
   Future<void> _logout() async {
+    if (!mounted) return;
     setState(() => _loggingOut = true);
+    final tokenStorage = AppApiProvider.tokenStorageOf(context);
     try {
-      await AppApiProvider.tokenStorageOf(context).clear();
-    } finally {
+      await tokenStorage.clear();
       if (!mounted) return;
-      setState(() => _loggingOut = false);
       Navigator.of(context).pop();
+    } finally {
+      if (mounted) {
+        setState(() => _loggingOut = false);
+      }
     }
   }
 

@@ -181,9 +181,51 @@ class LeagueRepository {
     return FixtureModel.fromJson(data);
   }
 
-  /// POST fixtures/[id]/goals
-  Future<void> recordGoals(int fixtureId, {required int playerId, required int goals}) async {
-    await _dio.post('/lubowa/v1/fixtures/$fixtureId/goals', data: {'player_id': playerId, 'goals': goals});
+  /// POST fixtures/[id]/goals — returns created goal log entry + updated player in response.
+  Future<GoalLogEntry> recordGoals(int fixtureId, {required int playerId, required int goals}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/lubowa/v1/fixtures/$fixtureId/goals',
+      data: {'player_id': playerId, 'goals': goals},
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
+    }
+    final goalJson = data['goal'] as Map<String, dynamic>?;
+    if (goalJson == null) {
+      throw DioException(requestOptions: response.requestOptions, message: 'Missing goal in response');
+    }
+    return GoalLogEntry.fromJson(goalJson);
+  }
+
+  /// GET fixtures/[fixtureId]/goals — list logged goal operations for a fixture.
+  Future<List<GoalLogEntry>> getFixtureGoals(int fixtureId) async {
+    final response = await _dio.get<List<dynamic>>('/lubowa/v1/fixtures/$fixtureId/goals');
+    final list = response.data;
+    if (list == null) return [];
+    return list.map((e) => GoalLogEntry.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// PATCH fixtures/[fixtureId]/goals/[goalId] — update a single goal log entry.
+  Future<GoalLogEntry> updateFixtureGoal({
+    required int fixtureId,
+    required int goalId,
+    required int goals,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/lubowa/v1/fixtures/$fixtureId/goals/$goalId',
+      data: {'goals': goals},
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
+    }
+    return GoalLogEntry.fromJson(data);
+  }
+
+  /// DELETE fixtures/[fixtureId]/goals/[goalId]
+  Future<void> deleteFixtureGoal({required int fixtureId, required int goalId}) async {
+    await _dio.delete('/lubowa/v1/fixtures/$fixtureId/goals/$goalId');
   }
 
   /// POST leagues/[id]/fixtures/reset
