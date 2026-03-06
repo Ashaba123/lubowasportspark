@@ -22,42 +22,11 @@ class _LeagueScreenState extends State<LeagueScreen> {
   final _codeController = TextEditingController();
   bool _loading = false;
   String? _error;
-  LeagueRoles? _leagueRoles;
-  MePlayer? _mePlayer;
-  bool _loadingRoles = false;
 
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadManageContent() async {
-    setState(() => _loadingRoles = true);
-    try {
-      final roles = await _repository.getMyLeagueRoles();
-      MePlayer? player;
-      try {
-        player = await _repository.getMyPlayer();
-      } catch (_) {}
-      if (!mounted) return;
-      setState(() {
-        _leagueRoles = roles;
-        _mePlayer = player;
-        _loadingRoles = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loadingRoles = false);
-    }
-  }
-
-  void _logout() {
-    AppApiProvider.tokenStorageOf(context).clear();
-    setState(() {
-      _leagueRoles = null;
-      _mePlayer = null;
-    });
   }
 
   Future<void> _loadByCode() async {
@@ -207,33 +176,26 @@ class _LeagueScreenState extends State<LeagueScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (_leagueRoles != null)
-                      _ManageSection(
-                        leagueRoles: _leagueRoles!,
-                        mePlayer: _mePlayer,
-                        repository: _repository,
-                        onLogout: _logout,
-                        onRefresh: _loadManageContent,
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: _loadingRoles
-                            ? null
-                            : () async {
-                                final ok = await Navigator.of(context).push<bool>(
-                                  fadeSlideRoute(builder: (_) => const LoginScreen()),
-                                );
-                                if (ok == true && mounted) _loadManageContent();
-                              },
-                        icon: _loadingRoles
-                            ? const FootballLoader(size: 20)
-                            : const Icon(Icons.login),
-                        label: const Text('Login'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final ok = await Navigator.of(context).push<bool>(
+                          fadeSlideRoute(builder: (_) => const LoginScreen()),
+                        );
+                        if (ok == true && mounted) {
+                          await Navigator.of(context).push(
+                            fadeSlideRoute(
+                              builder: (_) => LeagueManageScreen(repository: _repository),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.login),
+                      label: const Text('Login'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -241,6 +203,220 @@ class _LeagueScreenState extends State<LeagueScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Manage leagues and teams after logging in.
+class LeagueManageScreen extends StatefulWidget {
+  const LeagueManageScreen({super.key, required this.repository});
+
+  final LeagueRepository repository;
+
+  @override
+  State<LeagueManageScreen> createState() => _LeagueManageScreenState();
+}
+
+class _LeagueManageScreenState extends State<LeagueManageScreen> {
+  LeagueRoles? _leagueRoles;
+  MePlayer? _mePlayer;
+  bool _loading = true;
+  String? _error;
+  bool _loggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadManageContent();
+  }
+
+  Future<void> _loadManageContent() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final roles = await widget.repository.getMyLeagueRoles();
+      MePlayer? player;
+      try {
+        player = await widget.repository.getMyPlayer();
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _leagueRoles = roles;
+        _mePlayer = player;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(e);
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    setState(() => _loggingOut = true);
+    try {
+      await AppApiProvider.tokenStorageOf(context).clear();
+    } finally {
+      if (!mounted) return;
+      setState(() => _loggingOut = false);
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _showCreateLeagueDialog(BuildContext context) async {
+    final nameCtrl = TextEditingController();
+    int legs = 1;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Create league'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'League name'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              Text('Legs (fixtures per pair)', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Row(
+                children: [1, 2, 3]
+                    .map(
+                      (n) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text('$n'),
+                          selected: legs == n,
+                          onSelected: (_) => setDialogState(() => legs = n),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
+                Navigator.of(ctx).pop();
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await widget.repository.createLeague(name: name, legs: legs);
+                  if (context.mounted) {
+                    messenger.showSnackBar(const SnackBar(content: Text('League created')));
+                    await _loadManageContent();
+                  }
+                } catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text('Failed: $e')));
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Manage leagues')),
+      backgroundColor: Colors.transparent,
+      floatingActionButton: (_leagueRoles?.canCreateLeague ?? false)
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateLeagueDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Create league'),
+            )
+          : null,
+      body: _loading
+          ? const Center(child: FootballLoader())
+          : RefreshIndicator(
+              onRefresh: _loadManageContent,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(Icons.emoji_events, color: colorScheme.primary),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Manage your leagues', style: theme.textTheme.titleMedium),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Create leagues, add teams and players, generate fixtures, and record scores.',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (_error != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              _error!,
+                              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_leagueRoles != null)
+                    _ManageSection(
+                      leagueRoles: _leagueRoles!,
+                      mePlayer: _mePlayer,
+                      repository: widget.repository,
+                      onLogout: _loggingOut ? () {} : _logout,
+                      onRefresh: _loadManageContent,
+                    )
+                  else
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Your session has expired. Go back to the Leagues tab and log in again.',
+                          style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -849,6 +1025,11 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(widget.league.name)),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddTeam(context),
+        icon: const Icon(Icons.group_add),
+        label: const Text('Add team'),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
