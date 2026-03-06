@@ -179,6 +179,7 @@ class _ActivityHighlightCard extends StatelessWidget {
               height: 40,
               width: 40,
               decoration: BoxDecoration(
+                // ignore: deprecated_member_use
                 color: colorScheme.primary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
