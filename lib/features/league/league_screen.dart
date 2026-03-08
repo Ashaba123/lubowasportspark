@@ -7,9 +7,10 @@ import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/page_transitions.dart';
 import '../../shared/football_loader.dart';
-import 'models/league.dart';
+import 'fixtures_polling_notifier.dart';
 import 'league_repository.dart';
 import 'login_screen.dart';
+import 'models/league.dart';
 
 /// League: public (enter code → standings/results) and manage (login → create league, my leagues, my teams).
 class LeagueScreen extends StatefulWidget {
@@ -1010,10 +1011,16 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
             FilledButton.tonalIcon(
               onPressed: () => Navigator.of(context).push(
                 fadeSlideRoute(
-                  builder: (_) => _FixturesScreen(
-                    league: widget.league,
-                    repository: widget.repository,
-                    initialFixtures: _fixtures,
+                  builder: (_) => ChangeNotifierProvider(
+                    create: (_) => FixturesPollingNotifier(
+                      leagueId: widget.league.id,
+                      repository: widget.repository,
+                      initialFixtures: _fixtures,
+                    )..start(),
+                    child: _FixturesScreen(
+                      league: widget.league,
+                      repository: widget.repository,
+                    ),
                   ),
                 ),
               ).then((_) {
@@ -1072,58 +1079,30 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
 
 }
 
-class _FixturesScreen extends StatefulWidget {
+class _FixturesScreen extends StatelessWidget {
   const _FixturesScreen({
     required this.league,
     required this.repository,
-    this.initialFixtures = const [],
   });
 
   final LeagueModel league;
   final LeagueRepository repository;
-  final List<FixtureModel> initialFixtures;
-
-  @override
-  State<_FixturesScreen> createState() => _FixturesScreenState();
-}
-
-class _FixturesScreenState extends State<_FixturesScreen> {
-  late List<FixtureModel> _fixtures;
-  bool _loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fixtures = List.from(widget.initialFixtures);
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final list = await widget.repository.getFixtures(widget.league.id, forceRefresh: true);
-      if (!mounted) return;
-      setState(() {
-        _fixtures = list;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = context.watch<FixturesPollingNotifier>();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final fixtures = notifier.fixtures;
+    final loading = notifier.loading;
+
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.league.name} — Fixtures')),
+      appBar: AppBar(title: Text('${league.name} — Fixtures')),
       backgroundColor: colorScheme.surface,
-      body: _loading && _fixtures.isEmpty
+      body: loading && fixtures.isEmpty
           ? const Center(child: FootballLoader())
           : RefreshIndicator(
-              onRefresh: _load,
+              onRefresh: () => context.read<FixturesPollingNotifier>().refresh(),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -1134,10 +1113,11 @@ class _FixturesScreenState extends State<_FixturesScreen> {
                       TextButton.icon(
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
+                          final notifier = context.read<FixturesPollingNotifier>();
                           try {
-                            await widget.repository.generateFixtures(widget.league.id);
-                            if (mounted) await _load();
-                            if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
+                            await repository.generateFixtures(league.id);
+                            await notifier.refresh();
+                            if (context.mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
                           } catch (e) {
                             messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
                           }
@@ -1148,10 +1128,11 @@ class _FixturesScreenState extends State<_FixturesScreen> {
                       TextButton.icon(
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
+                          final notifier = context.read<FixturesPollingNotifier>();
                           try {
-                            await widget.repository.resetFixtures(widget.league.id);
-                            if (mounted) await _load();
-                            if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
+                            await repository.resetFixtures(league.id);
+                            await notifier.refresh();
+                            if (context.mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
                           } catch (e) {
                             messenger.showSnackBar(SnackBar(content: Text('$e')));
                           }
@@ -1167,7 +1148,7 @@ class _FixturesScreenState extends State<_FixturesScreen> {
                     style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 16),
-                  if (_fixtures.isEmpty)
+                  if (fixtures.isEmpty)
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
@@ -1180,7 +1161,7 @@ class _FixturesScreenState extends State<_FixturesScreen> {
                   else
                     Card(
                       child: Column(
-                        children: _fixtures.map((f) => ListTile(
+                        children: fixtures.map((f) => ListTile(
                               title: Text(
                                 '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
                                 style: theme.textTheme.bodyMedium,
@@ -1192,8 +1173,8 @@ class _FixturesScreenState extends State<_FixturesScreen> {
                                   fadeSlideRoute(
                                     builder: (_) => _FixtureEditScreen(
                                       fixture: f,
-                                      repository: widget.repository,
-                                      onSaved: _load,
+                                      repository: repository,
+                                      onSaved: () => context.read<FixturesPollingNotifier>().refresh(),
                                     ),
                                   ),
                                 );
