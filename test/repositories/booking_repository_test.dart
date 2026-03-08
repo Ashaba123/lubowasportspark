@@ -66,13 +66,18 @@ void main() {
       when(() => mockDio.get<dynamic>(
             any(),
             queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
           )).thenAnswer((_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}));
 
       await repository.getByEmail('user@example.com');
 
       verify(() => mockDio.get<dynamic>(
             AppConstants.pathLubowaBookings,
-            queryParameters: {'contact_email': 'user@example.com'},
+            queryParameters: {
+              'contact_email': 'user@example.com',
+              'per_page': 100,
+              'sort': '-created_at',
+            },
           )).called(1);
     });
 
