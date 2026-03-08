@@ -20,22 +20,26 @@ import 'features/settings/settings_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'shared/textured_background.dart';
 
-void main() {
-  runApp(const LubowaSportsParkApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final tokenStorage = SharedPreferencesTokenStorage();
+  await tokenStorage.getToken();
+  runApp(LubowaSportsParkApp(tokenStorage: tokenStorage));
 }
 
 class LubowaSportsParkApp extends StatefulWidget {
-  const LubowaSportsParkApp({super.key});
+  const LubowaSportsParkApp({super.key, required this.tokenStorage});
+
+  final TokenStorage tokenStorage;
 
   @override
   State<LubowaSportsParkApp> createState() => _LubowaSportsParkAppState();
 }
 
 class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
-  late final InMemoryTokenStorage _tokenStorage = InMemoryTokenStorage();
   late final ApiClient _apiClient = createAppApiClient(
-    tokenGetter: () => _tokenStorage.currentToken,
-    onUnauthorized: () => _tokenStorage.clear(),
+    tokenGetter: () => widget.tokenStorage.currentToken,
+    onUnauthorized: () => widget.tokenStorage.clear(),
   );
 
   ThemeMode _themeMode = ThemeMode.light;
@@ -50,7 +54,7 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
   Widget build(BuildContext context) {
     return AppApiProvider(
       apiClient: _apiClient,
-      tokenStorage: _tokenStorage,
+      tokenStorage: widget.tokenStorage,
       child: MaterialApp(
         title: 'Lubowa Sports Park',
         theme: AppTheme.light,

@@ -27,46 +27,6 @@ class HomeScreen extends StatelessWidget {
           children: [
             CustomScrollView(
               slivers: [
-                // Hero: gradient + one headline + one CTA (Dribbble-style)
-                SliverToBoxAdapter(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [cs.primary, cs.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Play • Train • Compete',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: cs.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        if (onNavigateToTab != null)
-                          FilledButton(
-                            onPressed: () => onNavigateToTab!(2),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: cs.surface,
-                              foregroundColor: cs.primary,
-                              minimumSize: const Size(double.infinity, 48),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text('Book Now'),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Content below hero
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 96),
                   sliver: SliverList(

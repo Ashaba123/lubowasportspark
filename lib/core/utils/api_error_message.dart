@@ -17,6 +17,10 @@ String userFriendlyApiErrorMessage(Object? error) {
       case DioExceptionType.receiveTimeout:
         return 'Cannot reach the server. Check your internet connection and try again.';
       case DioExceptionType.badResponse:
+        final status = error.response?.statusCode;
+        if (status == 401 || status == 403) {
+          return 'Wrong username or password.';
+        }
         return 'Server error. Please try again later.';
       default:
         break;

@@ -18,9 +18,12 @@ ApiClient createTestApiClient({Dio? dio}) {
   );
 }
 
-/// [TokenStorage] for tests. In-memory. No [currentToken]; use [InMemoryTokenStorage] if interceptor needs sync token.
+/// [TokenStorage] for tests. In-memory.
 class TestTokenStorage implements TokenStorage {
   String? _token;
+
+  @override
+  String? get currentToken => _token;
 
   @override
   Future<String?> getToken() async => _token;

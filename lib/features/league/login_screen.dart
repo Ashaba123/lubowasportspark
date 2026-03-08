@@ -23,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
+  bool _obscurePassword = true;
   AuthRepository? _authRepo;
   TokenStorage? _tokenStorage;
 
@@ -133,8 +134,17 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passwordCtrl,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                obscureText: _obscurePassword,
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                 onFieldSubmitted: (_) => _submit(),
               ),

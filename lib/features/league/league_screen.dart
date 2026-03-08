@@ -179,6 +179,16 @@ class _LeagueScreenState extends State<LeagueScreen> {
                     FilledButton.icon(
                       onPressed: () async {
                         final navigator = Navigator.of(context);
+                        final tokenStorage = AppApiProvider.tokenStorageOf(context);
+                        final token = await tokenStorage.getToken();
+                        if (mounted && token != null && token.isNotEmpty) {
+                          await navigator.push(
+                            fadeSlideRoute(
+                              builder: (_) => LeagueManageScreen(repository: _repository),
+                            ),
+                          );
+                          return;
+                        }
                         final ok = await navigator.push<bool>(
                           fadeSlideRoute(builder: (_) => const LoginScreen()),
                         );
@@ -191,7 +201,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                         }
                       },
                       icon: const Icon(Icons.login),
-                      label: const Text('Login'),
+                      label: const Text('Manage leagues'),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -223,7 +233,6 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
   MePlayer? _mePlayer;
   bool _loading = true;
   String? _error;
-  bool _loggingOut = false;
 
   @override
   void initState() {
@@ -257,96 +266,13 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
     }
   }
 
-  Future<void> _logout() async {
-    if (!mounted) return;
-    setState(() => _loggingOut = true);
-    final tokenStorage = AppApiProvider.tokenStorageOf(context);
-    try {
-      await tokenStorage.clear();
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } finally {
-      if (mounted) {
-        setState(() => _loggingOut = false);
-      }
-    }
-  }
-
-  Future<void> _showCreateLeagueDialog(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    int legs = 1;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Create league'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'League name'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              Text('Legs (fixtures per pair)', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Row(
-                children: [1, 2, 3]
-                    .map(
-                      (n) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text('$n'),
-                          selected: legs == n,
-                          onSelected: (_) => setDialogState(() => legs = n),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () async {
-                final name = nameCtrl.text.trim();
-                if (name.isEmpty) return;
-                Navigator.of(ctx).pop();
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await widget.repository.createLeague(name: name, legs: legs);
-                  if (context.mounted) {
-                    messenger.showSnackBar(const SnackBar(content: Text('League created')));
-                    await _loadManageContent();
-                  }
-                } catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text('Failed: $e')));
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Manage leagues')),
-      backgroundColor: Colors.transparent,
-      floatingActionButton: (_leagueRoles?.canCreateLeague ?? false)
-          ? FloatingActionButton.extended(
-              onPressed: () => _showCreateLeagueDialog(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Create league'),
-            )
-          : null,
+      backgroundColor: colorScheme.surface,
       body: _loading
           ? const Center(child: FootballLoader())
           : RefreshIndicator(
@@ -406,7 +332,6 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
                       leagueRoles: _leagueRoles!,
                       mePlayer: _mePlayer,
                       repository: widget.repository,
-                      onLogout: _loggingOut ? () {} : _logout,
                       onRefresh: _loadManageContent,
                     )
                   else
@@ -648,14 +573,12 @@ class _ManageSection extends StatelessWidget {
     required this.leagueRoles,
     required this.mePlayer,
     required this.repository,
-    required this.onLogout,
     required this.onRefresh,
   });
 
   final LeagueRoles leagueRoles;
   final MePlayer? mePlayer;
   final LeagueRepository repository;
-  final VoidCallback onLogout;
   final Future<void> Function() onRefresh;
 
   @override
@@ -759,13 +682,6 @@ class _ManageSection extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: onLogout,
-          icon: const Icon(Icons.logout),
-          label: const Text('Log out'),
-          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-        ),
       ],
     );
   }
@@ -1030,11 +946,6 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(widget.league.name)),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddTeam(context),
-        icon: const Icon(Icons.group_add),
-        label: const Text('Add team'),
-      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -1087,66 +998,28 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Text('Fixtures', style: theme.textTheme.titleLarge),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      await widget.repository.generateFixtures(widget.league.id);
-                      if (mounted) _load();
-                      if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
-                    } catch (e) {
-                      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
-                    }
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Generate'),
-                ),
-                TextButton.icon(
-                  onPressed: () async {
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      await widget.repository.resetFixtures(widget.league.id);
-                      if (mounted) _load();
-                      if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
-                    } catch (e) {
-                      messenger.showSnackBar(SnackBar(content: Text('$e')));
-                    }
-                  },
-                  icon: const Icon(Icons.clear),
-                  label: const Text('Reset'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
+            Text('Fixtures', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
             Text(
               'You (league creator) or park staff can generate fixtures. Needs at least 2 teams.',
               style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 8),
-            Card(
-              child: _fixtures.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'No fixtures yet. Add teams then tap Generate.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                      ),
-                    )
-                  : Column(
-                      children: _fixtures.map((f) => ListTile(
-                            title: Text(
-                              '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            subtitle: Text('${f.homeGoals ?? 0} – ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}'),
-                            trailing: const Icon(Icons.edit_outlined),
-                            onTap: () => _openFixture(context, f),
-                          )).toList(),
-                    ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () => Navigator.of(context).push(
+                fadeSlideRoute(
+                  builder: (_) => _FixturesScreen(
+                    league: widget.league,
+                    repository: widget.repository,
+                    initialFixtures: _fixtures,
+                  ),
+                ),
+              ).then((_) {
+                if (mounted) _load();
+              }),
+              icon: const Icon(Icons.calendar_view_month),
+              label: const Text('View fixtures'),
+              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
             ),
           ],
         ),
@@ -1189,17 +1062,146 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
     if (ok != true || !mounted) return;
     try {
       await widget.repository.addTeam(widget.league.id, name: nameCtrl.text.trim());
-      if (mounted) _load();
+      if (mounted) await _load();
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
   }
 
-  void _openFixture(BuildContext context, FixtureModel fixture) {
-    Navigator.of(context).push(
-      fadeSlideRoute(
-        builder: (_) => _FixtureEditScreen(fixture: fixture, repository: widget.repository, onSaved: _load),
-      ),
+}
+
+class _FixturesScreen extends StatefulWidget {
+  const _FixturesScreen({
+    required this.league,
+    required this.repository,
+    this.initialFixtures = const [],
+  });
+
+  final LeagueModel league;
+  final LeagueRepository repository;
+  final List<FixtureModel> initialFixtures;
+
+  @override
+  State<_FixturesScreen> createState() => _FixturesScreenState();
+}
+
+class _FixturesScreenState extends State<_FixturesScreen> {
+  late List<FixtureModel> _fixtures;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fixtures = List.from(widget.initialFixtures);
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final list = await widget.repository.getFixtures(widget.league.id);
+      if (!mounted) return;
+      setState(() {
+        _fixtures = list;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text('${widget.league.name} — Fixtures')),
+      backgroundColor: colorScheme.surface,
+      body: _loading && _fixtures.isEmpty
+          ? const Center(child: FootballLoader())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(
+                    children: [
+                      Text('Generate fixtures', style: theme.textTheme.titleMedium),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await widget.repository.generateFixtures(widget.league.id);
+                            if (mounted) await _load();
+                            if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
+                          } catch (e) {
+                            messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
+                          }
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Generate'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await widget.repository.resetFixtures(widget.league.id);
+                            if (mounted) await _load();
+                            if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
+                          } catch (e) {
+                            messenger.showSnackBar(SnackBar(content: Text('$e')));
+                          }
+                        },
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Needs at least 2 teams. You (league creator) or park staff can generate.',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_fixtures.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'No fixtures yet. Add teams in the league then tap Generate.',
+                          style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+                    )
+                  else
+                    Card(
+                      child: Column(
+                        children: _fixtures.map((f) => ListTile(
+                              title: Text(
+                                '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                              subtitle: Text('${f.homeGoals ?? 0} – ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}'),
+                              trailing: const Icon(Icons.edit_outlined),
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  fadeSlideRoute(
+                                    builder: (_) => _FixtureEditScreen(
+                                      fixture: f,
+                                      repository: widget.repository,
+                                      onSaved: _load,
+                                    ),
+                                  ),
+                                );
+                              },
+                            )).toList(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -1350,7 +1352,7 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.repository.addPlayer(widget.team.id, name: nameCtrl.text.trim());
-      if (mounted) _load();
+      if (mounted) await _load();
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
