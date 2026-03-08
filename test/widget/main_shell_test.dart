@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
-import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/theme/app_theme.dart';
 import 'package:lubowa_sports_park/main.dart';
 
@@ -13,9 +15,11 @@ void main() {
       MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        home: AppApiProvider(
-          apiClient: createTestApiClient(),
-          tokenStorage: TestTokenStorage(),
+        home: MultiProvider(
+          providers: [
+            Provider<ApiClient>.value(value: createTestApiClient()),
+            Provider<TokenStorage>.value(value: TestTokenStorage()),
+          ],
           child: MainShell(
             onToggleTheme: () {},
             isDark: false,
@@ -38,9 +42,11 @@ void main() {
       MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        home: AppApiProvider(
-          apiClient: createTestApiClient(),
-          tokenStorage: TestTokenStorage(),
+        home: MultiProvider(
+          providers: [
+            Provider<ApiClient>.value(value: createTestApiClient()),
+            Provider<TokenStorage>.value(value: TestTokenStorage()),
+          ],
           child: MainShell(
             onToggleTheme: () {},
             isDark: false,

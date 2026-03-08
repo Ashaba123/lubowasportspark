@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../core/api/app_api_provider.dart';
+import '../../core/api/api_client.dart';
+import '../../core/auth/token_storage.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/page_transitions.dart';
@@ -18,7 +20,7 @@ class LeagueScreen extends StatefulWidget {
 }
 
 class _LeagueScreenState extends State<LeagueScreen> {
-  late final LeagueRepository _repository = LeagueRepository(apiClient: AppApiProvider.apiClientOf(context));
+  late final LeagueRepository _repository = LeagueRepository(apiClient: context.read<ApiClient>());
   final _codeController = TextEditingController();
   bool _loading = false;
   String? _error;
@@ -44,7 +46,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       _loading = true;
     });
     try {
-      final data = await _repository.getPublicLeague(code);
+      final data = await _repository.getPublicLeague(code, forceRefresh: true);
       if (!mounted) return;
       setState(() => _loading = false);
       await Navigator.of(context).push(
@@ -179,7 +181,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
                     FilledButton.icon(
                       onPressed: () async {
                         final navigator = Navigator.of(context);
-                        final tokenStorage = AppApiProvider.tokenStorageOf(context);
+                        final tokenStorage = context.read<TokenStorage>();
                         final token = await tokenStorage.getToken();
                         if (mounted && token != null && token.isNotEmpty) {
                           await navigator.push(
@@ -246,10 +248,10 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
       _error = null;
     });
     try {
-      final roles = await widget.repository.getMyLeagueRoles();
+      final roles = await widget.repository.getMyLeagueRoles(forceRefresh: true);
       MePlayer? player;
       try {
-        player = await widget.repository.getMyPlayer();
+        player = await widget.repository.getMyPlayer(forceRefresh: true);
       } catch (_) {}
       if (!mounted) return;
       setState(() {
@@ -770,7 +772,7 @@ class _LeagueListScreenState extends State<_LeagueListScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await widget.repository.getLeagues();
+      final list = await widget.repository.getLeagues(forceRefresh: true);
       if (!mounted) return;
       final filtered = widget.filterManaged
           ? list.where((l) => widget.managedIds.contains(l.id)).toList()
@@ -917,10 +919,10 @@ class _LeagueDetailScreenState extends State<_LeagueDetailScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final teams = await widget.repository.getTeams(widget.league.id);
+      final teams = await widget.repository.getTeams(widget.league.id, forceRefresh: true);
       List<FixtureModel> fixtures = [];
       try {
-        fixtures = await widget.repository.getFixtures(widget.league.id);
+        fixtures = await widget.repository.getFixtures(widget.league.id, forceRefresh: true);
       } catch (_) {}
       if (!mounted) return;
       setState(() {
@@ -1099,7 +1101,7 @@ class _FixturesScreenState extends State<_FixturesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await widget.repository.getFixtures(widget.league.id);
+      final list = await widget.repository.getFixtures(widget.league.id, forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _fixtures = list;
@@ -1230,7 +1232,7 @@ class _TeamDetailScreenState extends State<_TeamDetailScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final list = await widget.repository.getTeamPlayers(widget.team.id);
+      final list = await widget.repository.getTeamPlayers(widget.team.id, forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _players = list;

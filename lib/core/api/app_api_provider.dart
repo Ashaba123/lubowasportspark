@@ -1,35 +1,11 @@
-import 'package:flutter/material.dart';
-
 import '../auth/token_storage.dart';
 import '../constants/app_constants.dart';
 import 'api_client.dart';
 
-/// Provides [ApiClient] and [TokenStorage] to the widget tree.
-/// Create in [main] with [TokenStorage] and optional [onUnauthorized] (e.g. clear token).
-class AppApiProvider extends InheritedWidget {
-  const AppApiProvider({
-    super.key,
-    required this.apiClient,
-    required this.tokenStorage,
-    required super.child,
-  });
-
-  final ApiClient apiClient;
-  final TokenStorage tokenStorage;
-
-  static AppApiProvider of(BuildContext context) {
-    final provider = context.dependOnInheritedWidgetOfExactType<AppApiProvider>();
-    assert(provider != null, 'AppApiProvider not found. Wrap app with AppApiProvider.');
-    return provider!;
-  }
-
-  static ApiClient apiClientOf(BuildContext context) => of(context).apiClient;
-  static TokenStorage tokenStorageOf(BuildContext context) => of(context).tokenStorage;
-
-  @override
-  bool updateShouldNotify(AppApiProvider oldWidget) =>
-      apiClient != oldWidget.apiClient || tokenStorage != oldWidget.tokenStorage;
-}
+/// **State / DI:** The app uses [Provider] for dependency injection throughout.
+/// [ApiClient] and [TokenStorage] are provided at the root in [main.dart] via [MultiProvider].
+/// Screens and widgets obtain them with [context.read<ApiClient>()] and [context.read<TokenStorage>()].
+/// This file only defines [createAppApiClient], used in [main.dart] to build the [ApiClient] instance.
 
 /// Creates [ApiClient] with [tokenGetter] (sync, e.g. from [InMemoryTokenStorage.currentToken]) and [onUnauthorized].
 ApiClient createAppApiClient({

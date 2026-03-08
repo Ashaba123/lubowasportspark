@@ -13,20 +13,26 @@ class LeagueRepository {
   // —— Public (no auth) ——
 
   /// GET /lubowa/v1/public/leagues/<code>
-  Future<PublicLeagueResponse> getPublicLeague(String code) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
+  Future<PublicLeagueResponse> getPublicLeague(String code, {bool forceRefresh = false}) async {
     final path = '${AppConstants.pathLubowaPublicLeague}/${Uri.encodeComponent(code)}';
-    final response = await _dio.get<Map<String, dynamic>>(path);
+    final response = await _dio.get<Map<String, dynamic>>(
+      path,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final data = response.data;
     if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
     return PublicLeagueResponse.fromJson(data);
   }
 
   /// GET /lubowa/v1/public/leagues/<code>/results?date=YYYY-MM-DD
-  Future<PublicResultsResponse> getPublicResults(String code, {String? date}) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
+  Future<PublicResultsResponse> getPublicResults(String code, {String? date, bool forceRefresh = false}) async {
     final path = '${AppConstants.pathLubowaPublicLeague}/${Uri.encodeComponent(code)}/results';
     final response = await _dio.get<Map<String, dynamic>>(
       path,
       queryParameters: date != null ? {'date': date} : null,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
     );
     final data = response.data;
     if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
@@ -36,17 +42,25 @@ class LeagueRepository {
   // —— Auth (JWT) ——
 
   /// GET /lubowa/v1/me/league_roles
-  Future<LeagueRoles> getMyLeagueRoles() async {
-    final response = await _dio.get<Map<String, dynamic>>(AppConstants.pathLubowaMeRoles);
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
+  Future<LeagueRoles> getMyLeagueRoles({bool forceRefresh = false}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      AppConstants.pathLubowaMeRoles,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final data = response.data;
     if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
     return LeagueRoles.fromJson(data);
   }
 
   /// GET /lubowa/v1/me/player (404 if no player linked)
-  Future<MePlayer?> getMyPlayer() async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
+  Future<MePlayer?> getMyPlayer({bool forceRefresh = false}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(AppConstants.pathLubowaMePlayer);
+      final response = await _dio.get<Map<String, dynamic>>(
+        AppConstants.pathLubowaMePlayer,
+        options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+      );
       final data = response.data;
       if (data == null) return null;
       return MePlayer.fromJson(data);
@@ -57,8 +71,12 @@ class LeagueRepository {
   }
 
   /// GET /lubowa/v1/leagues (paginated: response has data + meta).
-  Future<List<LeagueModel>> getLeagues() async {
-    final response = await _dio.get<dynamic>(AppConstants.pathLubowaLeagues);
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after creating a league).
+  Future<List<LeagueModel>> getLeagues({bool forceRefresh = false}) async {
+    final response = await _dio.get<dynamic>(
+      AppConstants.pathLubowaLeagues,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final list = _listFromPaginated(response.data);
     return list.map((e) => LeagueModel.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -79,9 +97,13 @@ class LeagueRepository {
   }
 
   /// GET leagues/[id]/teams (paginated: response has data + meta).
-  Future<List<TeamModel>> getTeams(int leagueId) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after adding a team).
+  Future<List<TeamModel>> getTeams(int leagueId, {bool forceRefresh = false}) async {
     final path = '${AppConstants.pathLubowaLeagues}/$leagueId/teams';
-    final response = await _dio.get<dynamic>(path);
+    final response = await _dio.get<dynamic>(
+      path,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final list = _listFromPaginated(response.data);
     return list.map((e) => TeamModel.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -99,9 +121,13 @@ class LeagueRepository {
   }
 
   /// GET teams/[id]/players (paginated: response has data + meta).
-  Future<List<PlayerModel>> getTeamPlayers(int teamId) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after adding a player).
+  Future<List<PlayerModel>> getTeamPlayers(int teamId, {bool forceRefresh = false}) async {
     final path = '/lubowa/v1/teams/$teamId/players';
-    final response = await _dio.get<dynamic>(path);
+    final response = await _dio.get<dynamic>(
+      path,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final list = _listFromPaginated(response.data);
     return list.map((e) => PlayerModel.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -146,9 +172,13 @@ class LeagueRepository {
   }
 
   /// GET leagues/[id]/fixtures
-  Future<List<FixtureModel>> getFixtures(int leagueId) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after generating fixtures).
+  Future<List<FixtureModel>> getFixtures(int leagueId, {bool forceRefresh = false}) async {
     final path = '${AppConstants.pathLubowaLeagues}/$leagueId/fixtures';
-    final response = await _dio.get<List<dynamic>>(path);
+    final response = await _dio.get<List<dynamic>>(
+      path,
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final list = response.data;
     if (list == null) return [];
     return list.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>)).toList();
@@ -196,8 +226,12 @@ class LeagueRepository {
   }
 
   /// GET fixtures/[fixtureId]/goals (paginated: response has data + meta).
-  Future<List<GoalLogEntry>> getFixtureGoals(int fixtureId) async {
-    final response = await _dio.get<dynamic>('/lubowa/v1/fixtures/$fixtureId/goals');
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after recording goals).
+  Future<List<GoalLogEntry>> getFixtureGoals(int fixtureId, {bool forceRefresh = false}) async {
+    final response = await _dio.get<dynamic>(
+      '/lubowa/v1/fixtures/$fixtureId/goals',
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
+    );
     final list = _listFromPaginated(response.data);
     return list.map((e) => GoalLogEntry.fromJson(e as Map<String, dynamic>)).toList();
   }

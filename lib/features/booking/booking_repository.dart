@@ -23,11 +23,13 @@ class BookingRepository {
   }
 
   /// GET /lubowa/v1/bookings?contact_email=... — list bookings (paginated: response has data + meta).
-  Future<List<BookingItem>> getByEmail(String contactEmail) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after creating a booking).
+  Future<List<BookingItem>> getByEmail(String contactEmail, {bool forceRefresh = false}) async {
     if (contactEmail.trim().isEmpty) return [];
     final response = await _dio.get<dynamic>(
       AppConstants.pathLubowaBookings,
       queryParameters: {'contact_email': contactEmail.trim()},
+      options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
     );
     final raw = response.data;
     if (raw == null) return [];

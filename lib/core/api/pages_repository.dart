@@ -12,12 +12,14 @@ class PagesRepository {
   final Dio _dio;
 
   /// GET wp/v2/pages?slug={slug}&_embed. Returns first match or null.
-  Future<WpPage?> getPageBySlug(String slug) async {
+  /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
+  Future<WpPage?> getPageBySlug(String slug, {bool forceRefresh = false}) async {
     if (slug.isEmpty) return null;
     try {
       final response = await _dio.get<List<dynamic>>(
         AppConstants.pathPages,
         queryParameters: {'slug': slug, '_embed': true},
+        options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
       );
       final list = response.data;
       if (list == null || list.isEmpty) return null;

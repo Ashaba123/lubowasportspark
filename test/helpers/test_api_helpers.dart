@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
-import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 
@@ -39,7 +39,8 @@ class TestTokenStorage implements TokenStorage {
   }
 }
 
-/// Wraps [child] with [MaterialApp] and [AppApiProvider] using [apiClient] and [tokenStorage].
+/// Wraps [child] with [MaterialApp] and [MultiProvider] using [apiClient] and [tokenStorage].
+/// Use as the root in tests: pumpWidget(wrapWithAppProviders(...)).
 Widget wrapWithAppProviders({
   required Widget child,
   required ApiClient apiClient,
@@ -47,9 +48,11 @@ Widget wrapWithAppProviders({
 }) {
   return MaterialApp(
     theme: ThemeData.light(useMaterial3: true),
-    home: AppApiProvider(
-      apiClient: apiClient,
-      tokenStorage: tokenStorage ?? TestTokenStorage(),
+    home: MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: apiClient),
+        Provider<TokenStorage>.value(value: tokenStorage ?? TestTokenStorage()),
+      ],
       child: child,
     ),
   );

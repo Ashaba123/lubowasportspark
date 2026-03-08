@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../core/api/app_api_provider.dart';
+import '../../core/api/api_client.dart';
 import '../../core/api/pages_repository.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/api_error_message.dart';
@@ -32,7 +33,7 @@ class _EventsScreenState extends State<EventsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_repository == null) {
-      final api = AppApiProvider.apiClientOf(context);
+      final api = context.read<ApiClient>();
       _repository = EventsRepository(apiClient: api);
       _pagesRepository = PagesRepository(apiClient: api);
       _load();
@@ -55,8 +56,8 @@ class _EventsScreenState extends State<EventsScreen> {
     }
     try {
       final results = await Future.wait([
-        _repository!.getPosts(),
-        _pagesRepository!.getPageBySlug(AppConstants.slugEventsPage),
+        _repository!.getPosts(forceRefresh: true),
+        _pagesRepository!.getPageBySlug(AppConstants.slugEventsPage, forceRefresh: true),
       ]);
       if (!mounted) return;
       setState(() {

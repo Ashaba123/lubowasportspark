@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
 import 'package:lubowa_sports_park/features/booking/booking_screen.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 
@@ -14,13 +12,10 @@ void main() {
     final tokenStorage = TestTokenStorage();
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData.light(useMaterial3: true),
-        home: AppApiProvider(
-          apiClient: apiClient,
-          tokenStorage: tokenStorage,
-          child: const BookingScreen(),
-        ),
+      wrapWithAppProviders(
+        apiClient: apiClient,
+        tokenStorage: tokenStorage,
+        child: const BookingScreen(),
       ),
     );
     await tester.pump(); // didChangeDependencies
@@ -31,13 +26,10 @@ void main() {
 
   testWidgets('BookingScreen has fade-in entrance animation', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData.light(useMaterial3: true),
-        home: AppApiProvider(
-          apiClient: createTestApiClient(dio: MockDio()),
-          tokenStorage: TestTokenStorage(),
-          child: const BookingScreen(),
-        ),
+      wrapWithAppProviders(
+        apiClient: createTestApiClient(dio: MockDio()),
+        tokenStorage: TestTokenStorage(),
+        child: const BookingScreen(),
       ),
     );
     await tester.pump();

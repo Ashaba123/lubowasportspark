@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'core/api/api_client.dart';
 import 'core/api/app_api_provider.dart';
@@ -52,9 +53,11 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AppApiProvider(
-      apiClient: _apiClient,
-      tokenStorage: widget.tokenStorage,
+    return MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: _apiClient),
+        Provider<TokenStorage>.value(value: widget.tokenStorage),
+      ],
       child: MaterialApp(
         title: 'Lubowa Sports Park',
         theme: AppTheme.light,

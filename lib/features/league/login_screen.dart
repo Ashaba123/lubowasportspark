@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/api/app_api_provider.dart';
-import '../../core/constants/app_constants.dart';
+import '../../core/api/api_client.dart';
 import '../../core/auth/auth_repository.dart';
 import '../../core/auth/token_storage.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/football_loader.dart';
@@ -30,8 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _authRepo ??= AuthRepository(apiClient: AppApiProvider.apiClientOf(context));
-    _tokenStorage ??= AppApiProvider.tokenStorageOf(context);
+    _authRepo ??= AuthRepository(apiClient: context.read<ApiClient>());
+    _tokenStorage ??= context.read<TokenStorage>();
   }
 
   @override

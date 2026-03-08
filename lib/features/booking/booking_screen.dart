@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../core/api/app_api_provider.dart';
+import '../../core/api/api_client.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/app_logo.dart';
@@ -80,7 +81,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
   }
 
   @override
@@ -588,7 +589,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
   }
 
   @override
@@ -609,7 +610,7 @@ class _MyBookingsEntryScreenState extends State<_MyBookingsEntryScreen> {
       _loading = true;
     });
     try {
-      final list = await _repository!.getByEmail(email);
+      final list = await _repository!.getByEmail(email, forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -848,13 +849,13 @@ class _MyBookingsScreenState extends State<_MyBookingsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: AppApiProvider.apiClientOf(context));
+    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
   }
 
   Future<void> _refresh() async {
     if (_repository == null) return;
     try {
-      final list = await _repository!.getByEmail(widget.email);
+      final list = await _repository!.getByEmail(widget.email, forceRefresh: true);
       if (!mounted) return;
       setState(() => _bookings = list);
     } catch (_) {}
