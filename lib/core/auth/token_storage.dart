@@ -17,6 +17,7 @@ class InMemoryTokenStorage implements TokenStorage {
   String? _token;
 
   /// Synchronous token for API client interceptor. Use after [setToken] or [getToken].
+  @override
   String? get currentToken => _token;
 
   @override
