@@ -28,7 +28,11 @@ class BookingRepository {
     if (contactEmail.trim().isEmpty) return [];
     final response = await _dio.get<dynamic>(
       AppConstants.pathLubowaBookings,
-      queryParameters: {'contact_email': contactEmail.trim()},
+      queryParameters: {
+        'contact_email': contactEmail.trim(),
+        'per_page': 100,
+        'sort': '-created_at',
+      },
       options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
     );
     final raw = response.data;

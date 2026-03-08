@@ -62,7 +62,7 @@ void main() {
     final tokenStorage = TestTokenStorage();
     await tokenStorage.setToken('test-token');
 
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == AppConstants.pathLubowaMeRoles) {
         return responseOk<Map<String, dynamic>>({
@@ -102,7 +102,7 @@ void main() {
     final tokenStorage = TestTokenStorage();
     await tokenStorage.setToken('test-token');
 
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == AppConstants.pathLubowaMeRoles) {
         return responseOk<Map<String, dynamic>>({
@@ -155,7 +155,7 @@ void main() {
     final tokenStorage = TestTokenStorage();
     await tokenStorage.setToken('test-token');
 
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == AppConstants.pathLubowaMeRoles) {
         return responseOk<Map<String, dynamic>>({
@@ -169,7 +169,7 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
@@ -225,7 +225,7 @@ void main() {
     final tokenStorage = TestTokenStorage();
     await tokenStorage.setToken('test-token');
 
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == AppConstants.pathLubowaMeRoles) {
         return responseOk<Map<String, dynamic>>({
@@ -239,7 +239,7 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({
@@ -263,6 +263,9 @@ void main() {
       }
       return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
     });
+    when(() => mockDio.get<List<dynamic>>(any(), options: any(named: 'options'))).thenAnswer(
+      (_) async => responseOk<List<dynamic>>([]),
+    );
     when(() => mockDio.post<List<dynamic>>(any())).thenAnswer(
       (_) async => responseOk<List<dynamic>>([]),
     );
@@ -301,7 +304,7 @@ void main() {
     final tokenStorage = TestTokenStorage();
     await tokenStorage.setToken('test-token');
 
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == AppConstants.pathLubowaMeRoles) {
         return responseOk<Map<String, dynamic>>({
@@ -315,7 +318,7 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({
