@@ -14,11 +14,14 @@ void main() {
     await tester.pump();
 
     expect(find.text('Play • Train • Compete'), findsOneWidget);
-    await tester.ensureVisible(find.text('Sports • Fitness • Community'));
+
+    await tester.scrollUntilVisible(find.text('Sports • Fitness • Community'), 100);
     expect(find.text('Sports • Fitness • Community'), findsOneWidget);
-    await tester.ensureVisible(find.text('Events'));
+
+    await tester.scrollUntilVisible(find.text('Events'), 100);
     expect(find.text('Events'), findsOneWidget);
-    await tester.ensureVisible(find.text('League'));
+
+    await tester.scrollUntilVisible(find.text('League'), 100);
     expect(find.text('League'), findsOneWidget);
   });
 
@@ -32,7 +35,11 @@ void main() {
     );
     await tester.pump();
 
-    await tester.ensureVisible(find.text('Events'));
+    await tester.scrollUntilVisible(find.text('Events'), 100);
+    // Scroll again so Events card is inside 600px viewport (widget was at y=621)
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -250));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Events'));
     await tester.pump();
 
