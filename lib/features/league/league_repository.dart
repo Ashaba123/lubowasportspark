@@ -56,11 +56,10 @@ class LeagueRepository {
     }
   }
 
-  /// GET /lubowa/v1/leagues
+  /// GET /lubowa/v1/leagues (paginated: response has data + meta).
   Future<List<LeagueModel>> getLeagues() async {
-    final response = await _dio.get<List<dynamic>>(AppConstants.pathLubowaLeagues);
-    final list = response.data;
-    if (list == null) return [];
+    final response = await _dio.get<dynamic>(AppConstants.pathLubowaLeagues);
+    final list = _listFromPaginated(response.data);
     return list.map((e) => LeagueModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -79,12 +78,11 @@ class LeagueRepository {
     return LeagueModel.fromJson(data);
   }
 
-  /// GET leagues/[id]/teams
+  /// GET leagues/[id]/teams (paginated: response has data + meta).
   Future<List<TeamModel>> getTeams(int leagueId) async {
     final path = '${AppConstants.pathLubowaLeagues}/$leagueId/teams';
-    final response = await _dio.get<List<dynamic>>(path);
-    final list = response.data;
-    if (list == null) return [];
+    final response = await _dio.get<dynamic>(path);
+    final list = _listFromPaginated(response.data);
     return list.map((e) => TeamModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -100,12 +98,11 @@ class LeagueRepository {
     return TeamModel.fromJson(data);
   }
 
-  /// GET teams/[id]/players
+  /// GET teams/[id]/players (paginated: response has data + meta).
   Future<List<PlayerModel>> getTeamPlayers(int teamId) async {
     final path = '/lubowa/v1/teams/$teamId/players';
-    final response = await _dio.get<List<dynamic>>(path);
-    final list = response.data;
-    if (list == null) return [];
+    final response = await _dio.get<dynamic>(path);
+    final list = _listFromPaginated(response.data);
     return list.map((e) => PlayerModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -198,15 +195,21 @@ class LeagueRepository {
     return GoalLogEntry.fromJson(goalJson);
   }
 
-  /// GET fixtures/[fixtureId]/goals — list logged goal operations for a fixture.
+  /// GET fixtures/[fixtureId]/goals (paginated: response has data + meta).
   Future<List<GoalLogEntry>> getFixtureGoals(int fixtureId) async {
-    final response = await _dio.get<List<dynamic>>('/lubowa/v1/fixtures/$fixtureId/goals');
-    final list = response.data;
-    if (list == null) return [];
+    final response = await _dio.get<dynamic>('/lubowa/v1/fixtures/$fixtureId/goals');
+    final list = _listFromPaginated(response.data);
     return list.map((e) => GoalLogEntry.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// PATCH fixtures/[fixtureId]/goals/[goalId] — update a single goal log entry.
+  static List<dynamic> _listFromPaginated(dynamic raw) {
+    if (raw == null) return [];
+    if (raw is Map && raw.containsKey('data')) return raw['data'] as List<dynamic>? ?? [];
+    if (raw is List) return raw;
+    return [];
+  }
+
   Future<GoalLogEntry> updateFixtureGoal({
     required int fixtureId,
     required int goalId,

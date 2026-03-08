@@ -63,14 +63,14 @@ void main() {
     });
 
     test('getByEmail calls GET /lubowa/v1/bookings with contact_email', () async {
-      when(() => mockDio.get<List<dynamic>>(
+      when(() => mockDio.get<dynamic>(
             any(),
             queryParameters: any(named: 'queryParameters'),
-          )).thenAnswer((_) async => responseOk<List<dynamic>>([]));
+          )).thenAnswer((_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}));
 
       await repository.getByEmail('user@example.com');
 
-      verify(() => mockDio.get<List<dynamic>>(
+      verify(() => mockDio.get<dynamic>(
             AppConstants.pathLubowaBookings,
             queryParameters: {'contact_email': 'user@example.com'},
           )).called(1);
@@ -79,7 +79,7 @@ void main() {
     test('getByEmail returns empty list for empty email', () async {
       final list = await repository.getByEmail('  ');
       expect(list, isEmpty);
-      verifyNever(() => mockDio.get<List<dynamic>>(any(), queryParameters: any(named: 'queryParameters')));
+      verifyNever(() => mockDio.get<dynamic>(any(), queryParameters: any(named: 'queryParameters')));
     });
   });
 }

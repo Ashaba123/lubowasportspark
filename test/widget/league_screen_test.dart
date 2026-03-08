@@ -169,20 +169,23 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<List<dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
-        return responseOk<List<dynamic>>([]);
+        return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
       }
       if (path == '${AppConstants.pathLubowaLeagues}/1/fixtures') {
-        return responseOk<List<dynamic>>([]);
+        return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
       }
       if (path == AppConstants.pathLubowaLeagues) {
-        return responseOk<List<dynamic>>([
-          {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
-        ]);
+        return responseOk<dynamic>({
+          'data': [
+            {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
+          ],
+          'meta': {'page': 1, 'per_page': 20, 'total': 1},
+        });
       }
-      return responseOk<List<dynamic>>([]);
+      return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
     });
     when(() => mockDio.post<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
       (_) async => responseOk<Map<String, dynamic>>({'id': 10, 'name': 'Eagles', 'leader_user_id': null}),
@@ -236,23 +239,29 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<List<dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
-        return responseOk<List<dynamic>>([
-          {'id': 10, 'name': 'Team A', 'leader_user_id': null},
-          {'id': 11, 'name': 'Team B', 'leader_user_id': null},
-        ]);
+        return responseOk<dynamic>({
+          'data': [
+            {'id': 10, 'name': 'Team A', 'leader_user_id': null},
+            {'id': 11, 'name': 'Team B', 'leader_user_id': null},
+          ],
+          'meta': {'page': 1, 'per_page': 20, 'total': 2},
+        });
       }
       if (path == '${AppConstants.pathLubowaLeagues}/1/fixtures') {
-        return responseOk<List<dynamic>>([]);
+        return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
       }
       if (path == AppConstants.pathLubowaLeagues) {
-        return responseOk<List<dynamic>>([
-          {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
-        ]);
+        return responseOk<dynamic>({
+          'data': [
+            {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
+          ],
+          'meta': {'page': 1, 'per_page': 20, 'total': 1},
+        });
       }
-      return responseOk<List<dynamic>>([]);
+      return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
     });
     when(() => mockDio.post<List<dynamic>>(any())).thenAnswer(
       (_) async => responseOk<List<dynamic>>([]),
@@ -306,25 +315,31 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<List<dynamic>>(any())).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(any())).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
-        return responseOk<List<dynamic>>([
-          {'id': 10, 'name': 'Eagles', 'leader_user_id': null},
-        ]);
+        return responseOk<dynamic>({
+          'data': [
+            {'id': 10, 'name': 'Eagles', 'leader_user_id': null},
+          ],
+          'meta': {'page': 1, 'per_page': 20, 'total': 1},
+        });
       }
       if (path == '${AppConstants.pathLubowaLeagues}/1/fixtures') {
-        return responseOk<List<dynamic>>([]);
+        return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
       }
       if (path == AppConstants.pathLubowaLeagues) {
-        return responseOk<List<dynamic>>([
-          {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
-        ]);
+        return responseOk<dynamic>({
+          'data': [
+            {'id': 1, 'name': 'Test League', 'code': 'X1', 'legs': 1, 'created_by': 1, 'created_at': '2025-03-01'},
+          ],
+          'meta': {'page': 1, 'per_page': 20, 'total': 1},
+        });
       }
       if (path == '/lubowa/v1/teams/10/players') {
-        return responseOk<List<dynamic>>([]);
+        return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
       }
-      return responseOk<List<dynamic>>([]);
+      return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
     });
     when(() => mockDio.post<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
       (_) async => responseOk<Map<String, dynamic>>({'id': 20, 'name': 'Henry', 'goals': 0, 'user_id': null}),

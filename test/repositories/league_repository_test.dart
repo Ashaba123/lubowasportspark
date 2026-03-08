@@ -75,13 +75,13 @@ void main() {
     });
 
     test('getLeagues calls GET /lubowa/v1/leagues', () async {
-      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
-        (_) async => responseOk<List<dynamic>>([]),
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}),
       );
 
       await repository.getLeagues();
 
-      verify(() => mockDio.get<List<dynamic>>(AppConstants.pathLubowaLeagues)).called(1);
+      verify(() => mockDio.get<dynamic>(AppConstants.pathLubowaLeagues)).called(1);
     });
 
     test('createLeague calls POST /lubowa/v1/leagues with name and legs', () async {
@@ -108,13 +108,13 @@ void main() {
     });
 
     test('getTeams calls GET /lubowa/v1/leagues/{id}/teams', () async {
-      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
-        (_) async => responseOk<List<dynamic>>([]),
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}),
       );
 
       await repository.getTeams(1);
 
-      verify(() => mockDio.get<List<dynamic>>(
+      verify(() => mockDio.get<dynamic>(
             '${AppConstants.pathLubowaLeagues}/1/teams',
           )).called(1);
     });
@@ -140,13 +140,13 @@ void main() {
     });
 
     test('getTeamPlayers calls GET /lubowa/v1/teams/{id}/players', () async {
-      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
-        (_) async => responseOk<List<dynamic>>([]),
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}),
       );
 
       await repository.getTeamPlayers(5);
 
-      verify(() => mockDio.get<List<dynamic>>(
+      verify(() => mockDio.get<dynamic>(
             '/lubowa/v1/teams/5/players',
           )).called(1);
     });
@@ -239,13 +239,13 @@ void main() {
     });
 
     test('getFixtureGoals calls GET /lubowa/v1/fixtures/{id}/goals', () async {
-      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
-        (_) async => responseOk<List<dynamic>>([]),
+      when(() => mockDio.get<dynamic>(any())).thenAnswer(
+        (_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}),
       );
 
       await repository.getFixtureGoals(5);
 
-      verify(() => mockDio.get<List<dynamic>>('/lubowa/v1/fixtures/5/goals')).called(1);
+      verify(() => mockDio.get<dynamic>('/lubowa/v1/fixtures/5/goals')).called(1);
     });
 
     test('updateFixtureGoal calls PATCH /lubowa/v1/fixtures/{fid}/goals/{gid}', () async {

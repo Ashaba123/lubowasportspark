@@ -22,15 +22,22 @@ class BookingRepository {
     return BookingSubmitResponse.fromJson(data);
   }
 
-  /// GET /lubowa/v1/bookings?contact_email=... — list bookings for contact (optional).
+  /// GET /lubowa/v1/bookings?contact_email=... — list bookings (paginated: response has data + meta).
   Future<List<BookingItem>> getByEmail(String contactEmail) async {
     if (contactEmail.trim().isEmpty) return [];
-    final response = await _dio.get<List<dynamic>>(
+    final response = await _dio.get<dynamic>(
       AppConstants.pathLubowaBookings,
       queryParameters: {'contact_email': contactEmail.trim()},
     );
-    final list = response.data;
-    if (list == null) return [];
+    final raw = response.data;
+    if (raw == null) return [];
+    final list = _listFromPaginated(raw);
     return list.map((e) => BookingItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  static List<dynamic> _listFromPaginated(dynamic raw) {
+    if (raw is Map && raw.containsKey('data')) return raw['data'] as List<dynamic>? ?? [];
+    if (raw is List) return raw;
+    return [];
   }
 }

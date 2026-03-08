@@ -8,6 +8,10 @@ Backend: **WordPress REST API** at `https://lubowasportspark.com`
 
 **Data sources (MVP):**
 - **Bookings & Leagues** — custom **Lubowa API** (same plugin: `lubowa/v1`). Bookings and all league/team/fixture/player endpoints live in this API.
+
+**Lubowa API conventions (v1.5+):**
+- **List endpoints** (GET bookings, leagues, leagues/…/teams, teams/…/players, fixtures/…/goals) return `{ "data": [ ... ], "meta": { "page", "per_page", "total" } }`. Query params: `page` (default 1), `per_page` (default 20, max 100). Bookings also support `sort` (`created_at` / `-created_at`) and `status` filter; leagues support `sort` (`created_at`, `-created_at`, `name`, `-name`).
+- **Errors** (4xx/5xx) use a consistent envelope: `{ "error": { "code": "<machine-readable>", "message": "<human-readable>" } }`. Use `error.code` for client logic (e.g. `league_not_found`, `validation_error`).
 - **Events** — WordPress **posts** (`wp/v2/posts`). The **website events page** uses this endpoint; events are regular posts; list/detail via WP REST.
 - **Home, Activities, About, Contact** — WordPress **pages** (`wp/v2/pages`). App fetches by slug so content matches the website; slugs are configured in the app (e.g. `home`, `activities`, `about`, `contact`).
 
