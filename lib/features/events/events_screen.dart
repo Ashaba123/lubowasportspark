@@ -8,7 +8,6 @@ import '../../core/utils/app_connectivity.dart';
 import '../../core/models/wp_page.dart';
 import '../../core/utils/html_utils.dart';
 import '../../shared/page_transitions.dart';
-import '../../shared/football_loader.dart';
 import 'event_detail_screen.dart';
 import 'events_repository.dart';
 import 'models/wp_post.dart';
