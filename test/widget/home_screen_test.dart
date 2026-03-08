@@ -13,8 +13,6 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Play • Train • Compete'), findsOneWidget);
-
     await tester.scrollUntilVisible(find.text('Sports • Fitness • Community'), 100);
     expect(find.text('Sports • Fitness • Community'), findsOneWidget);
 

@@ -195,5 +195,121 @@ void main() {
             '${AppConstants.pathLubowaLeagues}/1/fixtures',
           )).called(1);
     });
+
+    test('updateFixture calls PATCH /lubowa/v1/fixtures/{id} with home_goals and away_goals', () async {
+      when(() => mockDio.patch<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'id': 1,
+          'home_team_id': 10,
+          'away_team_id': 11,
+          'home_goals': 2,
+          'away_goals': 1,
+          'result_confirmed': 1,
+        }),
+      );
+
+      await repository.updateFixture(1, homeGoals: 2, awayGoals: 1);
+
+      verify(() => mockDio.patch<Map<String, dynamic>>(
+            '/lubowa/v1/fixtures/1',
+            data: {'home_goals': 2, 'away_goals': 1},
+          )).called(1);
+    });
+
+    test('recordGoals calls POST /lubowa/v1/fixtures/{id}/goals with player_id and goals', () async {
+      when(() => mockDio.post<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'goal': {
+            'id': 1,
+            'fixture_id': 5,
+            'team_id': 10,
+            'player_id': 20,
+            'goals': 2,
+            'created_at': '2025-03-01T12:00:00Z',
+          },
+        }),
+      );
+
+      await repository.recordGoals(5, playerId: 20, goals: 2);
+
+      verify(() => mockDio.post<Map<String, dynamic>>(
+            '/lubowa/v1/fixtures/5/goals',
+            data: {'player_id': 20, 'goals': 2},
+          )).called(1);
+    });
+
+    test('getFixtureGoals calls GET /lubowa/v1/fixtures/{id}/goals', () async {
+      when(() => mockDio.get<List<dynamic>>(any())).thenAnswer(
+        (_) async => responseOk<List<dynamic>>([]),
+      );
+
+      await repository.getFixtureGoals(5);
+
+      verify(() => mockDio.get<List<dynamic>>('/lubowa/v1/fixtures/5/goals')).called(1);
+    });
+
+    test('updateFixtureGoal calls PATCH /lubowa/v1/fixtures/{fid}/goals/{gid}', () async {
+      when(() => mockDio.patch<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'id': 1,
+          'fixture_id': 5,
+          'team_id': 10,
+          'player_id': 20,
+          'goals': 3,
+          'created_at': '2025-03-01T12:00:00Z',
+        }),
+      );
+
+      await repository.updateFixtureGoal(fixtureId: 5, goalId: 1, goals: 3);
+
+      verify(() => mockDio.patch<Map<String, dynamic>>(
+            '/lubowa/v1/fixtures/5/goals/1',
+            data: {'goals': 3},
+          )).called(1);
+    });
+
+    test('deleteFixtureGoal calls DELETE /lubowa/v1/fixtures/{fid}/goals/{gid}', () async {
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer((_) async => Response<void>(
+            requestOptions: RequestOptions(path: ''),
+            statusCode: 200,
+          ));
+
+      await repository.deleteFixtureGoal(fixtureId: 5, goalId: 1);
+
+      verify(() => mockDio.delete<dynamic>('/lubowa/v1/fixtures/5/goals/1')).called(1);
+    });
+
+    test('resetFixtures calls POST /lubowa/v1/leagues/{id}/fixtures/reset', () async {
+      when(() => mockDio.post<dynamic>(any())).thenAnswer(
+        (_) async => Response<void>(
+          requestOptions: RequestOptions(path: ''),
+          statusCode: 200,
+        ),
+      );
+
+      await repository.resetFixtures(1);
+
+      verify(() => mockDio.post<dynamic>(
+            '${AppConstants.pathLubowaLeagues}/1/fixtures/reset',
+          )).called(1);
+    });
+
+    test('updatePlayer calls PATCH /lubowa/v1/players/{id} with goals', () async {
+      when(() => mockDio.patch<Map<String, dynamic>>(any(), data: any(named: 'data'))).thenAnswer(
+        (_) async => responseOk<Map<String, dynamic>>({
+          'id': 20,
+          'name': 'Player 1',
+          'goals': 5,
+          'user_id': null,
+        }),
+      );
+
+      await repository.updatePlayer(20, goals: 5);
+
+      verify(() => mockDio.patch<Map<String, dynamic>>(
+            '/lubowa/v1/players/20',
+            data: {'goals': 5},
+          )).called(1);
+    });
   });
 }
