@@ -7,7 +7,9 @@ class ActivitiesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
+      backgroundColor: cs.surface,
       appBar: AppBar(title: const Text('Activities')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

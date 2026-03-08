@@ -36,6 +36,7 @@ class ContactScreen extends StatelessWidget {
     final hPadding = screenWidth >= 600 ? 48.0 : 24.0;
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(title: const Text('Contact')),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 24),

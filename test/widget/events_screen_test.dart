@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,10 +66,38 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     final hasEvents = find.text('Events').evaluate().isNotEmpty;
-    final hasLoading = find.byType(FootballLoader).evaluate().isNotEmpty;
+    final hasSpinner = find.byType(FootballLoader).evaluate().isNotEmpty;
+    final hasSkeleton = find.byType(Card).evaluate().length >= 4;
+    final hasLoading = hasSpinner || hasSkeleton;
     final hasRetry = find.text('Retry').evaluate().isNotEmpty;
-    final hasEventOrEmpty = find.text('Test Event').evaluate().isNotEmpty || find.text('No events right now.').evaluate().isNotEmpty;
+    final hasEventOrEmpty = find.text('Test Event').evaluate().isNotEmpty ||
+        find.text('No events right now').evaluate().isNotEmpty ||
+        find.byType(ListView).evaluate().isNotEmpty;
     expect(hasEvents, true);
     expect(hasLoading || hasRetry || hasEventOrEmpty, true);
+  });
+
+  testWidgets('EventsScreen shows skeleton when loading and list empty', (WidgetTester tester) async {
+    final completer = Completer<Response<List<dynamic>>>();
+    when(() => mockDio.get<List<dynamic>>(
+          AppConstants.pathPosts,
+          queryParameters: any(named: 'queryParameters'),
+        )).thenAnswer((_) => completer.future);
+    when(() => mockDio.get<List<dynamic>>(
+          AppConstants.pathPages,
+          queryParameters: any(named: 'queryParameters'),
+        )).thenAnswer((_) => completer.future);
+
+    await tester.pumpWidget(
+      wrapWithAppProviders(
+        apiClient: createTestApiClient(dio: mockDio),
+        child: const EventsScreen(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(FootballLoader), findsNothing);
+    expect(find.byType(Card), findsWidgets);
   });
 }

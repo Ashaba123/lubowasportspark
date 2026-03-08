@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
 import 'package:lubowa_sports_park/features/booking/booking_screen.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
 
 import '../helpers/test_api_helpers.dart';
 
@@ -26,5 +27,21 @@ void main() {
 
     expect(find.text('Book'), findsOneWidget);
     expect(find.text('Book. Play. Enjoy.'), findsOneWidget);
+  });
+
+  testWidgets('BookingScreen has fade-in entrance animation', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(useMaterial3: true),
+        home: AppApiProvider(
+          apiClient: createTestApiClient(dio: MockDio()),
+          tokenStorage: TestTokenStorage(),
+          child: const BookingScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(FadeSlideIn), findsOneWidget);
   });
 }

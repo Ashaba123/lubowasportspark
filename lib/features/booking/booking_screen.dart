@@ -4,8 +4,8 @@ import '../../core/api/app_api_provider.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
 import '../../shared/app_logo.dart';
-import '../../shared/page_transitions.dart';
 import '../../shared/football_loader.dart';
+import '../../shared/page_transitions.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
 
@@ -175,9 +175,13 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: () {
+      body: FadeSlideIn(
+        delay: Duration.zero,
+        duration: const Duration(milliseconds: 320),
+        slideDistance: 16,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: () {
           switch (_step) {
             case _BookingStep.service:
               return _buildServiceStep();
@@ -189,6 +193,7 @@ class _BookingScreenState extends State<BookingScreen> {
               return _buildSuccessStep();
           }
         }(),
+        ),
       ),
     );
   }

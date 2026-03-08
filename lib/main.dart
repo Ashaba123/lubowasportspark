@@ -188,7 +188,9 @@ class _GradientNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final tt = theme.textTheme;
+    final navForeground = theme.colorScheme.onPrimary;
 
     // Gradient stops: deep green → teal, subtler in dark mode
     final gradStart = isDark
@@ -240,6 +242,7 @@ class _GradientNavBar extends StatelessWidget {
                         label: dest.label,
                         selected: selected,
                         textTheme: tt,
+                        foregroundColor: navForeground,
                         onTap: () => onDestinationSelected(i),
                       );
                     }),
@@ -261,6 +264,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.textTheme,
+    required this.foregroundColor,
     required this.onTap,
   });
 
@@ -269,6 +273,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final TextTheme textTheme;
+  final Color foregroundColor;
   final VoidCallback onTap;
 
   @override
@@ -285,7 +290,7 @@ class _NavItem extends StatelessWidget {
         ),
         decoration: selected
             ? BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: foregroundColor.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(20),
               )
             : null,
@@ -297,7 +302,7 @@ class _NavItem extends StatelessWidget {
               child: Icon(
                 selected ? filledIcon : icon,
                 key: ValueKey(selected),
-                color: Colors.white.withValues(alpha: selected ? 1.0 : 0.65),
+                color: foregroundColor.withValues(alpha: selected ? 1.0 : 0.65),
                 size: 24,
               ),
             ),
@@ -305,7 +310,7 @@ class _NavItem extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: (textTheme.labelSmall ?? const TextStyle()).copyWith(
-                color: Colors.white.withValues(alpha: selected ? 1.0 : 0.65),
+                color: foregroundColor.withValues(alpha: selected ? 1.0 : 0.65),
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 fontSize: 10,
               ),
@@ -326,17 +331,26 @@ class _MoreTab extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: cs.surface,
       appBar: AppBar(title: const Text('More')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
+          Text(
+            'Quick links',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
           _MoreCard(
             icon: Icons.sports_soccer,
             title: 'Activities',
             subtitle: 'Futsal, Car Wash, Training, Events',
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            isPrimary: true,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ActivitiesScreen()),
             ),
@@ -348,6 +362,7 @@ class _MoreTab extends StatelessWidget {
             subtitle: 'Who we are and what we stand for',
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const AboutScreen()),
             ),
@@ -359,6 +374,7 @@ class _MoreTab extends StatelessWidget {
             subtitle: 'Get in touch with us',
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ContactScreen()),
             ),
@@ -370,6 +386,7 @@ class _MoreTab extends StatelessWidget {
             subtitle: 'Profile, policies & rules',
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const SettingsScreen()),
             ),
@@ -387,6 +404,7 @@ class _MoreCard extends StatelessWidget {
     required this.subtitle,
     required this.iconColor,
     required this.iconBg,
+    required this.isPrimary,
     required this.onTap,
   });
 
@@ -395,47 +413,70 @@ class _MoreCard extends StatelessWidget {
   final String subtitle;
   final Color iconColor;
   final Color iconBg;
+  final bool isPrimary;
   final VoidCallback onTap;
+
+  static const _minHeight = 56.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: iconColor, size: 26),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+        ],
+      ),
+    );
+    if (isPrimary) {
+      return Card(
+        margin: EdgeInsets.zero,
+        color: cs.primaryContainer.withValues(alpha: 0.4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _minHeight),
+            child: content,
+          ),
+        ),
+      );
+    }
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: iconColor, size: 26),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
-            ],
-          ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _minHeight),
+          child: content,
         ),
       ),
     );

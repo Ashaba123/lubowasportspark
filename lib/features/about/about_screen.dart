@@ -7,7 +7,9 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
+      backgroundColor: cs.surface,
       appBar: AppBar(title: const Text('About Us')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -15,17 +15,26 @@ class SettingsScreen extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: cs.surface,
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
+          Text(
+            'Account & policies',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
           _SettingsCard(
             icon: Icons.person_outline,
             title: 'Profile',
             subtitle: 'Account & profile (coming soon)',
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            isPrimary: true,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
             ),
@@ -37,6 +46,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'How we handle your data and privacy',
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const PrivacyPolicyScreen()),
             ),
@@ -48,6 +58,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Participation, bookings, cancellations & conduct',
             iconColor: cs.primary,
             iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const LeagueBookingRulesScreen()),
             ),
@@ -59,6 +70,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Using the facilities safely and respectfully',
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ParkRulesScreen()),
             ),
@@ -76,6 +88,7 @@ class _SettingsCard extends StatelessWidget {
     required this.subtitle,
     required this.iconColor,
     required this.iconBg,
+    required this.isPrimary,
     required this.onTap,
   });
 
@@ -84,19 +97,18 @@ class _SettingsCard extends StatelessWidget {
   final String subtitle;
   final Color iconColor;
   final Color iconBg;
+  final bool isPrimary;
   final VoidCallback onTap;
+
+  static const _minHeight = 56.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+    final cs = theme.colorScheme;
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -116,15 +128,38 @@ class _SettingsCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
             ],
           ),
+    );
+    if (isPrimary) {
+      return Card(
+        margin: EdgeInsets.zero,
+        color: cs.primaryContainer.withValues(alpha: 0.4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: _minHeight),
+            child: content,
+          ),
+        ),
+      );
+    }
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _minHeight),
+          child: content,
         ),
       ),
     );

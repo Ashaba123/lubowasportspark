@@ -86,7 +86,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildBody() {
     if (_loading && _posts.isEmpty) {
-      return const Center(child: FootballLoader());
+      return _EventsSkeleton(theme: Theme.of(context));
     }
     if (_error != null && _posts.isEmpty) {
       return Center(
@@ -256,6 +256,64 @@ class _EventsScreenState extends State<EventsScreen> {
     } catch (_) {
       return iso;
     }
+  }
+}
+
+/// Skeleton loading state using theme colors. No per-frame rebuilds.
+class _EventsSkeleton extends StatelessWidget {
+  const _EventsSkeleton({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 140,
+                width: double.infinity,
+                color: cs.surfaceContainerHighest,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: theme.textTheme.titleMedium?.fontSize ?? 20,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: theme.textTheme.bodyMedium?.fontSize ?? 16,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
