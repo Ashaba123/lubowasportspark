@@ -326,31 +326,49 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
   }
 
-  Future<void> _refresh() async {
-    if (_repository == null) return;
-    try {
-      final list =
-          await _repository!.getByEmail(widget.email, forceRefresh: true);
-      if (!mounted) return;
-      setState(() => _bookings = list);
-    } catch (_) {}
+  @override
+  Widget build(BuildContext context) {
+    final repo = _repository;
+    // Fallback to a single-frame view if repository isn't ready yet.
+    if (repo == null) {
+      return _MyBookingsScaffold(
+        email: widget.email,
+        initialBookings: _bookings,
+      );
+    }
+
+    return StreamProvider<List<BookingItem>>.value(
+      initialData: _bookings,
+      value: repo.getBookingsStream(widget.email),
+      child: _MyBookingsScaffold(
+        email: widget.email,
+        initialBookings: _bookings,
+      ),
+    );
   }
+}
+
+class _MyBookingsScaffold extends StatelessWidget {
+  const _MyBookingsScaffold({
+    required this.email,
+    required this.initialBookings,
+  });
+
+  final String email;
+  final List<BookingItem> initialBookings;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final bookings = context.watch<List<BookingItem>>();
+    final isInitialEmpty = initialBookings.isEmpty && bookings.isEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My bookings'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _refresh,
-          ),
-        ],
       ),
-      body: _bookings.isEmpty
+      body: isInitialEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -358,29 +376,42 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   const AppLogo(size: 120),
                   const SizedBox(height: 16),
                   Text(
-                    'No bookings yet',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    'Loading your bookings...',
+                    style: theme.textTheme.titleMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
-                  ),
+                  const FootballLoader(size: 32),
                 ],
               ),
             )
           : RefreshIndicator(
               color: cs.primary,
-              onRefresh: _refresh,
+              onRefresh: () async {
+                // Underlying stream polls every few seconds; wait briefly to hint refresh.
+                await Future<void>.delayed(const Duration(seconds: 1));
+              },
               child: ListView.separated(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: _bookings.length,
+                itemCount: bookings.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (_, i) {
-                  final b = _bookings[i];
+                  if (i == 0) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          'Live — updates every few seconds',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  final b = bookings[i - 1];
                   return BookingCard(
                     booking: b,
                     onViewDetails: () => Navigator.of(context).push(

@@ -1,11 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'league_repository.dart';
 import 'models/league.dart';
 import 'public_league_content.dart';
 
 /// Public league view for non-logged-in users.
 class PublicLeagueScreen extends StatelessWidget {
-  const PublicLeagueScreen({super.key, required this.data});
+  const PublicLeagueScreen({
+    super.key,
+    required this.data,
+    this.repository,
+  });
+
+  final PublicLeagueResponse data;
+  final LeagueRepository? repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = repository;
+    if (repo == null) {
+      // Fallback to static snapshot if repository isn't provided.
+      return _PublicLeagueScaffold(data: data);
+    }
+    return Provider<LeagueRepository>.value(
+      value: repo,
+      child: StreamProvider<PublicLeagueResponse>.value(
+        initialData: data,
+        value: repo.getPublicLeagueStream(data.league.code),
+        child: _PublicLeagueStreamBody(initial: data),
+      ),
+    );
+  }
+}
+
+class _PublicLeagueStreamBody extends StatelessWidget {
+  const _PublicLeagueStreamBody({required this.initial});
+
+  final PublicLeagueResponse initial;
+
+  @override
+  Widget build(BuildContext context) {
+    final latest = context.watch<PublicLeagueResponse>();
+    return _PublicLeagueScaffold(data: latest);
+  }
+}
+
+class _PublicLeagueScaffold extends StatelessWidget {
+  const _PublicLeagueScaffold({required this.data});
 
   final PublicLeagueResponse data;
 
@@ -41,6 +83,20 @@ class PublicLeagueScreen extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(Icons.sports_soccer, size: 16, color: colorScheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Live — updates every few seconds',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           PublicLeagueContent(data: data),

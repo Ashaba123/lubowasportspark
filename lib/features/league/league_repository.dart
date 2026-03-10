@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../../core/api/api_client.dart';
@@ -25,6 +27,21 @@ class LeagueRepository {
     return PublicLeagueResponse.fromJson(data);
   }
 
+  /// Stream polling wrapper around [getPublicLeague], emitting updates every [interval].
+  Stream<PublicLeagueResponse> getPublicLeagueStream(
+    String code, {
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) {
+      return const Stream<PublicLeagueResponse>.empty();
+    }
+    return _poll<PublicLeagueResponse>(
+      () => getPublicLeague(trimmed, forceRefresh: true),
+      interval,
+    );
+  }
+
   /// GET /lubowa/v1/public/leagues/<code>/results?date=YYYY-MM-DD
   /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed.
   Future<PublicResultsResponse> getPublicResults(String code, {String? date, bool forceRefresh = false}) async {
@@ -37,6 +54,22 @@ class LeagueRepository {
     final data = response.data;
     if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
     return PublicResultsResponse.fromJson(data);
+  }
+
+  /// Stream polling wrapper around [getPublicResults], emitting updates every [interval].
+  Stream<PublicResultsResponse> getPublicResultsStream(
+    String code, {
+    String? date,
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) {
+      return const Stream<PublicResultsResponse>.empty();
+    }
+    return _poll<PublicResultsResponse>(
+      () => getPublicResults(trimmed, date: date, forceRefresh: true),
+      interval,
+    );
   }
 
   // —— Auth (JWT) ——
@@ -86,6 +119,16 @@ class LeagueRepository {
     return list.map((e) => LeagueModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Poll leagues every [interval] and emit updates as a stream.
+  Stream<List<LeagueModel>> getLeaguesStream({
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return _poll<List<LeagueModel>>(
+      () => getLeagues(forceRefresh: true),
+      interval,
+    );
+  }
+
   /// POST /lubowa/v1/leagues
   Future<LeagueModel> createLeague({required String name, int legs = 1, int? bookingId}) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -118,6 +161,17 @@ class LeagueRepository {
     return list.map((e) => TeamModel.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Poll teams for [leagueId] every [interval] and emit updates as a stream.
+  Stream<List<TeamModel>> getTeamsStream(
+    int leagueId, {
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return _poll<List<TeamModel>>(
+      () => getTeams(leagueId, forceRefresh: true),
+      interval,
+    );
+  }
+
   /// POST leagues/[id]/teams
   Future<TeamModel> addTeam(int leagueId, {required String name, int? leaderUserId}) async {
     final path = '${AppConstants.pathLubowaLeagues}/$leagueId/teams';
@@ -145,6 +199,17 @@ class LeagueRepository {
     }
     final list = _listFromPaginated(response.data);
     return list.map((e) => PlayerModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Poll players for [teamId] every [interval] and emit updates as a stream.
+  Stream<List<PlayerModel>> getTeamPlayersStream(
+    int teamId, {
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return _poll<List<PlayerModel>>(
+      () => getTeamPlayers(teamId, forceRefresh: true),
+      interval,
+    );
   }
 
   /// POST teams/[id]/players
@@ -199,6 +264,17 @@ class LeagueRepository {
     final list = response.data;
     if (list == null) return [];
     return list.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Poll fixtures for [leagueId] every [interval] and emit updates as a stream.
+  Stream<List<FixtureModel>> getFixturesStream(
+    int leagueId, {
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return _poll<List<FixtureModel>>(
+      () => getFixtures(leagueId, forceRefresh: true),
+      interval,
+    );
   }
 
   /// PATCH fixtures/[id]
@@ -258,6 +334,17 @@ class LeagueRepository {
     return list.map((e) => GoalLogEntry.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Poll goals for [fixtureId] every [interval] and emit updates as a stream.
+  Stream<List<GoalLogEntry>> getFixtureGoalsStream(
+    int fixtureId, {
+    Duration interval = const Duration(seconds: 3),
+  }) {
+    return _poll<List<GoalLogEntry>>(
+      () => getFixtureGoals(fixtureId, forceRefresh: true),
+      interval,
+    );
+  }
+
   /// PATCH fixtures/[fixtureId]/goals/[goalId] — update a single goal log entry.
   static List<dynamic> _listFromPaginated(dynamic raw) {
     if (raw == null) return [];
@@ -290,5 +377,32 @@ class LeagueRepository {
   /// POST leagues/[id]/fixtures/reset
   Future<void> resetFixtures(int leagueId) async {
     await _dio.post('${AppConstants.pathLubowaLeagues}/$leagueId/fixtures/reset');
+  }
+
+  Stream<T> _poll<T>(Future<T> Function() fetch, Duration interval) {
+    final controller = StreamController<T>();
+    Timer? timer;
+
+    Future<void> tick() async {
+      try {
+        final value = await fetch();
+        if (!controller.isClosed) controller.add(value);
+      } catch (e, s) {
+        if (!controller.isClosed) controller.addError(e, s);
+      }
+    }
+
+    controller.onListen = () {
+      tick();
+      timer = Timer.periodic(interval, (_) => tick());
+    };
+    controller.onCancel = () {
+      timer?.cancel();
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    };
+
+    return controller.stream;
   }
 }

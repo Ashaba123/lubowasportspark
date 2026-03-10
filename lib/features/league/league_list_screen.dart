@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
@@ -6,7 +7,7 @@ import 'league_detail_screen.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 
-class LeagueListScreen extends StatefulWidget {
+class LeagueListScreen extends StatelessWidget {
   const LeagueListScreen({
     super.key,
     required this.repository,
@@ -21,91 +22,83 @@ class LeagueListScreen extends StatefulWidget {
   final List<int> ledTeamIds;
 
   @override
-  State<LeagueListScreen> createState() => _LeagueListScreenState();
+  Widget build(BuildContext context) {
+    final title = filterManaged ? 'Leagues I manage' : 'Teams I lead';
+    return Provider<LeagueRepository>.value(
+      value: repository,
+      child: StreamProvider<List<LeagueModel>>.value(
+        initialData: const <LeagueModel>[],
+        value: repository.getLeaguesStream(),
+        child: _LeagueListScaffold(
+          title: title,
+          filterManaged: filterManaged,
+          managedIds: managedIds,
+        ),
+      ),
+    );
+  }
 }
 
-class _LeagueListScreenState extends State<LeagueListScreen> {
-  List<LeagueModel> _leagues = [];
-  bool _loading = true;
-  String? _error;
+class _LeagueListScaffold extends StatelessWidget {
+  const _LeagueListScaffold({
+    required this.title,
+    required this.filterManaged,
+    required this.managedIds,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final list = await widget.repository.getLeagues(forceRefresh: true);
-      if (!mounted) return;
-      final filtered = widget.filterManaged
-          ? list.where((l) => widget.managedIds.contains(l.id)).toList()
-          : list;
-      setState(() {
-        _leagues = filtered;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
-    }
-  }
+  final String title;
+  final bool filterManaged;
+  final List<int> managedIds;
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.filterManaged ? 'Leagues I manage' : 'Teams I lead';
-    if (_loading) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final repository = context.read<LeagueRepository>();
+    final allLeagues = context.watch<List<LeagueModel>>();
+    final leagues = filterManaged
+        ? allLeagues.where((l) => managedIds.contains(l.id)).toList()
+        : allLeagues;
+
+    if (allLeagues.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
         body: const Center(child: FootballLoader()),
       );
     }
-    if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(title)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-                const SizedBox(height: 16),
-                Text(_error!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('Retry')),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: RefreshIndicator(
-        onRefresh: _load,
-        child: _leagues.isEmpty
+        onRefresh: () async {
+          // Underlying stream polls every few seconds; wait briefly to hint refresh.
+          await Future<void>.delayed(const Duration(seconds: 1));
+        },
+        child: leagues.isEmpty
             ? ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Live — updates every few seconds',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   const SizedBox(height: 48),
                   Icon(Icons.emoji_events_outlined, size: 64, color: colorScheme.onSurfaceVariant),
                   const SizedBox(height: 24),
                   Text(
-                    widget.filterManaged ? 'No leagues yet' : 'No teams yet',
+                    filterManaged ? 'No leagues yet' : 'No teams yet',
                     style: theme.textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    widget.filterManaged
+                    filterManaged
                         ? 'Create a league from the Leagues tab, or ask park staff to add you as a league manager.'
                         : 'You\'ll see leagues here once you\'re set as a team leader.',
                     style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -115,14 +108,28 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
               )
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                itemCount: _leagues.length,
+                itemCount: leagues.length + 1,
                 itemBuilder: (_, i) {
-                  final l = _leagues[i];
+                  if (i == 0) {
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Live — updates every few seconds',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  final l = leagues[i - 1];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
                       onTap: () => Navigator.of(context).push(
-                        fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: widget.repository)),
+                        fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: repository)),
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
@@ -144,7 +151,10 @@ class _LeagueListScreenState extends State<LeagueListScreen> {
                                 children: [
                                   Text(l.name, style: theme.textTheme.titleMedium),
                                   const SizedBox(height: 2),
-                                  Text('Code: ${l.code}', style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant)),
+                                  Text(
+                                    'Code: ${l.code}',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
                                 ],
                               ),
                             ),

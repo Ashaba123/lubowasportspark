@@ -52,7 +52,12 @@ class _LeagueScreenState extends State<LeagueScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
       await Navigator.of(context).push(
-        fadeSlideRoute(builder: (_) => PublicLeagueScreen(data: data)),
+        fadeSlideRoute(
+          builder: (_) => PublicLeagueScreen(
+            data: data,
+            repository: _repository,
+          ),
+        ),
       );
     } catch (e, stack) {
       if (!mounted) return;
