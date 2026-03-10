@@ -287,17 +287,9 @@ void main() {
     await tester.tap(find.text('Test League'));
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
-    await tester.tap(find.text('View fixtures'));
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-
-    expect(find.textContaining('Fixtures'), findsOneWidget);
-
-    await tester.tap(find.text('Generate'));
-    await tester.pumpAndSettle(const Duration(seconds: 5));
-
-    verify(() => mockDio.post<List<dynamic>>(
-          '${AppConstants.pathLubowaLeagues}/1/fixtures/generate',
-        )).called(1);
+    // Fixtures are now managed from a dedicated fixtures screen only; the
+    // league detail screen no longer shows a "View fixtures" button.
+    expect(find.text('View fixtures'), findsNothing);
   });
 
   testWidgets('Add player dialog submits player name', (WidgetTester tester) async {

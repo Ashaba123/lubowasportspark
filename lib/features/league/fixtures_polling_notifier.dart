@@ -28,6 +28,15 @@ class FixturesPollingNotifier extends ChangeNotifier {
   bool get loading => _loading;
   Object? get error => _error;
 
+  /// Replace fixtures list with [list] and notify listeners immediately.
+  /// Used after generate/reset so UI updates even if polling hasn't fired yet.
+  void setFixtures(List<FixtureModel> list) {
+    _fixtures = List.from(list);
+    _loading = false;
+    _error = null;
+    notifyListeners();
+  }
+
   void start() {
     _load();
     _timer = Timer.periodic(pollInterval, (_) => _load());

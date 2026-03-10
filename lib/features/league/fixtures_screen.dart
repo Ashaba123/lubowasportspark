@@ -46,8 +46,12 @@ class FixturesScreen extends StatelessWidget {
                           final messenger = ScaffoldMessenger.of(context);
                           final notifier = context.read<FixturesPollingNotifier>();
                           try {
-                            await repository.generateFixtures(league.id);
-                            await notifier.refresh();
+                            final generated = await repository.generateFixtures(league.id);
+                            if (generated.isNotEmpty) {
+                              notifier.setFixtures(generated);
+                            } else {
+                              await notifier.refresh();
+                            }
                             if (context.mounted) {
                               messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
                             }

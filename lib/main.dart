@@ -356,8 +356,8 @@ class _MoreTab extends StatelessWidget {
             title: 'Activities',
             subtitle: 'Futsal, Car Wash, Training, Events',
             iconColor: cs.primary,
-            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
-            isPrimary: true,
+            iconBg: cs.primary.withValues(alpha: 0.12),
+            isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ActivitiesScreen()),
             ),

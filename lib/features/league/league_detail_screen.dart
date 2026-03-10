@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
-import 'fixtures_polling_notifier.dart';
-import 'fixtures_screen.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 import 'team_detail_screen.dart';
@@ -21,7 +18,6 @@ class LeagueDetailScreen extends StatefulWidget {
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   List<TeamModel> _teams = [];
-  List<FixtureModel> _fixtures = [];
   bool _loading = true;
 
   @override
@@ -34,14 +30,9 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     setState(() => _loading = true);
     try {
       final teams = await widget.repository.getTeams(widget.league.id, forceRefresh: true);
-      List<FixtureModel> fixtures = [];
-      try {
-        fixtures = await widget.repository.getFixtures(widget.league.id, forceRefresh: true);
-      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _teams = teams;
-        _fixtures = fixtures;
         _loading = false;
       });
     } catch (_) {
@@ -65,6 +56,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
             Card(
@@ -123,38 +115,6 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                     ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
-            Text('Fixtures', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              'You (league creator) or park staff can generate fixtures. Needs at least 2 teams.',
-              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              onPressed: () => Navigator.of(context)
-                  .push(
-                    fadeSlideRoute(
-                      builder: (_) => ChangeNotifierProvider(
-                        create: (_) => FixturesPollingNotifier(
-                          leagueId: widget.league.id,
-                          repository: widget.repository,
-                          initialFixtures: _fixtures,
-                        )..start(),
-                        child: FixturesScreen(
-                          league: widget.league,
-                          repository: widget.repository,
-                        ),
-                      ),
-                    ),
-                  )
-                  .then((_) {
-                if (mounted) _load();
-              }),
-              icon: const Icon(Icons.calendar_view_month),
-              label: const Text('View fixtures'),
-              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
             ),
           ],
         ),

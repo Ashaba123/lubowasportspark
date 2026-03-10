@@ -54,6 +54,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           player: player,
           teamName: widget.team.name,
           leagueName: widget.league.name,
+          repository: widget.repository,
         ),
       ),
     );

@@ -9,6 +9,7 @@ import '../../core/auth/token_storage.dart';
 import '../../features/league/league_repository.dart';
 import '../../features/league/login_screen.dart';
 import '../../features/league/models/league.dart';
+import '../../features/league/league_screen.dart';
 
 /// Tries to decode JWT payload and return a display name (user_nicename, display_name, or username).
 String? _usernameFromToken(String token) {
@@ -125,6 +126,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (mounted && result == true) _checkAuth();
   }
 
+  void _openPublicLeagues() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LeagueScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -181,7 +188,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     mePlayer: _mePlayer,
                                     roles: _roles,
                                   )
-                                : _LoggedOutHeader(onLogin: _openLogin),
+                                : _LoggedOutHeader(onViewLeagues: _openPublicLeagues),
                             const SizedBox(height: 16),
                             _SettingsSection(
                               hasToken: _hasToken,
@@ -336,9 +343,9 @@ class _ProfileStat extends StatelessWidget {
 }
 
 class _LoggedOutHeader extends StatelessWidget {
-  const _LoggedOutHeader({required this.onLogin});
+  const _LoggedOutHeader({required this.onViewLeagues});
 
-  final VoidCallback onLogin;
+  final VoidCallback onViewLeagues;
 
   @override
   Widget build(BuildContext context) {
@@ -365,12 +372,12 @@ class _LoggedOutHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Guest',
+                        'Public leagues & tables',
                         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Log in to manage leagues and track your goals.',
+                        'View league tables and results without logging in.',
                         style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                       ),
                     ],
@@ -380,9 +387,9 @@ class _LoggedOutHeader extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: onLogin,
-              icon: const Icon(Icons.login),
-              label: const Text('Log in'),
+              onPressed: onViewLeagues,
+              icon: const Icon(Icons.emoji_events_outlined),
+              label: const Text('View leagues & tables'),
               style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
             ),
           ],
