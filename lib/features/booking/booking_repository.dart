@@ -24,6 +24,28 @@ class BookingRepository {
     return BookingSubmitResponse.fromJson(data);
   }
 
+  /// GET /lubowa/v1/bookings/slots?date=...&service=... — returns list of { time_slot, status } for that date+service.
+  /// Slots with status pending or approved are considered taken.
+  Future<List<String>> getBookedSlots(String date, String service) async {
+    final response = await _dio.get<dynamic>(
+      '${AppConstants.pathLubowaBookings}/slots',
+      queryParameters: {'date': date, 'service': service},
+    );
+    final raw = response.data;
+    if (raw is! List || raw.isEmpty) return [];
+    final taken = <String>[];
+    for (final e in raw) {
+      if (e is Map<String, dynamic>) {
+        final status = e['status'] as String?;
+        if (status == 'pending' || status == 'approved') {
+          final slot = e['time_slot'] as String?;
+          if (slot != null && slot.isNotEmpty) taken.add(slot);
+        }
+      }
+    }
+    return taken;
+  }
+
   /// GET /lubowa/v1/bookings?contact_email=... — list bookings (paginated: response has data + meta).
   /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after creating a booking).
   Future<List<BookingItem>> getByEmail(String contactEmail, {bool forceRefresh = false}) async {

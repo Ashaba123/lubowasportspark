@@ -18,8 +18,15 @@ String userFriendlyApiErrorMessage(Object? error) {
         return 'Cannot reach the server. Check your internet connection and try again.';
       case DioExceptionType.badResponse:
         final status = error.response?.statusCode;
+        final body = error.response?.data;
+        final serverMessage = _serverMessage(body);
         if (status == 401 || status == 403) {
           return 'Wrong username or password.';
+        }
+        if (status == 400 && serverMessage != null) return serverMessage;
+        if (status == 409 && serverMessage != null) return serverMessage;
+        if (status != null && status >= 400 && status < 500 && serverMessage != null) {
+          return serverMessage;
         }
         return 'Server error. Please try again later.';
       default:
@@ -30,4 +37,17 @@ String userFriendlyApiErrorMessage(Object? error) {
     return 'Cannot reach the server. Check your internet connection and try again.';
   }
   return 'Something went wrong. Please try again.';
+}
+
+String? _serverMessage(dynamic data) {
+  if (data is Map<String, dynamic>) {
+    final err = data['error'];
+    if (err is Map<String, dynamic>) {
+      final m = err['message'];
+      if (m is String && m.trim().isNotEmpty) return m.trim();
+    }
+    final m = data['message'];
+    if (m is String && m.trim().isNotEmpty) return m.trim();
+  }
+  return null;
 }

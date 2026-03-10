@@ -135,75 +135,39 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              cs.primary,
-              cs.secondary,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: _loading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            icon: const Icon(Icons.arrow_back_ios_new),
-                            color: cs.onPrimary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Profile',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: cs.onPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Spacer(),
-                          Icon(Icons.person_outline, color: cs.onPrimary),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _hasToken
-                                ? _ProfileHeader(
-                                    username: _username,
-                                    mePlayer: _mePlayer,
-                                    roles: _roles,
-                                  )
-                                : _LoggedOutHeader(onViewLeagues: _openPublicLeagues),
-                            const SizedBox(height: 16),
-                            _SettingsSection(
-                              hasToken: _hasToken,
-                              leagueUserSummary: _leagueUserSummary,
-                              onLogin: _openLogin,
-                              onLogout: _logout,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_ios_new),
         ),
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _hasToken
+                      ? _ProfileHeader(
+                          username: _username,
+                          mePlayer: _mePlayer,
+                          roles: _roles,
+                        )
+                      : _LoggedOutHeader(onViewLeagues: _openPublicLeagues),
+                  const SizedBox(height: 16),
+                  _SettingsSection(
+                    hasToken: _hasToken,
+                    leagueUserSummary: _leagueUserSummary,
+                    onLogin: _openLogin,
+                    onLogout: _logout,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -237,7 +201,7 @@ class _ProfileHeader extends StatelessWidget {
     final teams = roles?.ledTeamIds.length ?? 0;
 
     return Card(
-      color: cs.surface.withValues(alpha: 0.96),
+      color: cs.surface.withValues(alpha: 0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -352,7 +316,7 @@ class _LoggedOutHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Card(
-      color: cs.surface.withValues(alpha: 0.96),
+      color: cs.surface.withValues(alpha: 0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),

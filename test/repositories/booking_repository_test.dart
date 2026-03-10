@@ -86,5 +86,32 @@ void main() {
       expect(list, isEmpty);
       verifyNever(() => mockDio.get<dynamic>(any(), queryParameters: any(named: 'queryParameters')));
     });
+
+    test('getBookedSlots calls GET /lubowa/v1/bookings/slots with date and service', () async {
+      when(() => mockDio.get<dynamic>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+          )).thenAnswer((_) async => responseOk<dynamic>([]));
+
+      await repository.getBookedSlots('2025-03-15', 'Football pitch');
+
+      verify(() => mockDio.get<dynamic>(
+            '${AppConstants.pathLubowaBookings}/slots',
+            queryParameters: {'date': '2025-03-15', 'service': 'Football pitch'},
+          )).called(1);
+    });
+
+    test('getBookedSlots returns only pending and approved slots', () async {
+      when(() => mockDio.get<dynamic>(any(), queryParameters: any(named: 'queryParameters')))
+          .thenAnswer((_) async => responseOk<dynamic>([
+                {'time_slot': '10:00', 'status': 'pending'},
+                {'time_slot': '11:00', 'status': 'approved'},
+                {'time_slot': '12:00', 'status': 'canceled'},
+              ]));
+
+      final slots = await repository.getBookedSlots('2025-03-15', 'Padel');
+
+      expect(slots, ['10:00', '11:00']);
+    });
   });
 }

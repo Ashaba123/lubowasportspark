@@ -58,6 +58,8 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedService;
   bool _submitting = false;
   String? _error;
+  List<String> _bookedSlots = [];
+  bool _loadingSlots = false;
 
   static const _timeSlots = [
     '09:00',
@@ -144,6 +146,30 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
+  Future<void> _loadBookedSlots() async {
+    if (_repository == null || _selectedDate == null || _selectedService == null) return;
+    setState(() => _loadingSlots = true);
+    try {
+      final dateStr =
+          '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+      final taken = await _repository!.getBookedSlots(dateStr, _selectedService!);
+      if (!mounted) return;
+      setState(() {
+        _bookedSlots = taken;
+        _loadingSlots = false;
+        if (_selectedTimeSlot != null && taken.contains(_selectedTimeSlot)) {
+          _selectedTimeSlot = null;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _bookedSlots = [];
+        _loadingSlots = false;
+      });
+    }
+  }
+
   void _resetFlow() {
     setState(() {
       _step = _BookingStep.service;
@@ -151,6 +177,7 @@ class _BookingScreenState extends State<BookingScreen> {
       _selectedDate = null;
       _selectedTimeSlot = null;
       _selectedService = null;
+      _bookedSlots = [];
       _nameCtrl.clear();
       _phoneCtrl.clear();
       _emailCtrl.clear();
@@ -326,7 +353,10 @@ class _BookingScreenState extends State<BookingScreen> {
                   firstDate: DateTime.now(),
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
-                if (date != null) setState(() => _selectedDate = date);
+                if (date != null) {
+                  setState(() => _selectedDate = date);
+                  _loadBookedSlots();
+                }
               },
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -361,21 +391,30 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           const SizedBox(height: 16),
           Text('Time slot', style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _timeSlots.map((slot) {
-              final selected = _selectedTimeSlot == slot;
-              return FilterChip(
-                selected: selected,
-                label: Text(_formatTimeSlot(slot)),
-                onSelected: (v) => setState(() => _selectedTimeSlot = v ? slot : null),
-                selectedColor: colorScheme.primaryContainer,
-                checkmarkColor: colorScheme.primary,
-              );
-            }).toList(),
-          ),
+          if (_loadingSlots)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+            )
+          else ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _timeSlots.map((slot) {
+                final selected = _selectedTimeSlot == slot;
+                final taken = _bookedSlots.contains(slot);
+                return FilterChip(
+                  selected: selected && !taken,
+                  label: Text(_formatTimeSlot(slot)),
+                  onSelected: taken ? null : (v) => setState(() => _selectedTimeSlot = v ? slot : null),
+                  selectedColor: colorScheme.primaryContainer,
+                  checkmarkColor: colorScheme.primary,
+                  disabledColor: colorScheme.surfaceContainerHighest,
+                );
+              }).toList(),
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: colorScheme.error)),
@@ -839,6 +878,7 @@ class _MyBookingsScreen extends StatefulWidget {
 class _MyBookingsScreenState extends State<_MyBookingsScreen> {
   late List<BookingItem> _bookings;
   BookingRepository? _repository;
+  bool _didInitialRefresh = false;
 
   @override
   void initState() {
@@ -849,7 +889,16 @@ class _MyBookingsScreenState extends State<_MyBookingsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
+    if (_repository == null) {
+      _repository = BookingRepository(apiClient: context.read<ApiClient>());
+      // Refetch so a booking just created shows immediately.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_didInitialRefresh && mounted && _repository != null) {
+          _didInitialRefresh = true;
+          _refresh();
+        }
+      });
+    }
   }
 
   Future<void> _refresh() async {
