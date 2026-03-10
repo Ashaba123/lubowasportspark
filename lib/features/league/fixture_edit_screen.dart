@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../shared/football_loader.dart';
+import '../../shared/page_transitions.dart';
+import 'fixture_goals_screen.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 
@@ -14,7 +16,7 @@ class FixtureEditScreen extends StatefulWidget {
 
   final FixtureModel fixture;
   final LeagueRepository repository;
-  final Future<void> Function() onSaved;
+  final void Function(FixtureModel updated) onSaved;
 
   @override
   State<FixtureEditScreen> createState() => _FixtureEditScreenState();
@@ -49,9 +51,15 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
-      await widget.repository.updateFixture(widget.fixture.id, homeGoals: h, awayGoals: a);
-      if (mounted) widget.onSaved();
-      if (mounted) Navigator.of(context).pop();
+      final updated = await widget.repository.updateFixture(
+        widget.fixture.id,
+        homeGoals: h,
+        awayGoals: a,
+      );
+      if (mounted) {
+        widget.onSaved(updated);
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     } finally {
@@ -66,14 +74,16 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
-      await widget.repository.updateFixture(
+      final updated = await widget.repository.updateFixture(
         widget.fixture.id,
         homeGoals: h,
         awayGoals: a,
         resultConfirmed: 1,
       );
-      if (mounted) widget.onSaved();
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        widget.onSaved(updated);
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     } finally {
@@ -117,6 +127,22 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                fadeSlideRoute(
+                  builder: (_) => FixtureGoalsScreen(
+                    fixture: widget.fixture,
+                    repository: widget.repository,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.sports_score),
+            label: const Text('Goal log'),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
           ),
           if (!widget.fixture.isFullTime) ...[
             const SizedBox(height: 24),

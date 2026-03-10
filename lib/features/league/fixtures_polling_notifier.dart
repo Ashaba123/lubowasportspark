@@ -37,6 +37,15 @@ class FixturesPollingNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update a single [fixture] in the list and notify listeners.
+  /// Used after editing score or marking full time so UI updates immediately.
+  void updateFixture(FixtureModel fixture) {
+    final index = _fixtures.indexWhere((f) => f.id == fixture.id);
+    if (index == -1) return;
+    _fixtures[index] = fixture;
+    notifyListeners();
+  }
+
   void start() {
     _load();
     _timer = Timer.periodic(pollInterval, (_) => _load());

@@ -25,12 +25,14 @@ class PlayerViewScreen extends StatefulWidget {
 
 class _PlayerViewScreenState extends State<PlayerViewScreen> {
   late int _goals;
+  late String _playerName;
   bool _updating = false;
 
   @override
   void initState() {
     super.initState();
     _goals = widget.player.goals;
+    _playerName = widget.player.name;
   }
 
   Future<void> _showAddGoalsDialog() async {
@@ -97,12 +99,145 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
     }
   }
 
+  Future<void> _renamePlayer() async {
+    final nameCtrl = TextEditingController(text: _playerName);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename player'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(labelText: 'Player name'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              if (nameCtrl.text.trim().isEmpty) return;
+              Navigator.of(ctx).pop(true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _updating = true);
+    try {
+      final updated = await widget.repository.updatePlayer(
+        widget.player.id,
+        name: nameCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _playerName = updated.name;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Player updated')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _updating = false);
+      }
+    }
+  }
+
+  Future<void> _deletePlayer() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete player'),
+        content: const Text('Are you sure you want to delete this player? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _updating = true);
+    try {
+      await widget.repository.deletePlayer(widget.player.id);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Player deleted')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        setState(() => _updating = false);
+      }
+    }
+  }
+
+  Future<void> _resetGoals() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset goals'),
+        content: const Text('Set this player\'s goals back to 0?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    setState(() => _updating = true);
+    try {
+      final updated = await widget.repository.updatePlayer(widget.player.id, goals: 0);
+      if (!mounted) return;
+      setState(() {
+        _goals = updated.goals;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Goals reset')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _updating = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.player.name)),
+      appBar: AppBar(
+        title: Text(_playerName),
+        actions: [
+          IconButton(
+            tooltip: 'Rename player',
+            icon: const Icon(Icons.edit),
+            onPressed: _updating ? null : _renamePlayer,
+          ),
+          IconButton(
+            tooltip: 'Delete player',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _updating ? null : _deletePlayer,
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _updating ? null : _showAddGoalsDialog,
         icon: const Icon(Icons.add),
@@ -128,7 +263,7 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(widget.player.name, style: theme.textTheme.titleLarge),
+                  Text(_playerName, style: theme.textTheme.titleLarge),
                   const SizedBox(height: 4),
                   Text(
                     'Goals',
@@ -160,14 +295,27 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
                 children: [
-                  StatChip(
-                    value: '$_goals',
-                    label: 'Goals',
-                    theme: theme,
-                    colorScheme: colorScheme,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      StatChip(
+                        value: '$_goals',
+                        label: 'Goals',
+                        theme: theme,
+                        colorScheme: colorScheme,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _updating ? null : _resetGoals,
+                      icon: const Icon(Icons.restore),
+                      label: const Text('Reset goals'),
+                    ),
                   ),
                 ],
               ),

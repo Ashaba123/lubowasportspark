@@ -119,7 +119,7 @@ class FixturesScreen extends StatelessWidget {
                                       builder: (_) => FixtureEditScreen(
                                         fixture: f,
                                         repository: repository,
-                                        onSaved: () => context.read<FixturesPollingNotifier>().refresh(),
+                                        onSaved: (updated) => context.read<FixturesPollingNotifier>().updateFixture(updated),
                                       ),
                                     ),
                                   );

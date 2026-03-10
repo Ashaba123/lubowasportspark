@@ -379,6 +379,55 @@ class LeagueRepository {
     await _dio.post('${AppConstants.pathLubowaLeagues}/$leagueId/fixtures/reset');
   }
 
+  /// PATCH leagues/[id]
+  Future<LeagueModel> updateLeague(
+    int leagueId, {
+    String? name,
+    int? legs,
+  }) async {
+    final path = '${AppConstants.pathLubowaLeagues}/$leagueId';
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (legs != null) body['legs'] = legs;
+    final response = await _dio.patch<Map<String, dynamic>>(path, data: body);
+    final data = response.data;
+    if (data == null) {
+      throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
+    }
+    return LeagueModel.fromJson(data);
+  }
+
+  /// DELETE leagues/[id]
+  Future<void> deleteLeague(int leagueId) async {
+    final path = '${AppConstants.pathLubowaLeagues}/$leagueId';
+    await _dio.delete(path);
+  }
+
+  /// PATCH teams/[id]
+  Future<TeamModel> updateTeam(
+    int teamId, {
+    String? name,
+    int? leaderUserId,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/lubowa/v1/teams/$teamId',
+      data: {
+        if (name != null) 'name': name,
+        if (leaderUserId != null) 'leader_user_id': leaderUserId,
+      },
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
+    }
+    return TeamModel.fromJson(data);
+  }
+
+  /// DELETE teams/[id]
+  Future<void> deleteTeam(int teamId) async {
+    await _dio.delete('/lubowa/v1/teams/$teamId');
+  }
+
   Stream<T> _poll<T>(Future<T> Function() fetch, Duration interval) {
     final controller = StreamController<T>();
     Timer? timer;
