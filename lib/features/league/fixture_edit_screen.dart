@@ -1,0 +1,179 @@
+import 'package:flutter/material.dart';
+
+import '../../shared/football_loader.dart';
+import 'league_repository.dart';
+import 'models/league.dart';
+
+class FixtureEditScreen extends StatefulWidget {
+  const FixtureEditScreen({
+    super.key,
+    required this.fixture,
+    required this.repository,
+    required this.onSaved,
+  });
+
+  final FixtureModel fixture;
+  final LeagueRepository repository;
+  final Future<void> Function() onSaved;
+
+  @override
+  State<FixtureEditScreen> createState() => _FixtureEditScreenState();
+}
+
+class _FixtureEditScreenState extends State<FixtureEditScreen> {
+  late final TextEditingController _homeCtrl;
+  late final TextEditingController _awayCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _homeCtrl = TextEditingController(text: '${widget.fixture.homeGoals ?? 0}');
+    _awayCtrl = TextEditingController(text: '${widget.fixture.awayGoals ?? 0}');
+  }
+
+  @override
+  void dispose() {
+    _homeCtrl.dispose();
+    _awayCtrl.dispose();
+    super.dispose();
+  }
+
+  int get _homeGoals => int.tryParse(_homeCtrl.text) ?? 0;
+  int get _awayGoals => int.tryParse(_awayCtrl.text) ?? 0;
+
+  Future<void> _save() async {
+    if (widget.fixture.isFullTime) return;
+    final h = _homeGoals;
+    final a = _awayGoals;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _saving = true);
+    try {
+      await widget.repository.updateFixture(widget.fixture.id, homeGoals: h, awayGoals: a);
+      if (mounted) widget.onSaved();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _markFullTime() async {
+    if (widget.fixture.isFullTime) return;
+    final h = _homeGoals;
+    final a = _awayGoals;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _saving = true);
+    try {
+      await widget.repository.updateFixture(
+        widget.fixture.id,
+        homeGoals: h,
+        awayGoals: a,
+        resultConfirmed: 1,
+      );
+      if (mounted) widget.onSaved();
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edit fixture')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text(
+                    '${widget.fixture.homeTeamName ?? "Home"} vs ${widget.fixture.awayTeamName ?? "Away"}',
+                    style: theme.textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  if (widget.fixture.isFullTime) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Full time — score locked',
+                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.primary),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (!widget.fixture.isFullTime) ...[
+            const SizedBox(height: 24),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _homeCtrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          labelText: widget.fixture.homeTeamName ?? 'Home',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '–',
+                        style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _awayCtrl,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          labelText: widget.fixture.awayTeamName ?? 'Away',
+                          alignLabelWithHint: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              child: _saving ? const FootballLoader(size: 22) : const Text('Save score'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _saving ? null : _markFullTime,
+              style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              child: const Text('Mark full time'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
