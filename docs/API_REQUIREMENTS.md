@@ -73,9 +73,11 @@ App screens that mirror the website use the same WordPress **pages** as the site
 | Item | Value |
 |------|--------|
 | **Submit** | POST `/lubowa/v1/bookings` |
-| **Request body** | `{ "date": "YYYY-MM-DD", "time_slot": "...", "contact_name": "...", "contact_phone": "...", "contact_email": "...", "notes": "..." }` |
-| **Response** | 201 + `{ "id": <int>, "status": "pending" }` |
-| **List my bookings** | GET `/lubowa/v1/bookings?contact_email=<email>` — returns user’s `[{ id, date, time_slot, contact_name, status, created_at }, ...]` (no auth) |
+| **Request body** | `{ "date": "YYYY-MM-DD", "time_slot": "...", "contact_name": "...", "contact_phone": "...", "contact_email": "...", "notes": "...", "service": "..." }` |
+| **Uniqueness** | Each `(date, time_slot, service)` combination can only be booked once. If another user books the same slot first, the API returns 409 with `error.code = "slot_unavailable"`. |
+| **Response** | 201 + `{ "id": <int>, "status": "pending" }` on success; 409 + `{ "error": { "code": "slot_unavailable", "message": "This time slot is no longer available. Please choose another time." } }` if the slot is already taken. |
+| **List my bookings** | GET `/lubowa/v1/bookings?contact_email=<email>` — returns user’s `[{ id, date, time_slot, contact_name, service, status, created_at }, ...]` (no auth) |
+| **Booked slots for a day/service** | GET `/lubowa/v1/bookings/slots?date=YYYY-MM-DD&service=...` — returns `[{ "time_slot": "...", "status": "pending" | "approved" | "canceled" | "rejected" }, ...]` for that date/service. Optional `status` query param can filter by one status. Use this to disable already-booked slots in the app UI. |
 | **Who** | Submit: public. List: public (by contact) or optional simple auth |
 
 Bookings are submitted from the mobile app; admin sees them under **Lubowa → App Bookings** in WordPress. (My bookings: GET with contact_email; “My bookings” see table above.)
