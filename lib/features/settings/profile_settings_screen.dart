@@ -9,7 +9,8 @@ import '../../core/auth/token_storage.dart';
 import '../../features/league/league_repository.dart';
 import '../../features/league/login_screen.dart';
 import '../../features/league/models/league.dart';
-import '../../features/league/league_screen.dart';
+import '../../features/league/public_league_view_screen.dart';
+import '../../shared/page_transitions.dart';
 
 /// Tries to decode JWT payload and return a display name (user_nicename, display_name, or username).
 String? _usernameFromToken(String token) {
@@ -128,14 +129,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   void _openPublicLeagues() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LeagueScreen()),
+      fadeSlideRoute(builder: (_) => const PublicLeagueViewScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),

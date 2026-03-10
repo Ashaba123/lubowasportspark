@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
+import 'fixtures_polling_notifier.dart';
+import 'fixtures_screen.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 import 'team_detail_screen.dart';
@@ -132,7 +135,61 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Text('Fixtures', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                FilledButton.tonalIcon(
+                  onPressed: _teams.length < 2
+                      ? null
+                      : () => _openFixtures(context),
+                  icon: const Icon(Icons.calendar_month, size: 20),
+                  label: const Text('Open fixtures'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_teams.length < 2)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Add at least 2 teams to generate fixtures.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+              )
+            else
+              Card(
+                child: ListTile(
+                  leading: Icon(Icons.sports_soccer_outlined, color: colorScheme.primary),
+                  title: Text(
+                    'Generate fixtures, edit scores, add goals, mark full time',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _openFixtures(context),
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _openFixtures(BuildContext context) {
+    if (_teams.length < 2) return;
+    Navigator.of(context).push(
+      fadeSlideRoute(
+        builder: (_) => ChangeNotifierProvider<FixturesPollingNotifier>(
+          create: (_) => FixturesPollingNotifier(
+            leagueId: widget.league.id,
+            repository: widget.repository,
+          )..start(),
+          child: FixturesScreen(
+            league: widget.league,
+            repository: widget.repository,
+          ),
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/api_error_message.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'fixture_goals_screen.dart';
@@ -56,12 +57,16 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         homeGoals: h,
         awayGoals: a,
       );
+      if (!mounted) return;
+      if ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0) {
+        await _showAssignGoalsDialog(updated);
+      }
       if (mounted) {
         widget.onSaved(updated);
         Navigator.of(context).pop();
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -80,15 +85,29 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         awayGoals: a,
         resultConfirmed: 1,
       );
+      if (!mounted) return;
+      if ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0) {
+        await _showAssignGoalsDialog(updated);
+      }
       if (mounted) {
         widget.onSaved(updated);
         Navigator.of(context).pop();
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _showAssignGoalsDialog(FixtureModel updated) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _AssignGoalsDialog(
+        fixture: updated,
+        repository: widget.repository,
+      ),
+    );
   }
 
   @override
@@ -199,6 +218,205 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Dialog to assign fixture goals to players (home/away) after saving score.
+class _AssignGoalsDialog extends StatefulWidget {
+  const _AssignGoalsDialog({
+    required this.fixture,
+    required this.repository,
+  });
+
+  final FixtureModel fixture;
+  final LeagueRepository repository;
+
+  @override
+  State<_AssignGoalsDialog> createState() => _AssignGoalsDialogState();
+}
+
+class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
+  List<PlayerModel> _homePlayers = [];
+  List<PlayerModel> _awayPlayers = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlayers();
+  }
+
+  Future<void> _loadPlayers() async {
+    try {
+      final home = await widget.repository.getTeamPlayers(
+        widget.fixture.homeTeamId,
+        forceRefresh: true,
+      );
+      final away = await widget.repository.getTeamPlayers(
+        widget.fixture.awayTeamId,
+        forceRefresh: true,
+      );
+      if (!mounted) return;
+      setState(() {
+        _homePlayers = home..sort((a, b) => a.name.compareTo(b.name));
+        _awayPlayers = away..sort((a, b) => a.name.compareTo(b.name));
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _addGoalForTeam(bool isHome) async {
+    final players = isHome ? _homePlayers : _awayPlayers;
+    if (players.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Add players to this team first')),
+        );
+      }
+      return;
+    }
+    PlayerModel? selected = players.first;
+    final goalsCtrl = TextEditingController(text: '1');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Add goals — ${isHome ? widget.fixture.homeTeamName ?? "Home" : widget.fixture.awayTeamName ?? "Away"}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<PlayerModel>(
+                value: selected,
+                decoration: const InputDecoration(labelText: 'Player'),
+                items: players
+                    .map(
+                      (p) => DropdownMenuItem(
+                        value: p,
+                        child: Text(p.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setDialogState(() => selected = v),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: goalsCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Goals'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final n = int.tryParse(goalsCtrl.text.trim());
+                if (n == null || n < 1 || selected == null) return;
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok != true || !mounted || selected == null) return;
+    final player = selected!;
+    final n = int.tryParse(goalsCtrl.text.trim());
+    if (n == null || n < 1) return;
+    try {
+      await widget.repository.recordGoals(
+        widget.fixture.id,
+        playerId: player.id,
+        goals: n,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Goals recorded')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFriendlyApiErrorMessage(e))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final homeGoals = widget.fixture.homeGoals ?? 0;
+    final awayGoals = widget.fixture.awayGoals ?? 0;
+
+    return AlertDialog(
+      title: const Text('Record who scored? (optional)'),
+      content: _loading
+          ? const SizedBox(
+              height: 80,
+              child: Center(child: FootballLoader(size: 32)),
+            )
+          : SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (homeGoals > 0) ...[
+                    Text(
+                      '${widget.fixture.homeTeamName ?? "Home"} ($homeGoals ${homeGoals == 1 ? "goal" : "goals"})',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _addGoalForTeam(true),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add goal'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 40),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (awayGoals > 0) ...[
+                    Text(
+                      '${widget.fixture.awayTeamName ?? "Away"} ($awayGoals ${awayGoals == 1 ? "goal" : "goals"})',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _addGoalForTeam(false),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add goal'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 40),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Text(
+                    'You can also use Goal log from the fixture to add or edit later.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Done'),
+        ),
+      ],
     );
   }
 }
