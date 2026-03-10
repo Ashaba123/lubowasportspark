@@ -50,6 +50,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String? _username;
   String? _leagueUserSummary;
   MePlayer? _mePlayer;
+  LeagueRoles? _roles;
   bool _loading = true;
 
   @override
@@ -69,6 +70,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _username = null;
         _leagueUserSummary = null;
         _mePlayer = null;
+        _roles = null;
         _loading = false;
       });
       return;
@@ -88,6 +90,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _hasToken = true;
         _leagueUserSummary = buf.isEmpty ? 'Logged in for leagues.' : buf.toString().trim();
         _mePlayer = player;
+        _roles = roles;
         _loading = false;
       });
     } catch (_) {
@@ -96,6 +99,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _hasToken = true;
         _leagueUserSummary = 'Logged in for leagues.';
         _mePlayer = null;
+        _roles = null;
         _loading = false;
       });
     }
@@ -110,6 +114,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _username = null;
       _leagueUserSummary = null;
       _mePlayer = null;
+      _roles = null;
     });
   }
 
@@ -126,126 +131,332 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final cs = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: _loading
-            ? const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            : _hasToken
-                ? _buildLoggedIn(theme, cs)
-                : _buildLoggedOut(theme, cs),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              cs.primary,
+              cs.secondary,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            icon: const Icon(Icons.arrow_back_ios_new),
+                            color: cs.onPrimary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Profile',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: cs.onPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.person_outline, color: cs.onPrimary),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _hasToken
+                                ? _ProfileHeader(
+                                    username: _username,
+                                    mePlayer: _mePlayer,
+                                    roles: _roles,
+                                  )
+                                : _LoggedOutHeader(onLogin: _openLogin),
+                            const SizedBox(height: 16),
+                            _SettingsSection(
+                              hasToken: _hasToken,
+                              leagueUserSummary: _leagueUserSummary,
+                              onLogin: _openLogin,
+                              onLogout: _logout,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
-    );
-  }
-
-  Widget _buildLoggedOut(ThemeData theme, ColorScheme cs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Icon(Icons.person_outline, size: 48, color: cs.onSurfaceVariant),
-                const SizedBox(height: 16),
-                Text(
-                  'Log in to manage leagues and link your player profile.',
-                  style: theme.textTheme.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: _openLogin,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Log in'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoggedIn(ThemeData theme, ColorScheme cs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_username != null && _username!.isNotEmpty) ...[
-                  Text('Logged in as', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
-                  const SizedBox(height: 2),
-                  Text(_username!, style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 16),
-                ],
-                if (_mePlayer != null) ...[
-                  _InfoRow(label: 'Player', value: _mePlayer!.name),
-                  if (_mePlayer!.teamName != null && _mePlayer!.teamName!.isNotEmpty)
-                    _InfoRow(label: 'Team', value: _mePlayer!.teamName!),
-                  if (_mePlayer!.leagueName != null && _mePlayer!.leagueName!.isNotEmpty)
-                    _InfoRow(label: 'League', value: _mePlayer!.leagueName!),
-                  _InfoRow(label: 'Career goals', value: '${_mePlayer!.goals}'),
-                  const SizedBox(height: 16),
-                ],
-                if (_leagueUserSummary != null && _leagueUserSummary!.isNotEmpty) ...[
-                  Text(
-                    _leagueUserSummary!,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                FilledButton.tonalIcon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Log out'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.username,
+    required this.mePlayer,
+    required this.roles,
+  });
 
-  final String label;
-  final String value;
+  final String? username;
+  final MePlayer? mePlayer;
+  final LeagueRoles? roles;
+
+  String _initialsFromName(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) return parts.first.characters.take(2).toString().toUpperCase();
+    return (parts.first.characters.take(1).toString() + parts.last.characters.take(1).toString()).toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+    final displayName =
+        ((mePlayer != null && mePlayer!.name.isNotEmpty) ? mePlayer!.name : null) ?? username ?? 'Player';
+    final goals = mePlayer?.goals ?? 0;
+    final leagues = roles?.managedLeagueIds.length ?? 0;
+    final teams = roles?.ledTeamIds.length ?? 0;
+
+    return Card(
+      color: cs.surface.withValues(alpha: 0.96),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: cs.primaryContainer,
+                  child: Text(
+                    _initialsFromName(displayName),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: cs.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'League profile',
+                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          Expanded(
-            child: Text(value, style: theme.textTheme.bodyMedium),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _ProfileStat(label: 'Goals', value: goals.toString(), icon: Icons.sports_soccer),
+                const SizedBox(width: 8),
+                _ProfileStat(label: 'Leagues', value: leagues.toString(), icon: Icons.emoji_events_outlined),
+                const SizedBox(width: 8),
+                _ProfileStat(label: 'Teams', value: teams.toString(), icon: Icons.groups_2_outlined),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileStat extends StatelessWidget {
+  const _ProfileStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          // ignore: deprecated_member_use
+          color: cs.surfaceVariant.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: cs.primary),
+            const SizedBox(width: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoggedOutHeader extends StatelessWidget {
+  const _LoggedOutHeader({required this.onLogin});
+
+  final VoidCallback onLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Card(
+      color: cs.surface.withValues(alpha: 0.96),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: cs.primaryContainer,
+                  child: Icon(Icons.person_outline, color: cs.onPrimaryContainer, size: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Guest',
+                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Log in to manage leagues and track your goals.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onLogin,
+              icon: const Icon(Icons.login),
+              label: const Text('Log in'),
+              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.hasToken,
+    required this.leagueUserSummary,
+    required this.onLogin,
+    required this.onLogout,
+  });
+
+  final bool hasToken;
+  final String? leagueUserSummary;
+  final VoidCallback onLogin;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Card(
+      color: cs.surface.withValues(alpha: 0.98),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: Text(
+                'Account',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (hasToken) ...[
+              ListTile(
+                leading: const Icon(Icons.verified_user_outlined),
+                title: const Text('League account'),
+                subtitle: leagueUserSummary != null
+                    ? Text(
+                        leagueUserSummary!,
+                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      )
+                    : null,
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Log out'),
+                onTap: onLogout,
+              ),
+            ] else ...[
+              ListTile(
+                leading: const Icon(Icons.login),
+                title: const Text('Log in'),
+                subtitle: Text(
+                  'Sign in to manage your leagues and bookings.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+                onTap: onLogin,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
