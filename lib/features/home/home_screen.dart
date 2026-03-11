@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../shared/app_logo.dart';
-import '../../shared/football_loader.dart';
-import '../../shared/page_transitions.dart';
-import '../league/league_repository.dart';
-import '../league/public_league_screen.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
+import 'package:lubowa_sports_park/shared/app_logo.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/public_league_screen.dart';
 
 /// Home tab: logo + tagline + 3–4 action cards. Mobile-first.
 /// [onNavigateToTab] switches bottom nav (1=Events, 2=Book, 3=League, 4=More).

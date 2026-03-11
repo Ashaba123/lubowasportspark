@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
-import '../constants/app_constants.dart';
-import '../models/wp_page.dart';
-import 'api_client.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/models/wp_page.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
 
 /// Fetches WordPress pages (wp/v2/pages). Used for Home, Activities, About, Contact.
 class PagesRepository {

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/app_state.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/theme/app_theme.dart';
 import 'package:lubowa_sports_park/main.dart';
@@ -19,6 +20,9 @@ void main() {
           providers: [
             Provider<ApiClient>.value(value: createTestApiClient()),
             Provider<TokenStorage>.value(value: TestTokenStorage()),
+            ChangeNotifierProvider<AppState>(
+              create: (_) => AppState(),
+            ),
           ],
           child: MainShell(
             onToggleTheme: () {},
@@ -46,6 +50,9 @@ void main() {
           providers: [
             Provider<ApiClient>.value(value: createTestApiClient()),
             Provider<TokenStorage>.value(value: TestTokenStorage()),
+            ChangeNotifierProvider<AppState>(
+              create: (_) => AppState(),
+            ),
           ],
           child: MainShell(
             onToggleTheme: () {},

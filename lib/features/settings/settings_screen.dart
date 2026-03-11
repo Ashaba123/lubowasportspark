@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/page_transitions.dart';
-import 'league_booking_rules_screen.dart';
-import 'park_rules_screen.dart';
-import 'privacy_policy_screen.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/settings/league_booking_rules_screen.dart';
+import 'package:lubowa_sports_park/features/settings/park_rules_screen.dart';
+import 'package:lubowa_sports_park/features/settings/privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

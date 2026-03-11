@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/page_transitions.dart';
-import 'league_list_screen.dart';
-import 'league_repository.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/league_list_screen.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 class ManageSection extends StatelessWidget {
   const ManageSection({

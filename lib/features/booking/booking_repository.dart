@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/constants/app_constants.dart';
-import 'models/booking.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 
 /// Bookings via POST/GET /lubowa/v1/bookings. No auth for submit; list by contact_email.
 class BookingRepository {

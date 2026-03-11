@@ -7,13 +7,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/auth/token_storage.dart';
-import '../../features/league/league_repository.dart';
-import '../../features/league/login_screen.dart';
-import '../../features/league/models/league.dart';
-import '../../features/league/public_league_view_screen.dart';
-import '../../shared/page_transitions.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/login_screen.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
+import 'package:lubowa_sports_park/features/league/public_league_view_screen.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
 
 /// Tries to decode JWT payload and return a display name (user_nicename, display_name, or username).
 String? _usernameFromToken(String token) {

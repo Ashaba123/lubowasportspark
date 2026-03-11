@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import '../api/api_client.dart';
-import '../constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 
 /// JWT login: POST /jwt-auth/v1/token. Returns token string.
 class AuthRepository {

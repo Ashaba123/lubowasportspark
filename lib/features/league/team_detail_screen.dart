@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/cache/local_cache.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../shared/football_loader.dart';
-import '../../shared/page_transitions.dart';
-import 'league_repository.dart';
-import 'models/league.dart';
-import 'player_view_screen.dart';
+import 'package:lubowa_sports_park/core/cache/local_cache.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
+import 'package:lubowa_sports_park/features/league/player_view_screen.dart';
 
 class TeamDetailScreen extends StatefulWidget {
   const TeamDetailScreen({

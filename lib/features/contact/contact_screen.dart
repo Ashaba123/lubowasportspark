@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 
 /// Contact: static contact info, hours, and button to open the contact page.
 class ContactScreen extends StatelessWidget {

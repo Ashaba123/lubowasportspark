@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../shared/football_loader.dart';
-import '../../shared/page_transitions.dart';
-import 'booking_repository.dart';
-import 'models/booking.dart';
-import 'my_bookings_screen.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
+import 'package:lubowa_sports_park/features/booking/models/booking.dart';
+import 'package:lubowa_sports_park/features/booking/my_bookings_entry_screen.dart';
 
 // Converts "16:00" → "4pm", "09:30" → "9:30am"
 String _formatTimeSlot(String slot) {
@@ -40,17 +40,17 @@ enum _BookingStep { service, dateTime, details, success }
 
 class _BookingScreenState extends State<BookingScreen> {
   BookingRepository? _repository;
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _phoneCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _notesCtrl = TextEditingController();
 
   // Focus nodes for keyboard navigation
-  final _nameFocus = FocusNode();
-  final _phoneFocus = FocusNode();
-  final _emailFocus = FocusNode();
-  final _notesFocus = FocusNode();
+  final FocusNode _nameFocus = FocusNode();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _notesFocus = FocusNode();
 
   _BookingStep _step = _BookingStep.service;
   DateTime? _selectedDate;
@@ -58,10 +58,10 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedService;
   bool _submitting = false;
   String? _error;
-  List<String> _bookedSlots = [];
+  List<String> _bookedSlots = <String>[];
   bool _loadingSlots = false;
 
-  static const _timeSlots = [
+  static const List<String> _timeSlots = <String>[
     '09:00',
     '10:00',
     '11:00',
@@ -74,7 +74,7 @@ class _BookingScreenState extends State<BookingScreen> {
     '18:00',
   ];
 
-  static const _services = [
+  static const List<String> _services = <String>[
     'Football pitch',
     'Event Space',
     'Padel',
@@ -119,8 +119,8 @@ class _BookingScreenState extends State<BookingScreen> {
       _submitting = true;
     });
     try {
-      final notesText = _notesCtrl.text.trim();
-      final request = BookingRequest(
+      final String notesText = _notesCtrl.text.trim();
+      final BookingRequest request = BookingRequest(
         date:
             '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
         timeSlot: _selectedTimeSlot!,
@@ -150,9 +150,9 @@ class _BookingScreenState extends State<BookingScreen> {
     if (_repository == null || _selectedDate == null || _selectedService == null) return;
     setState(() => _loadingSlots = true);
     try {
-      final dateStr =
+      final String dateStr =
           '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-      final taken = await _repository!.getBookedSlots(dateStr, _selectedService!);
+      final List<String> taken = await _repository!.getBookedSlots(dateStr, _selectedService!);
       if (!mounted) return;
       setState(() {
         _bookedSlots = taken;
@@ -164,7 +164,7 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _bookedSlots = [];
+        _bookedSlots = <String>[];
         _loadingSlots = false;
       });
     }
@@ -177,7 +177,7 @@ class _BookingScreenState extends State<BookingScreen> {
       _selectedDate = null;
       _selectedTimeSlot = null;
       _selectedService = null;
-      _bookedSlots = [];
+      _bookedSlots = <String>[];
       _nameCtrl.clear();
       _phoneCtrl.clear();
       _emailCtrl.clear();
@@ -191,7 +191,7 @@ class _BookingScreenState extends State<BookingScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Book'),
-        actions: [
+        actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.list_alt),
             tooltip: 'My bookings',
@@ -210,33 +210,33 @@ class _BookingScreenState extends State<BookingScreen> {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           child: () {
-          switch (_step) {
-            case _BookingStep.service:
-              return _buildServiceStep();
-            case _BookingStep.dateTime:
-              return _buildDateTimeStep();
-            case _BookingStep.details:
-              return _buildDetailsStep();
-            case _BookingStep.success:
-              return _buildSuccessStep();
-          }
-        }(),
+            switch (_step) {
+              case _BookingStep.service:
+                return _buildServiceStep();
+              case _BookingStep.dateTime:
+                return _buildDateTimeStep();
+              case _BookingStep.details:
+                return _buildDetailsStep();
+              case _BookingStep.success:
+                return _buildSuccessStep();
+            }
+          }(),
         ),
       ),
     );
   }
 
   Widget _buildServiceStep() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final hPadding = screenWidth >= 600 ? 48.0 : 24.0;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double hPadding = screenWidth >= 600 ? 48.0 : 24.0;
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           const SizedBox(height: 16),
           Text(
             'Book. Play. Enjoy.',
@@ -264,13 +264,13 @@ class _BookingScreenState extends State<BookingScreen> {
             ),
             items: _services
                 .map(
-                  (s) => DropdownMenuItem<String>(
+                  (String s) => DropdownMenuItem<String>(
                     value: s,
                     child: Text(s, style: TextStyle(color: colorScheme.primary)),
                   ),
                 )
                 .toList(),
-            onChanged: (value) => setState(() => _selectedService = value),
+            onChanged: (String? value) => setState(() => _selectedService = value),
           ),
           const SizedBox(height: 24),
           FilledButton(
@@ -295,7 +295,7 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -308,7 +308,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Text('My Bookings', style: theme.textTheme.titleMedium),
                           Text(
                             'View My Bookings',
@@ -329,16 +329,16 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildDateTimeStep() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final hPadding = screenWidth >= 600 ? 32.0 : 16.0;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double hPadding = screenWidth >= 600 ? 32.0 : 16.0;
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           Text(
             _selectedService ?? 'Choose date & time',
             style: theme.textTheme.titleLarge,
@@ -347,7 +347,7 @@ class _BookingScreenState extends State<BookingScreen> {
           Card(
             child: InkWell(
               onTap: () async {
-                final date = await showDatePicker(
+                final DateTime? date = await showDatePicker(
                   context: context,
                   initialDate: _selectedDate ?? DateTime.now(),
                   firstDate: DateTime.now(),
@@ -362,13 +362,13 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
-                  children: [
+                  children: <Widget>[
                     Icon(Icons.calendar_today, color: colorScheme.primary, size: 24),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                        children: <Widget>[
                           Text(
                             'Date',
                             style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -396,18 +396,18 @@ class _BookingScreenState extends State<BookingScreen> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
             )
-          else ...[
+          else ...<Widget>[
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _timeSlots.map((slot) {
-                final selected = _selectedTimeSlot == slot;
-                final taken = _bookedSlots.contains(slot);
+              children: _timeSlots.map((String slot) {
+                final bool selected = _selectedTimeSlot == slot;
+                final bool taken = _bookedSlots.contains(slot);
                 return FilterChip(
                   selected: selected && !taken,
                   label: Text(_formatTimeSlot(slot)),
-                  onSelected: taken ? null : (v) => setState(() => _selectedTimeSlot = v ? slot : null),
+                  onSelected: taken ? null : (bool v) => setState(() => _selectedTimeSlot = v ? slot : null),
                   selectedColor: colorScheme.primaryContainer,
                   checkmarkColor: colorScheme.primary,
                   disabledColor: colorScheme.surfaceContainerHighest,
@@ -415,13 +415,13 @@ class _BookingScreenState extends State<BookingScreen> {
               }).toList(),
             ),
           ],
-          if (_error != null) ...[
+          if (_error != null) ...<Widget>[
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: colorScheme.error)),
           ],
           const SizedBox(height: 24),
           Row(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => setState(() => _step = _BookingStep.service),
@@ -449,10 +449,10 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildDetailsStep() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final hPadding = screenWidth >= 600 ? 32.0 : 16.0;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double hPadding = screenWidth >= 600 ? 32.0 : 16.0;
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
@@ -460,23 +460,23 @@ class _BookingScreenState extends State<BookingScreen> {
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_selectedService != null || _selectedDate != null || _selectedTimeSlot != null) ...[
+          children: <Widget>[
+            if (_selectedService != null || _selectedDate != null || _selectedTimeSlot != null) ...<Widget>[
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children: <Widget>[
                       if (_selectedService != null)
                         Text(
                           _selectedService!,
                           style: theme.textTheme.titleMedium,
                         ),
-                      if (_selectedDate != null || _selectedTimeSlot != null) ...[
+                      if (_selectedDate != null || _selectedTimeSlot != null) ...<Widget>[
                         const SizedBox(height: 4),
                         Text(
-                          [
+                          <String>[
                             if (_selectedDate != null && _selectedTimeSlot != null)
                               _formatBookingDateTime(
                                 '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
@@ -503,7 +503,7 @@ class _BookingScreenState extends State<BookingScreen> {
               onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
               decoration: const InputDecoration(labelText: 'Name', hintText: 'Your name'),
               textCapitalization: TextCapitalization.words,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -513,7 +513,7 @@ class _BookingScreenState extends State<BookingScreen> {
               onFieldSubmitted: (_) => _emailFocus.requestFocus(),
               decoration: const InputDecoration(labelText: 'Phone', hintText: 'Your phone'),
               keyboardType: TextInputType.phone,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -523,7 +523,7 @@ class _BookingScreenState extends State<BookingScreen> {
               onFieldSubmitted: (_) => _notesFocus.requestFocus(),
               decoration: const InputDecoration(labelText: 'Email', hintText: 'your@email.com'),
               keyboardType: TextInputType.emailAddress,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+              validator: (String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -536,13 +536,13 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               maxLines: 2,
             ),
-            if (_error != null) ...[
+            if (_error != null) ...<Widget>[
               const SizedBox(height: 12),
               Text(_error!, style: TextStyle(color: colorScheme.error)),
             ],
             const SizedBox(height: 24),
             Row(
-              children: [
+              children: <Widget>[
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => setState(() => _step = _BookingStep.dateTime),
@@ -576,7 +576,7 @@ class _BookingScreenState extends State<BookingScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: <Widget>[
             Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 64),
             const SizedBox(height: 16),
             Text('Booking submitted', style: Theme.of(context).textTheme.titleLarge),

@@ -1,6 +1,6 @@
-import '../auth/token_storage.dart';
-import '../constants/app_constants.dart';
-import 'api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
 
 /// **State / DI:** The app uses [Provider] for dependency injection throughout.
 /// [ApiClient] and [TokenStorage] are provided at the root in [main.dart] via [MultiProvider].

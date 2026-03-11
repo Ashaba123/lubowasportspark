@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/auth/auth_repository.dart';
-import '../../core/auth/token_storage.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../shared/football_loader.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/auth_repository.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
 
 /// JWT login. On success stores token and pops with true.
 class LoginScreen extends StatefulWidget {

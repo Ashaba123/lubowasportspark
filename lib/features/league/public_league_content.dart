@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/football_loader.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 class PublicLeagueContent extends StatelessWidget {
   const PublicLeagueContent({super.key, required this.data});

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/utils/api_error_message.dart';
-import '../../shared/football_loader.dart';
-import 'league_repository.dart';
-import 'manage_section.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/manage_section.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 /// Manage leagues and teams after logging in.
 class LeagueManageScreen extends StatefulWidget {

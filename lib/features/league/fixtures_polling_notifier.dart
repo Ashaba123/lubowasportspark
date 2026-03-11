@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/cache/local_cache.dart';
-import 'league_repository.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/core/cache/local_cache.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 /// Polls fixtures for a league so the screen updates when another user changes goals (or fixtures).
 /// Start with [start]; call [refresh] for manual refresh (pull-to-refresh, after generate/reset/edit).

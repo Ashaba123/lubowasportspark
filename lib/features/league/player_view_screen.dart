@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'models/league.dart';
-import 'stat_chip.dart';
-import 'league_repository.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
+import 'package:lubowa_sports_park/features/league/stat_chip.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
 
 /// Single player view: name, team, league, goals.
 class PlayerViewScreen extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../shared/app_logo.dart';
+import 'package:lubowa_sports_park/shared/app_logo.dart';
 
 /// Splash screen: logo with scale + fade animation, then navigates to [onDone].
 class SplashScreen extends StatefulWidget {

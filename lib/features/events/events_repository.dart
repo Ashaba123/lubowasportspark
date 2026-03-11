@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/constants/app_constants.dart';
-import 'models/wp_post.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/features/events/models/wp_post.dart';
 
 /// Fetches events (WordPress posts) from wp/v2/posts. Public, no auth.
 class EventsRepository {

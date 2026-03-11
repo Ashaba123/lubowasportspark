@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 
 /// Single HTTP client for WordPress REST API. Base URL from [baseUrl];
 /// JWT sent via [AuthInterceptor]. On 401, [onUnauthorized] is invoked.

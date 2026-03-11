@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/html_utils.dart';
-import 'models/wp_post.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/utils/html_utils.dart';
+import 'package:lubowa_sports_park/features/events/models/wp_post.dart';
 
 /// Event (WP post) detail: title, date, featured image, HTML content. Designed for clarity and hierarchy.
 class EventDetailScreen extends StatelessWidget {

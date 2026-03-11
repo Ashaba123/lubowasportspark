@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../shared/football_loader.dart';
-import '../../shared/page_transitions.dart';
-import 'league_repository.dart';
-import 'public_league_screen.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/public_league_screen.dart';
 
 /// Dedicated screen for public view of leagues: enter code → view standings, results, top scorers.
 /// Used when a guest taps "View leagues & tables" in profile.

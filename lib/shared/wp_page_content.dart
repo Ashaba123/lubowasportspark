@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 
-import '../core/constants/app_constants.dart';
-import '../core/models/wp_page.dart';
-import '../core/utils/html_utils.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/models/wp_page.dart';
+import 'package:lubowa_sports_park/core/utils/html_utils.dart';
 
 /// Displays a WordPress page: featured image + HTML content (images, text, links).
 class WpPageContent extends StatelessWidget {

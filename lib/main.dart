@@ -3,24 +3,24 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'core/api/api_client.dart';
-import 'core/api/app_api_provider.dart';
-import 'core/auth/token_storage.dart';
-import 'core/onboarding/onboarding_storage.dart';
-import 'core/theme/app_theme.dart';
-import 'shared/page_transitions.dart';
-import 'features/activities/activities_screen.dart';
-import 'features/about/about_screen.dart';
-import 'features/booking/booking_screen.dart';
-import 'features/contact/contact_screen.dart';
-import 'features/events/events_screen.dart';
-import 'features/home/home_screen.dart';
-import 'features/league/league_screen.dart';
-import 'features/onboarding/onboarding_screen.dart';
-import 'features/settings/profile_settings_screen.dart';
-import 'features/settings/settings_screen.dart';
-import 'features/splash/splash_screen.dart';
-import 'shared/textured_background.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/core/app_state.dart';
+import 'package:lubowa_sports_park/core/theme/app_theme.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/activities/activities_screen.dart';
+import 'package:lubowa_sports_park/features/about/about_screen.dart';
+import 'package:lubowa_sports_park/features/booking/booking_form_screen.dart';
+import 'package:lubowa_sports_park/features/contact/contact_screen.dart';
+import 'package:lubowa_sports_park/features/events/events_screen.dart';
+import 'package:lubowa_sports_park/features/home/home_screen.dart';
+import 'package:lubowa_sports_park/features/league/league_screen.dart';
+import 'package:lubowa_sports_park/features/onboarding/onboarding_screen.dart';
+import 'package:lubowa_sports_park/features/settings/profile_settings_screen.dart';
+import 'package:lubowa_sports_park/features/settings/settings_screen.dart';
+import 'package:lubowa_sports_park/features/splash/splash_screen.dart';
+import 'package:lubowa_sports_park/shared/textured_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,101 +44,84 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
     onUnauthorized: () => widget.tokenStorage.clear(),
   );
 
-  ThemeMode _themeMode = ThemeMode.light;
-
-  void _toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: _apiClient),
         Provider<TokenStorage>.value(value: widget.tokenStorage),
-      ],
-      child: MaterialApp(
-        title: 'Lubowa Sports Park',
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: _themeMode,
-        home: _AppRoot(
-          onToggleTheme: _toggleTheme,
-          isDark: _themeMode == ThemeMode.dark,
+        ChangeNotifierProvider<AppState>(
+          create: (_) => AppState(),
         ),
+      ],
+      child: Consumer<AppState>(
+        builder: (BuildContext context, AppState appState, Widget? _) {
+          return MaterialApp(
+            title: 'Lubowa Sports Park',
+            theme: AppTheme.light,
+            debugShowCheckedModeBanner: false,
+            darkTheme: AppTheme.dark,
+            themeMode: appState.themeMode,
+            home: const _AppRoot(),
+          );
+        },
       ),
     );
   }
 }
 
 class _AppRoot extends StatefulWidget {
-  const _AppRoot({required this.onToggleTheme, required this.isDark});
-
-  final VoidCallback onToggleTheme;
-  final bool isDark;
+  const _AppRoot();
 
   @override
   State<_AppRoot> createState() => _AppRootState();
 }
 
 class _AppRootState extends State<_AppRoot> {
-  bool _showSplash = true;
-  bool _showOnboarding = false;
-
-  static const _splashDuration = Duration(milliseconds: 2200);
-
-  void _onSplashDone() async {
-    final completed = await OnboardingStorage.hasCompleted();
-    if (!mounted) return;
-    setState(() {
-      _showSplash = false;
-      _showOnboarding = !completed;
-    });
-  }
-
-  void _onOnboardingDone() async {
-    await OnboardingStorage.setCompleted();
-    if (!mounted) return;
-    setState(() => _showOnboarding = false);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_showSplash) {
+    final AppState appState = context.watch<AppState>();
+    if (appState.showSplash) {
       return SplashScreen(
-        onDone: _onSplashDone,
-        duration: _splashDuration,
+        onDone: appState.handleSplashDone,
+        duration: AppState.splashDuration,
       );
     }
-    if (_showOnboarding) {
-      return OnboardingScreen(onDone: _onOnboardingDone);
+    if (appState.showOnboarding) {
+      return OnboardingScreen(onDone: appState.handleOnboardingDone);
     }
-    return MainShell(onToggleTheme: widget.onToggleTheme, isDark: widget.isDark);
+    return const MainShell();
   }
 }
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key, required this.onToggleTheme, required this.isDark});
+  const MainShell({
+    super.key,
+    this.onToggleTheme,
+    this.isDark,
+  });
 
-  final VoidCallback onToggleTheme;
-  final bool isDark;
+  // These are kept for backwards compatibility with existing tests and
+  // call sites; AppState now owns the actual theme state.
+  // ignore: unused_field
+  final VoidCallback? onToggleTheme;
+  // ignore: unused_field
+  final bool? isDark;
 
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
 class _MainShellState extends State<MainShell> {
-  int _index = 0;
-
   @override
   Widget build(BuildContext context) {
+    final AppState appState = context.watch<AppState>();
+    final int index = appState.tabIndex;
     final tabs = [
       HomeScreen(
-        onNavigateToTab: (i) => setState(() => _index = i),
-        onToggleTheme: widget.onToggleTheme,
-        isDark: widget.isDark,
+        onNavigateToTab: appState.selectTab,
+        onToggleTheme: appState.toggleTheme,
+        isDark: appState.isDark,
       ),
       const EventsScreen(),
       const BookingScreen(),
@@ -153,7 +136,7 @@ class _MainShellState extends State<MainShell> {
           // AnimatedOpacity on each child keeps all tabs alive (IndexedStack
           // behaviour) while cross-fading when the selected index changes.
           ...tabs.asMap().entries.map((entry) {
-            final visible = entry.key == _index;
+            final bool visible = entry.key == index;
             return AnimatedOpacity(
               opacity: visible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -167,9 +150,9 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
       bottomNavigationBar: _GradientNavBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        isDark: widget.isDark,
+        selectedIndex: index,
+        onDestinationSelected: appState.selectTab,
+        isDark: appState.isDark,
       ),
     );
   }

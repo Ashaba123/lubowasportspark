@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/api/pages_repository.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/api_error_message.dart';
-import '../../core/utils/app_connectivity.dart';
-import '../../core/models/wp_page.dart';
-import '../../core/utils/html_utils.dart';
-import '../../shared/page_transitions.dart';
-import 'event_detail_screen.dart';
-import 'events_repository.dart';
-import 'models/wp_post.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/api/pages_repository.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
+import 'package:lubowa_sports_park/core/models/wp_page.dart';
+import 'package:lubowa_sports_park/core/utils/html_utils.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/events/event_detail_screen.dart';
+import 'package:lubowa_sports_park/features/events/events_repository.dart';
+import 'package:lubowa_sports_park/features/events/models/wp_post.dart';
 
 /// Events: intro from wp page (events1) + list from wp/v2/posts. List + detail + pull-to-refresh.
 class EventsScreen extends StatefulWidget {

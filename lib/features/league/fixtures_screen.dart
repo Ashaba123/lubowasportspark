@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/utils/api_error_message.dart';
-import '../../shared/football_loader.dart';
-import '../../shared/page_transitions.dart';
-import 'fixtures_polling_notifier.dart';
-import 'fixture_edit_screen.dart';
-import 'league_repository.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
+import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/fixtures_polling_notifier.dart';
+import 'package:lubowa_sports_park/features/league/fixture_edit_screen.dart';
+import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 class FixturesScreen extends StatelessWidget {
   const FixturesScreen({
@@ -37,56 +37,89 @@ class FixturesScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
-                    children: [
-                      Text('Generate fixtures', style: theme.textTheme.titleMedium),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final messenger = ScaffoldMessenger.of(context);
-                          final notifier = context.read<FixturesPollingNotifier>();
-                          try {
-                            final generated = await repository.generateFixtures(league.id);
-                            if (generated.isNotEmpty) {
-                              notifier.setFixtures(generated);
-                            } else {
-                              await notifier.refresh();
-                            }
-                            if (context.mounted) {
-                              messenger.showSnackBar(const SnackBar(content: Text('Fixtures generated')));
-                            }
-                          } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(content: Text(userFriendlyApiErrorMessage(e))),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Generate'),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Generate fixtures',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Needs at least 2 teams. You (league creator) or park staff can generate.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.end,
+                            children: [
+                              FilledButton.icon(
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final fixturesNotifier = context.read<FixturesPollingNotifier>();
+                                  try {
+                                    final generated = await repository.generateFixtures(league.id);
+                                    if (generated.isNotEmpty) {
+                                      fixturesNotifier.setFixtures(generated);
+                                    } else {
+                                      await fixturesNotifier.refresh();
+                                    }
+                                    if (context.mounted) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Fixtures generated'),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(userFriendlyApiErrorMessage(e)),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Generate'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  final fixturesNotifier = context.read<FixturesPollingNotifier>();
+                                  try {
+                                    await repository.resetFixtures(league.id);
+                                    fixturesNotifier.setFixtures(const []);
+                                    await fixturesNotifier.refresh();
+                                    if (context.mounted) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Fixtures reset'),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text('$e'),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.clear),
+                                label: const Text('Reset'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final messenger = ScaffoldMessenger.of(context);
-                          final notifier = context.read<FixturesPollingNotifier>();
-                          try {
-                            await repository.resetFixtures(league.id);
-                            await notifier.refresh();
-                            if (context.mounted) {
-                              messenger.showSnackBar(const SnackBar(content: Text('Fixtures reset')));
-                            }
-                          } catch (e) {
-                            messenger.showSnackBar(SnackBar(content: Text('$e')));
-                          }
-                        },
-                        icon: const Icon(Icons.clear),
-                        label: const Text('Reset'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Needs at least 2 teams. You (league creator) or park staff can generate.',
-                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (fixtures.isEmpty)

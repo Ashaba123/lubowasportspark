@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import '../../core/api/api_client.dart';
-import '../../core/constants/app_constants.dart';
-import 'models/league.dart';
+import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
+import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 /// League API: public (by code) and authenticated (manage). Uses [ApiClient] for base URL and optional JWT.
 class LeagueRepository {
