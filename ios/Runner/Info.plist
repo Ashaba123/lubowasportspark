@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We use your photo to show a profile avatar in the Lubowa Sports Park app.</string>
 </dict>
 </plist>

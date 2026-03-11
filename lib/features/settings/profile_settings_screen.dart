@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/api/api_client.dart';
@@ -54,6 +56,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   MePlayer? _mePlayer;
   LeagueRoles? _roles;
   bool _loading = true;
+  File? _avatarFile;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void didChangeDependencies() {
@@ -120,6 +124,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     });
   }
 
+  Future<void> _pickAvatar() async {
+    try {
+      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+      setState(() {
+        _avatarFile = File(picked.path);
+      });
+    } catch (_) {
+      // Ignore failures; keep existing avatar/initials.
+    }
+  }
+
   Future<void> _openLogin() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -155,6 +171,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           username: _username,
                           mePlayer: _mePlayer,
                           roles: _roles,
+                          avatarFile: _avatarFile,
+                          onEditAvatar: _pickAvatar,
                         )
                       : _LoggedOutHeader(onViewLeagues: _openPublicLeagues),
                   const SizedBox(height: 16),
@@ -176,11 +194,15 @@ class _ProfileHeader extends StatelessWidget {
     required this.username,
     required this.mePlayer,
     required this.roles,
+    required this.avatarFile,
+    required this.onEditAvatar,
   });
 
   final String? username;
   final MePlayer? mePlayer;
   final LeagueRoles? roles;
+  final File? avatarFile;
+  final VoidCallback onEditAvatar;
 
   String _initialsFromName(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -198,49 +220,73 @@ class _ProfileHeader extends StatelessWidget {
     final goals = mePlayer?.goals ?? 0;
     final leagues = roles?.managedLeagueIds.length ?? 0;
     final teams = roles?.ledTeamIds.length ?? 0;
+    final ImageProvider<Object>? avatarImage =
+        avatarFile != null ? FileImage(avatarFile!) : null;
 
-    return Card(
-      color: cs.surface.withValues(alpha: 0.98),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: cs.primaryContainer,
-                  child: Text(
-                    _initialsFromName(displayName),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: cs.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Stack(
+            children: [
+              CircleAvatar(
+                radius: 48,
+                backgroundColor: cs.primaryContainer,
+                backgroundImage: avatarImage,
+                child: avatarImage == null
+                    ? Text(
+                        _initialsFromName(displayName),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    : null,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onEditAvatar,
+                    borderRadius: BorderRadius.circular(18),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: cs.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.edit, size: 16, color: cs.onPrimary),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'League profile',
-                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              displayName,
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 20),
-            Row(
+            const SizedBox(height: 4),
+            Text(
+              'League profile',
+              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Card(
+          color: cs.surface.withValues(alpha: 0.98),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Row(
               children: [
                 _ProfileStat(label: 'Goals', value: goals.toString(), icon: Icons.sports_soccer),
                 const SizedBox(width: 8),
@@ -249,9 +295,9 @@ class _ProfileHeader extends StatelessWidget {
                 _ProfileStat(label: 'Teams', value: teams.toString(), icon: Icons.groups_2_outlined),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

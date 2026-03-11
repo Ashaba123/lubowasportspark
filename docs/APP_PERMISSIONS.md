@@ -7,6 +7,7 @@ Track every permission the app needs from the user or the system. When adding a 
 | Permission / capability | Purpose | Android | iOS |
 |-------------------------|---------|---------|-----|
 | **Internet** | API calls, loading content from website | `AndroidManifest.xml`: `<uses-permission android:name="android.permission.INTERNET" />` (normal permission, auto-granted) | No declaration needed; network access is allowed by default. |
+| **Photos / storage** | Upload profile avatar from gallery | `AndroidManifest.xml`: `android.permission.READ_MEDIA_IMAGES` (API 33+) or `android.permission.READ_EXTERNAL_STORAGE` (older). Requested at runtime by `image_picker`. | `Info.plist`: `NSPhotoLibraryUsageDescription` explaining why we access photos. |
 
 ## Future / planned (add when implementing)
 
@@ -14,7 +15,6 @@ Track every permission the app needs from the user or the system. When adding a 
 |-------------------------|---------|---------|-----|
 | **Camera** | _e.g. profile photo, scan_ | `AndroidManifest.xml`: `android.permission.CAMERA`. Request at runtime if needed. | `Info.plist`: `NSCameraUsageDescription` (required). |
 | **Location** | _e.g. find park, check-in_ | `AndroidManifest.xml`: `ACCESS_FINE_LOCATION` and/or `ACCESS_COARSE_LOCATION`. Request at runtime. | `Info.plist`: `NSLocationWhenInUseUsageDescription` (and optionally `NSLocationAlwaysUsageDescription`). |
-| **Photos / storage** | _e.g. upload images, save to gallery_ | `AndroidManifest.xml`: `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` (per SDK). Request at runtime. | `Info.plist`: `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription` if saving. |
 | **Notifications** | _e.g. event reminders, booking confirmations_ | FCM / Firebase; no extra permission in manifest for basic push. | Enable Push Notifications capability in Xcode; no usage description. |
 
 ## How to add a permission
