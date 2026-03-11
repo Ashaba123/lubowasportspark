@@ -290,6 +290,7 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<PlayerModel>(
+                // ignore: deprecated_member_use
                 value: selected,
                 decoration: const InputDecoration(labelText: 'Player'),
                 items: players
