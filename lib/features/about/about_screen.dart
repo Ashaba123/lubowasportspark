@@ -88,7 +88,7 @@ class _AboutInfoCard extends StatelessWidget {
               width: 40,
               decoration: BoxDecoration(
                 // ignore: deprecated_member_use
-                color: colorScheme.primary.withOpacity(0.08),
+                color: colorScheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: colorScheme.primary),

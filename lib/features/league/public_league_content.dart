@@ -55,7 +55,7 @@ class PublicLeagueContent extends StatelessWidget {
                           2 => const Color(0xFFCD7F32),
                           _ => null,
                         };
-                        final rowBg = rank < 3 ? rankColor?.withOpacity(0.08) : null;
+                        final rowBg = rank < 3 ? rankColor?.withValues(alpha: 0.08) : null;
                         return TableRow(
                           decoration: rowBg != null ? BoxDecoration(color: rowBg) : null,
                           children: [
@@ -158,7 +158,7 @@ class PublicLeagueContent extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer.withOpacity(0.6),
+                                  color: colorScheme.primaryContainer.withValues(alpha: 0.6),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

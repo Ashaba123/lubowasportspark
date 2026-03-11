@@ -134,7 +134,7 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withOpacity(0.5),
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(

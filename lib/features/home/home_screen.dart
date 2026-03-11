@@ -62,7 +62,7 @@ class HomeScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: cs.primaryContainer.withOpacity(0.3),
+                          color: cs.primaryContainer.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -131,7 +131,7 @@ class HomeScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withOpacity(0.7),
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: AnimatedSwitcher(
@@ -203,7 +203,7 @@ class _ActionCardState extends State<_ActionCard> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: cs.primary.withOpacity(0.35),
+            color: cs.primary.withValues(alpha: 0.35),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -216,7 +216,7 @@ class _ActionCardState extends State<_ActionCard> {
             onTap: widget.onTap,
             onHighlightChanged: (h) => setState(() => _pressed = h),
             borderRadius: BorderRadius.circular(12),
-            splashColor: Colors.white.withOpacity(0.1),
+            splashColor: Colors.white.withValues(alpha: 0.1),
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Row(
@@ -224,7 +224,7 @@ class _ActionCardState extends State<_ActionCard> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(widget.icon, color: Colors.white, size: 28),
@@ -245,13 +245,13 @@ class _ActionCardState extends State<_ActionCard> {
                       Text(
                         widget.subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.85)),
+                Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.85)),
               ],
             ),
           ),
@@ -274,7 +274,7 @@ class _ActionCardState extends State<_ActionCard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.5),
+                  color: cs.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(widget.icon, color: cs.primary, size: 28),
@@ -389,7 +389,7 @@ class _PublicLeagueStatsSectionState extends State<_PublicLeagueStatsSection> {
             Text(
               'Enter a league code to see standings, fixtures, and top scorers. No login needed.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onPrimary.withOpacity(0.9),
+                color: cs.onPrimary.withValues(alpha: 0.9),
               ),
             ),
             const SizedBox(height: 16),
@@ -412,7 +412,7 @@ class _PublicLeagueStatsSectionState extends State<_PublicLeagueStatsSection> {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(88, 48),
                     foregroundColor: cs.primary,
-                    backgroundColor: cs.surface.withOpacity(0.9),
+                    backgroundColor: cs.surface.withValues(alpha: 0.9),
                   ),
                   child: _loading
                       ? const FootballLoader(size: 22)

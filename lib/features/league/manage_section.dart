@@ -46,7 +46,7 @@ class ManageSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondary.withOpacity(0.15),
+                        color: colorScheme.secondary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(Icons.groups, color: colorScheme.secondary),
@@ -104,7 +104,7 @@ class ManageSection extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withOpacity(0.6),
+                        color: colorScheme.primaryContainer.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(Icons.emoji_events, color: colorScheme.primary),

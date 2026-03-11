@@ -371,7 +371,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Card(
-        color: cs.surface.withOpacity(0.98),
+        color: cs.surface.withValues(alpha: 0.98),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -410,7 +410,7 @@ class _ProfileStat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withOpacity(0.9),
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -449,7 +449,7 @@ class _LoggedOutHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Card(
-      color: cs.surface.withOpacity(0.98),
+      color: cs.surface.withValues(alpha: 0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -515,7 +515,7 @@ class _SettingsSection extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Card(
-      color: cs.surface.withOpacity(0.98),
+      color: cs.surface.withValues(alpha: 0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
