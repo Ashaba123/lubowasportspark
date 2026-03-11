@@ -26,7 +26,53 @@ class ManageSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (leagueRoles.canCreateLeague)
+        if (leagueRoles.ledTeamIds.isNotEmpty) ...[
+          Card(
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                fadeSlideRoute(
+                  builder: (_) => LeagueListScreen(
+                    repository: repository,
+                    filterManaged: false,
+                    ledTeamIds: leagueRoles.ledTeamIds,
+                  ),
+                ),
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.groups, color: colorScheme.secondary),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Teams I lead', style: theme.textTheme.titleMedium),
+                          Text(
+                            'Manage players and record goals',
+                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (leagueRoles.canCreateLeague) ...[
           FilledButton.icon(
             onPressed: () => _showCreateLeagueDialog(context),
             icon: const Icon(Icons.add),
@@ -36,8 +82,9 @@ class ManageSection extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-        if (leagueRoles.managedLeagueIds.isNotEmpty) ...[
           const SizedBox(height: 12),
+        ],
+        if (leagueRoles.managedLeagueIds.isNotEmpty) ...[
           Card(
             child: InkWell(
               onTap: () => Navigator.of(context).push(
@@ -82,54 +129,8 @@ class ManageSection extends StatelessWidget {
             ),
           ),
         ],
-        if (leagueRoles.ledTeamIds.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Card(
-            child: InkWell(
-              onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(
-                  builder: (_) => LeagueListScreen(
-                    repository: repository,
-                    filterManaged: false,
-                    ledTeamIds: leagueRoles.ledTeamIds,
-                  ),
-                ),
-              ),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colorScheme.secondary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.groups, color: colorScheme.secondary),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Teams I lead', style: theme.textTheme.titleMedium),
-                          Text(
-                            'Manage players and record goals',
-                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
         if (mePlayer != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: Icon(Icons.star, color: colorScheme.primary),

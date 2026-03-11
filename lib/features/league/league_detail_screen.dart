@@ -104,11 +104,15 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                   style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
                 const Spacer(),
-                FilledButton.tonalIcon(
+                FilledButton.icon(
                   onPressed: () => _showAddTeam(context),
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Add team'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
                 ),
               ],
             ),
@@ -140,13 +144,17 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
               children: [
                 Text('Fixtures', style: theme.textTheme.titleLarge),
                 const Spacer(),
-                FilledButton.tonalIcon(
+                FilledButton.icon(
                   onPressed: _teams.length < 2
                       ? null
                       : () => _openFixtures(context),
                   icon: const Icon(Icons.calendar_month, size: 20),
                   label: const Text('Open fixtures'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
                 ),
               ],
             ),

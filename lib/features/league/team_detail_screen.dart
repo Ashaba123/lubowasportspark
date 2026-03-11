@@ -153,11 +153,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
             if (_players.length < 8) ...[
               const SizedBox(height: 16),
-              FilledButton.tonalIcon(
+              FilledButton.icon(
                 onPressed: () => _showAddPlayer(context),
                 icon: const Icon(Icons.person_add),
                 label: const Text('Add player'),
-                style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
               ),
             ],
           ],

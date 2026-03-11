@@ -68,52 +68,24 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primaryContainer.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(Icons.emoji_events, color: colorScheme.primary),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Manage your leagues', style: theme.textTheme.titleMedium),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Create leagues, add teams and players, generate fixtures, and record scores.',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_error != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              _error!,
-                              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                            ),
-                          ],
-                        ],
-                      ),
+                  Text(
+                    'Manage your leagues',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Create leagues, add teams and players, generate fixtures, and record scores.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   if (_leagueRoles != null)
                     ManageSection(

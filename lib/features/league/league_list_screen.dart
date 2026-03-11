@@ -78,16 +78,6 @@ class _LeagueListScaffold extends StatelessWidget {
             ? ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Live — updates every few seconds',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   const SizedBox(height: 48),
                   Icon(Icons.emoji_events_outlined, size: 64, color: colorScheme.onSurfaceVariant),
                   const SizedBox(height: 24),
@@ -108,23 +98,9 @@ class _LeagueListScaffold extends StatelessWidget {
               )
             : ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                itemCount: leagues.length + 1,
+                itemCount: leagues.length,
                 itemBuilder: (_, i) {
-                  if (i == 0) {
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          'Live — updates every few seconds',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  final l = leagues[i - 1];
+                  final l = leagues[i];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
