@@ -19,7 +19,7 @@ void main() {
     mockDio = MockDio();
   });
 
-  testWidgets('LeagueScreen shows Leagues app bar and public view by code', (WidgetTester tester) async {
+  testWidgets('LeagueScreen shows Leagues app bar and manage section', (WidgetTester tester) async {
     await tester.pumpWidget(
       wrapWithAppProviders(
         apiClient: createTestApiClient(dio: mockDio),
@@ -28,35 +28,13 @@ void main() {
     );
 
     expect(find.text('Leagues'), findsOneWidget);
-    expect(find.text('Public league stats'), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
-    expect(find.text('View'), findsOneWidget);
+    expect(find.text('Login to manage a league'), findsOneWidget);
+    expect(find.text('Manage leagues'), findsOneWidget);
   });
 
-  testWidgets('LeagueScreen enter code and tap View does not crash', (WidgetTester tester) async {
-    when(() => mockDio.get<Map<String, dynamic>>(any())).thenAnswer(
-      (_) async => responseOk<Map<String, dynamic>>({
-        'league': {'id': 1, 'name': 'Test League', 'code': 'ABC'},
-        'standings': [],
-        'fixtures': [],
-        'top_scorers': [],
-      }),
-    );
-
-    await tester.pumpWidget(
-      wrapWithAppProviders(
-        apiClient: createTestApiClient(dio: mockDio),
-        child: const LeagueScreen(),
-      ),
-    );
-    await tester.enterText(find.byType(TextField), 'ABC');
-    await tester.tap(find.text('View'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
-
-    expect(find.text('Leagues'), findsOneWidget);
-  });
+  // Public league stats have moved to the Home screen; LeagueScreen now only
+  // shows the manage section (login + Manage leagues button), so we no longer
+  // test entering a code and tapping View here.
 
   testWidgets('LeagueScreen with token shows Manage leagues and opens manage screen', (WidgetTester tester) async {
     final tokenStorage = TestTokenStorage();
