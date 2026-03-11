@@ -32,7 +32,7 @@ class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withValues(alpha: _opacity)
+      ..color = color.withOpacity(_opacity)
       ..style = PaintingStyle.fill;
 
     final cols = (size.width / _spacing).ceil() + 1;

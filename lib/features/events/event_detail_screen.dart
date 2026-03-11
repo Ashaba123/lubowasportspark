@@ -45,7 +45,7 @@ class EventDetailScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -100,13 +100,13 @@ class EventDetailScreen extends StatelessWidget {
     return Container(
       color: theme.colorScheme.surfaceContainerHighest,
       alignment: Alignment.center,
-      child: Opacity(
+          child: Opacity(
         opacity: 0.9,
         child: Image.asset(
           'assets/logo.png',
           height: 72,
           fit: BoxFit.contain,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.9),
           colorBlendMode: BlendMode.srcIn,
         ),
       ),

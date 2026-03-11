@@ -32,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.08),
+      backgroundColor: colorScheme.primaryContainer.withOpacity(0.08),
       body: SafeArea(
         child: Stack(
           children: [
@@ -81,7 +81,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               borderRadius: BorderRadius.circular(4),
                               color: isActive
                                   ? colorScheme.primary
-                                  : colorScheme.outline.withValues(alpha: 0.4),
+                                  : colorScheme.outline.withOpacity(0.4),
                             ),
                           );
                         }),
@@ -161,8 +161,8 @@ class _OnboardingPage extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary.withValues(alpha: 0.15),
-                  colorScheme.secondary.withValues(alpha: 0.1),
+                  colorScheme.primary.withOpacity(0.15),
+                  colorScheme.secondary.withOpacity(0.1),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

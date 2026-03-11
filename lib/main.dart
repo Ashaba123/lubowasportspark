@@ -214,24 +214,24 @@ class _GradientNavBar extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
         elevation: 16,
-        shadowColor: gradStart.withValues(alpha: isDark ? 0.4 : 0.45),
+        shadowColor: gradStart.withOpacity(isDark ? 0.4 : 0.45),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
+        child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    gradStart.withValues(alpha: isDark ? 0.92 : 0.96),
-                    gradEnd.withValues(alpha: isDark ? 0.92 : 0.96),
+                    gradStart.withOpacity(isDark ? 0.92 : 0.96),
+                    gradEnd.withOpacity(isDark ? 0.92 : 0.96),
                   ],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(32),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: isDark ? 0.06 : 0.12),
+                  color: Colors.white.withOpacity(isDark ? 0.06 : 0.12),
                   width: 1,
                 ),
               ),
@@ -298,7 +298,7 @@ class _NavItem extends StatelessWidget {
         ),
         decoration: selected
             ? BoxDecoration(
-                color: foregroundColor.withValues(alpha: 0.18),
+                color: foregroundColor.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(20),
               )
             : null,
@@ -310,7 +310,7 @@ class _NavItem extends StatelessWidget {
               child: Icon(
                 selected ? filledIcon : icon,
                 key: ValueKey(selected),
-                color: foregroundColor.withValues(alpha: selected ? 1.0 : 0.65),
+                color: foregroundColor.withOpacity(selected ? 1.0 : 0.65),
                 size: 24,
               ),
             ),
@@ -318,7 +318,7 @@ class _NavItem extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: (textTheme.labelSmall ?? const TextStyle()).copyWith(
-                color: foregroundColor.withValues(alpha: selected ? 1.0 : 0.65),
+                color: foregroundColor.withOpacity(selected ? 1.0 : 0.65),
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
                 fontSize: 10,
               ),
@@ -357,7 +357,7 @@ class _MoreTab extends StatelessWidget {
             title: 'Profile',
             subtitle: 'Account & league profile',
             iconColor: cs.primary,
-            iconBg: cs.primary.withValues(alpha: 0.12),
+            iconBg: cs.primary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
@@ -369,7 +369,7 @@ class _MoreTab extends StatelessWidget {
             title: 'Activities',
             subtitle: 'Futsal, Car Wash, Training, Events',
             iconColor: cs.primary,
-            iconBg: cs.primary.withValues(alpha: 0.12),
+            iconBg: cs.primary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ActivitiesScreen()),
@@ -381,7 +381,7 @@ class _MoreTab extends StatelessWidget {
             title: 'About Us',
             subtitle: 'Who we are and what we stand for',
             iconColor: cs.secondary,
-            iconBg: cs.secondary.withValues(alpha: 0.12),
+            iconBg: cs.secondary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const AboutScreen()),
@@ -393,7 +393,7 @@ class _MoreTab extends StatelessWidget {
             title: 'Contact',
             subtitle: 'Get in touch with us',
             iconColor: cs.primary,
-            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            iconBg: cs.primaryContainer.withOpacity(0.5),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ContactScreen()),
@@ -405,7 +405,7 @@ class _MoreTab extends StatelessWidget {
             title: 'Settings',
             subtitle: 'Policies & rules',
             iconColor: cs.secondary,
-            iconBg: cs.secondary.withValues(alpha: 0.12),
+            iconBg: cs.secondary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const SettingsScreen()),
@@ -477,8 +477,8 @@ class _MoreCard extends StatelessWidget {
     );
     if (isPrimary) {
       return Card(
-        margin: EdgeInsets.zero,
-        color: cs.primaryContainer.withValues(alpha: 0.4),
+      margin: EdgeInsets.zero,
+      color: cs.primaryContainer.withOpacity(0.4),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),

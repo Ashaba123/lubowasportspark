@@ -219,13 +219,13 @@ class _EventsScreenState extends State<EventsScreen> {
       width: double.infinity,
       color: theme.colorScheme.surfaceContainerHighest,
       alignment: Alignment.center,
-      child: Opacity(
+          child: Opacity(
         opacity: 0.9,
         child: Image.asset(
           'assets/logo.png',
           height: 64,
           fit: BoxFit.contain,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.9),
           colorBlendMode: BlendMode.srcIn,
         ),
       ),
@@ -293,7 +293,7 @@ class _EventsSkeleton extends StatelessWidget {
                       height: theme.textTheme.titleMedium?.fontSize ?? 20,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.2),
+                        color: cs.onSurfaceVariant.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -302,7 +302,7 @@ class _EventsSkeleton extends StatelessWidget {
                       height: theme.textTheme.bodyMedium?.fontSize ?? 16,
                       width: 120,
                       decoration: BoxDecoration(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.12),
+                        color: cs.onSurfaceVariant.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -328,7 +328,7 @@ class _EventDateChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        color: theme.colorScheme.primaryContainer.withOpacity(0.85),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

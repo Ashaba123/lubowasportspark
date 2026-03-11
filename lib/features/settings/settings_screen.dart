@@ -32,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
             title: 'Privacy Policy',
             subtitle: 'How we handle your data and privacy',
             iconColor: cs.secondary,
-            iconBg: cs.secondary.withValues(alpha: 0.12),
+            iconBg: cs.secondary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const PrivacyPolicyScreen()),
@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
             title: 'League & Booking Rules',
             subtitle: 'Participation, bookings, cancellations & conduct',
             iconColor: cs.primary,
-            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            iconBg: cs.primaryContainer.withOpacity(0.5),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const LeagueBookingRulesScreen()),
@@ -56,7 +56,7 @@ class SettingsScreen extends StatelessWidget {
             title: 'Park Rules',
             subtitle: 'Using the facilities safely and respectfully',
             iconColor: cs.secondary,
-            iconBg: cs.secondary.withValues(alpha: 0.12),
+            iconBg: cs.secondary.withOpacity(0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ParkRulesScreen()),
@@ -127,8 +127,8 @@ class _SettingsCard extends StatelessWidget {
     );
     if (isPrimary) {
       return Card(
-        margin: EdgeInsets.zero,
-        color: cs.primaryContainer.withValues(alpha: 0.4),
+      margin: EdgeInsets.zero,
+      color: cs.primaryContainer.withOpacity(0.4),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),

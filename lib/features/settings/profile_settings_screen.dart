@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/auth/token_storage.dart';
@@ -50,6 +51,10 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
+  static const String _avatarPathKey = 'avatar_path';
+  static const String _cachedMePlayerKey = 'cached_me_player';
+  static const String _cachedLeagueRolesKey = 'cached_league_roles';
+
   bool _hasToken = false;
   String? _username;
   String? _leagueUserSummary;
@@ -58,14 +63,87 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _loading = true;
   File? _avatarFile;
   final ImagePicker _imagePicker = ImagePicker();
+  bool _authCheckInProgress = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _checkAuth();
+  void initState() {
+    super.initState();
+    _loadAvatar();
+    _loadCachedLeagueData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuth();
+    });
+  }
+
+  Future<void> _loadAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final path = prefs.getString(_avatarPathKey);
+    if (path == null) return;
+    final file = File(path);
+    if (!file.existsSync()) {
+      await prefs.remove(_avatarPathKey);
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _avatarFile = file;
+    });
+  }
+
+  Future<void> _saveLeagueDataToCache(LeagueRoles roles, MePlayer? player) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cachedLeagueRolesKey, jsonEncode(roles.toJson()));
+    if (player != null) {
+      await prefs.setString(_cachedMePlayerKey, jsonEncode(player.toJson()));
+    } else {
+      await prefs.remove(_cachedMePlayerKey);
+    }
+  }
+
+  String _buildLeagueUserSummary(LeagueRoles roles, MePlayer? player) {
+    final buf = StringBuffer();
+    if (roles.canCreateLeague) buf.write('League creator. ');
+    if (roles.managedLeagueIds.isNotEmpty) buf.write('Manages ${roles.managedLeagueIds.length} league(s). ');
+    if (roles.ledTeamIds.isNotEmpty) buf.write('Leads ${roles.ledTeamIds.length} team(s). ');
+    if (player != null) buf.write('Career goals: ${player.goals}.');
+    return buf.isEmpty ? 'Logged in for leagues.' : buf.toString().trim();
+  }
+
+  Future<void> _loadCachedLeagueData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rolesJson = prefs.getString(_cachedLeagueRolesKey);
+    final playerJson = prefs.getString(_cachedMePlayerKey);
+    if (rolesJson == null && playerJson == null) {
+      return;
+    }
+    LeagueRoles? roles;
+    MePlayer? player;
+    try {
+      if (rolesJson != null) {
+        roles = LeagueRoles.fromJson(jsonDecode(rolesJson) as Map<String, dynamic>);
+      }
+      if (playerJson != null) {
+        player = MePlayer.fromJson(jsonDecode(playerJson) as Map<String, dynamic>);
+      }
+    } catch (_) {
+      // Ignore cache decoding issues; will be replaced by fresh data.
+    }
+    if (!mounted) return;
+    if (roles == null && player == null) {
+      return;
+    }
+    final summary = roles != null ? _buildLeagueUserSummary(roles, player) : null;
+    setState(() {
+      _roles = roles ?? _roles;
+      _mePlayer = player ?? _mePlayer;
+      _leagueUserSummary = summary ?? _leagueUserSummary;
+      _loading = false;
+    });
   }
 
   Future<void> _checkAuth() async {
+    if (_authCheckInProgress) return;
+    _authCheckInProgress = true;
     final tokenStorage = context.read<TokenStorage>();
     final token = await tokenStorage.getToken();
     if (!mounted) return;
@@ -79,6 +157,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _roles = null;
         _loading = false;
       });
+      _authCheckInProgress = false;
       return;
     }
     setState(() => _username = _usernameFromToken(token));
@@ -87,14 +166,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       final roles = await repo.getMyLeagueRoles(forceRefresh: true);
       final player = await repo.getMyPlayer(forceRefresh: true);
       if (!mounted) return;
-      final buf = StringBuffer();
-      if (roles.canCreateLeague) buf.write('League creator. ');
-      if (roles.managedLeagueIds.isNotEmpty) buf.write('Manages ${roles.managedLeagueIds.length} league(s). ');
-      if (roles.ledTeamIds.isNotEmpty) buf.write('Leads ${roles.ledTeamIds.length} team(s). ');
-      if (player != null) buf.write('Career goals: ${player.goals}.');
+      await _saveLeagueDataToCache(roles, player);
+      final summary = _buildLeagueUserSummary(roles, player);
       setState(() {
         _hasToken = true;
-        _leagueUserSummary = buf.isEmpty ? 'Logged in for leagues.' : buf.toString().trim();
+        _leagueUserSummary = summary;
         _mePlayer = player;
         _roles = roles;
         _loading = false;
@@ -108,12 +184,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _roles = null;
         _loading = false;
       });
+    } finally {
+      _authCheckInProgress = false;
     }
   }
 
   Future<void> _logout() async {
     final tokenStorage = context.read<TokenStorage>();
     await tokenStorage.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_avatarPathKey);
+    await prefs.remove(_cachedMePlayerKey);
+    await prefs.remove(_cachedLeagueRolesKey);
     if (!mounted) return;
     setState(() {
       _hasToken = false;
@@ -121,6 +203,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _leagueUserSummary = null;
       _mePlayer = null;
       _roles = null;
+      _avatarFile = null;
     });
   }
 
@@ -128,8 +211,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     try {
       final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (picked == null || !mounted) return;
+      final docsDir = await getApplicationDocumentsDirectory();
+      final avatarPath = '${docsDir.path}${Platform.pathSeparator}user_avatar.jpg';
+      final sourceFile = File(picked.path);
+      final copied = await sourceFile.copy(avatarPath);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_avatarPathKey, copied.path);
       setState(() {
-        _avatarFile = File(picked.path);
+        _avatarFile = copied;
       });
     } catch (_) {
       // Ignore failures; keep existing avatar/initials.
@@ -230,7 +319,7 @@ class _ProfileHeader extends StatelessWidget {
           child: Stack(
             children: [
               CircleAvatar(
-                radius: 48,
+                radius: 96,
                 backgroundColor: cs.primaryContainer,
                 backgroundImage: avatarImage,
                 child: avatarImage == null
@@ -282,7 +371,7 @@ class _ProfileHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Card(
-          color: cs.surface.withValues(alpha: 0.98),
+        color: cs.surface.withOpacity(0.98),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -321,8 +410,7 @@ class _ProfileStat extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          // ignore: deprecated_member_use
-          color: cs.surfaceVariant.withValues(alpha: 0.9),
+          color: cs.surfaceContainerHighest.withOpacity(0.9),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -361,7 +449,7 @@ class _LoggedOutHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Card(
-      color: cs.surface.withValues(alpha: 0.98),
+      color: cs.surface.withOpacity(0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
@@ -427,7 +515,7 @@ class _SettingsSection extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Card(
-      color: cs.surface.withValues(alpha: 0.98),
+      color: cs.surface.withOpacity(0.98),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

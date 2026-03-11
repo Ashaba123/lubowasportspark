@@ -265,6 +265,14 @@ class LeagueRoles {
       ledTeamIds: led?.map((e) => LeagueModel._toInt(e)).where((v) => v != 0).toList() ?? [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'can_create_league': canCreateLeague,
+      'managed_league_ids': managedLeagueIds,
+      'led_team_ids': ledTeamIds,
+    };
+  }
 }
 
 /// GET /lubowa/v1/me/player response (career goals).
@@ -296,4 +304,16 @@ class MePlayer {
         leagueId: LeagueModel._optionalInt(json['league_id']),
         leagueName: json['league_name'] as String?,
       );
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'team_id': teamId,
+      'goals': goals,
+      'team_name': teamName,
+      'league_id': leagueId,
+      'league_name': leagueName,
+    };
+  }
 }
