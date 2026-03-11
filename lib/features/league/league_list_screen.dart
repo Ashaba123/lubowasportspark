@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/cache/local_cache.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'league_detail_screen.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 
-class LeagueListScreen extends StatelessWidget {
+class LeagueListScreen extends StatefulWidget {
   const LeagueListScreen({
     super.key,
     required this.repository,
@@ -22,17 +24,52 @@ class LeagueListScreen extends StatelessWidget {
   final List<int> ledTeamIds;
 
   @override
+  State<LeagueListScreen> createState() => _LeagueListScreenState();
+}
+
+class _LeagueListScreenState extends State<LeagueListScreen> {
+  List<LeagueModel> _cachedLeagues = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = LocalCache(prefs).getList(LocalCache.leaguesKey);
+    if (cached.isNotEmpty && mounted) {
+      setState(() {
+        _cachedLeagues = cached.map(LeagueModel.fromJson).toList();
+      });
+    }
+  }
+
+  Stream<List<LeagueModel>> _streamWithCache() {
+    return widget.repository.getLeaguesStream().map((list) {
+      SharedPreferences.getInstance().then(
+        (prefs) => LocalCache(prefs).setList(
+          LocalCache.leaguesKey,
+          list.map((l) => l.toJson()).toList(),
+        ),
+      );
+      return list;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final title = filterManaged ? 'Leagues I manage' : 'Teams I lead';
+    final title = widget.filterManaged ? 'Leagues I manage' : 'Teams I lead';
     return Provider<LeagueRepository>.value(
-      value: repository,
+      value: widget.repository,
       child: StreamProvider<List<LeagueModel>>.value(
-        initialData: const <LeagueModel>[],
-        value: repository.getLeaguesStream(),
+        initialData: _cachedLeagues,
+        value: _streamWithCache(),
         child: _LeagueListScaffold(
           title: title,
-          filterManaged: filterManaged,
-          managedIds: managedIds,
+          filterManaged: widget.filterManaged,
+          managedIds: widget.managedIds,
         ),
       ),
     );

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/cache/local_cache.dart';
+import '../../core/utils/api_error_message.dart';
 import '../../shared/football_loader.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
@@ -23,6 +26,7 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
   List<GoalLogEntry> _goals = [];
   Map<int, PlayerModel> _playerMap = {};
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -31,7 +35,31 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs);
+    final goalsKey = LocalCache.goalsKey(widget.fixture.id);
+    final homeKey = LocalCache.playersKey(widget.fixture.homeTeamId);
+    final awayKey = LocalCache.playersKey(widget.fixture.awayTeamId);
+
+    final cachedGoals = cache.getList(goalsKey).map(GoalLogEntry.fromJson).toList();
+    final cachedHomePlayers = cache.getList(homeKey).map(PlayerModel.fromJson).toList();
+    final cachedAwayPlayers = cache.getList(awayKey).map(PlayerModel.fromJson).toList();
+
+    if ((cachedGoals.isNotEmpty || cachedHomePlayers.isNotEmpty || cachedAwayPlayers.isNotEmpty) && mounted) {
+      final map = <int, PlayerModel>{
+        for (final p in cachedHomePlayers) p.id: p,
+        for (final p in cachedAwayPlayers) p.id: p,
+      };
+      setState(() {
+        _goals = cachedGoals;
+        _playerMap = map;
+        _loading = false;
+        _error = null;
+      });
+    } else if (mounted) {
+      setState(() => _loading = true);
+    }
+
     try {
       final goals = await widget.repository.getFixtureGoals(
         widget.fixture.id,
@@ -45,6 +73,9 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         widget.fixture.awayTeamId,
         forceRefresh: true,
       );
+      await cache.setList(goalsKey, goals.map((g) => g.toJson()).toList());
+      await cache.setList(homeKey, homePlayers.map((p) => p.toJson()).toList());
+      await cache.setList(awayKey, awayPlayers.map((p) => p.toJson()).toList());
       final map = <int, PlayerModel>{};
       for (final p in homePlayers) {
         map[p.id] = p;
@@ -57,10 +88,14 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         _goals = goals;
         _playerMap = map;
         _loading = false;
+        _error = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(e);
+      });
     }
   }
 
@@ -230,9 +265,16 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         goalId: entry.id,
       );
       if (!mounted) return;
+      final updated = _goals.where((g) => g.id != entry.id).toList();
       setState(() {
-        _goals = _goals.where((g) => g.id != entry.id).toList();
+        _goals = updated;
       });
+      SharedPreferences.getInstance().then(
+        (prefs) => LocalCache(prefs).setList(
+          LocalCache.goalsKey(widget.fixture.id),
+          updated.map((g) => g.toJson()).toList(),
+        ),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Goal entry deleted')),
@@ -287,6 +329,16 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
                 ),
               ),
             ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             if (_goals.isEmpty)
               Card(

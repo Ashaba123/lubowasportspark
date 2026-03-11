@@ -12,6 +12,7 @@ class LocalCache {
 
   // —— Key helpers ——
 
+  static const String leaguesKey = 'cache_leagues';
   static String teamsKey(int leagueId) => 'cache_teams_$leagueId';
   static String playersKey(int teamId) => 'cache_players_$teamId';
   static String fixturesKey(int leagueId) => 'cache_fixtures_$leagueId';
