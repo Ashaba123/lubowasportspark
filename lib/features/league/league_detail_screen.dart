@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/cache/local_cache.dart';
+import '../../core/utils/api_error_message.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'fixtures_polling_notifier.dart';
@@ -22,6 +25,7 @@ class LeagueDetailScreen extends StatefulWidget {
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   List<TeamModel> _teams = [];
   bool _loading = true;
+  String? _error;
   late String _leagueName;
 
   @override
@@ -32,17 +36,36 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs);
+    final cacheKey = LocalCache.teamsKey(widget.league.id);
+
+    final cached = cache.getList(cacheKey);
+    if (cached.isNotEmpty && mounted) {
+      setState(() {
+        _teams = cached.map(TeamModel.fromJson).toList();
+        _loading = false;
+        _error = null;
+      });
+    } else if (mounted) {
+      setState(() => _loading = true);
+    }
+
     try {
       final teams = await widget.repository.getTeams(widget.league.id, forceRefresh: true);
+      await cache.setList(cacheKey, teams.map((t) => t.toJson()).toList());
       if (!mounted) return;
       setState(() {
         _teams = teams;
         _loading = false;
+        _error = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(e);
+      });
     }
   }
 
@@ -94,6 +117,16 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                 ),
               ),
             ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               children: [
@@ -214,11 +247,17 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         ),
       ),
     )
-        .then((deleted) {
+        .then((deleted) async {
       if (deleted == true && mounted) {
+        final updatedTeams = _teams.where((t) => t.id != team.id).toList();
         setState(() {
-          _teams = _teams.where((t) => t.id != team.id).toList();
+          _teams = updatedTeams;
         });
+        final prefs = await SharedPreferences.getInstance();
+        await LocalCache(prefs).setList(
+          LocalCache.teamsKey(widget.league.id),
+          updatedTeams.map((t) => t.toJson()).toList(),
+        );
       }
     });
   }
@@ -254,9 +293,15 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         name: nameCtrl.text.trim(),
       );
       if (!mounted) return;
+      final updatedTeams = [..._teams, newTeam];
       setState(() {
-        _teams = [..._teams, newTeam];
+        _teams = updatedTeams;
       });
+      final prefs = await SharedPreferences.getInstance();
+      await LocalCache(prefs).setList(
+        LocalCache.teamsKey(widget.league.id),
+        updatedTeams.map((t) => t.toJson()).toList(),
+      );
       messenger.showSnackBar(
         const SnackBar(content: Text('Team added')),
       );

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/cache/local_cache.dart';
 import 'league_repository.dart';
 import 'models/league.dart';
 
@@ -35,6 +37,7 @@ class FixturesPollingNotifier extends ChangeNotifier {
     _loading = false;
     _error = null;
     notifyListeners();
+    _persistFixtures(list);
   }
 
   /// Update a single [fixture] in the list and notify listeners.
@@ -44,14 +47,26 @@ class FixturesPollingNotifier extends ChangeNotifier {
     if (index == -1) return;
     _fixtures[index] = fixture;
     notifyListeners();
+    _persistFixtures(_fixtures);
   }
 
   void start() {
-    _load();
+    _loadFromCacheThenApi();
     _timer = Timer.periodic(pollInterval, (_) => _load());
   }
 
   Future<void> refresh() => _load();
+
+  Future<void> _loadFromCacheThenApi() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = LocalCache(prefs).getList(LocalCache.fixturesKey(leagueId));
+    if (cached.isNotEmpty && _fixtures.isEmpty) {
+      _fixtures = cached.map(FixtureModel.fromJson).toList();
+      _loading = false;
+      notifyListeners();
+    }
+    await _load();
+  }
 
   Future<void> _load() async {
     final isFirstLoad = _fixtures.isEmpty;
@@ -67,6 +82,7 @@ class FixturesPollingNotifier extends ChangeNotifier {
         _loading = false;
         _error = null;
         notifyListeners();
+        _persistFixtures(list);
       }
     } catch (e) {
       if (_timer != null) {
@@ -75,6 +91,15 @@ class FixturesPollingNotifier extends ChangeNotifier {
         notifyListeners();
       }
     }
+  }
+
+  void _persistFixtures(List<FixtureModel> list) {
+    SharedPreferences.getInstance().then(
+      (prefs) => LocalCache(prefs).setList(
+        LocalCache.fixturesKey(leagueId),
+        list.map((f) => f.toJson()).toList(),
+      ),
+    );
   }
 
   @override

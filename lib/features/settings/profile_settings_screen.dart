@@ -315,6 +315,7 @@ class _ProfileHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 24),
         Center(
           child: Stack(
             children: [

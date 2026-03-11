@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/cache/local_cache.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../shared/app_logo.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
+
+const String _lastEmailKey = 'last_bookings_email';
 
 // Local formatting helpers mirrored from booking_screen.dart
 String formatTimeSlot(String slot) {
@@ -49,6 +53,20 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _restoreLastEmail();
+  }
+
+  Future<void> _restoreLastEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastEmail = prefs.getString(_lastEmailKey) ?? '';
+    if (lastEmail.isNotEmpty && mounted) {
+      _emailCtrl.text = lastEmail;
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
@@ -72,17 +90,44 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
       _loading = true;
     });
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final cache = LocalCache(prefs);
+      final cacheKey = LocalCache.bookingsKey(email);
+
+      final cached = cache.getList(cacheKey);
+      final cachedBookings = cached.map(BookingItem.fromJson).toList();
+
       final list = await _repository!.getByEmail(email, forceRefresh: true);
+      await cache.setList(cacheKey, list.map((b) => b.toJson()).toList());
+      await prefs.setString(_lastEmailKey, email);
+
       if (!mounted) return;
       setState(() {
         _loading = false;
       });
       Navigator.of(context).pushReplacement(
         fadeSlideRoute(
-          builder: (_) => MyBookingsScreen(initialBookings: list, email: email),
+          builder: (_) => MyBookingsScreen(
+            initialBookings: list.isNotEmpty ? list : cachedBookings,
+            email: email,
+          ),
         ),
       );
     } catch (e, stack) {
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final cached = LocalCache(prefs).getList(LocalCache.bookingsKey(email));
+      if (cached.isNotEmpty && mounted) {
+        Navigator.of(context).pushReplacement(
+          fadeSlideRoute(
+            builder: (_) => MyBookingsScreen(
+              initialBookings: cached.map(BookingItem.fromJson).toList(),
+              email: email,
+            ),
+          ),
+        );
+        return;
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -326,10 +371,29 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
   }
 
+  Stream<List<BookingItem>> _streamWithCache(BookingRepository repo) async* {
+    await for (final apiList in repo.getBookingsStream(widget.email)) {
+      // Merge by id: API data wins for existing ids; preserved cached entries
+      // for any ids not yet returned by the current poll.
+      final merged = <int, BookingItem>{
+        for (final b in _bookings) b.id: b,
+        for (final b in apiList) b.id: b,
+      };
+      final deduped = merged.values.toList()
+        ..sort((a, b) => b.id.compareTo(a.id));
+      SharedPreferences.getInstance().then(
+        (prefs) => LocalCache(prefs).setList(
+          LocalCache.bookingsKey(widget.email),
+          deduped.map((b) => b.toJson()).toList(),
+        ),
+      );
+      yield deduped;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = _repository;
-    // Fallback to a single-frame view if repository isn't ready yet.
     if (repo == null) {
       return _MyBookingsScaffold(
         email: widget.email,
@@ -339,7 +403,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
     return StreamProvider<List<BookingItem>>.value(
       initialData: _bookings,
-      value: repo.getBookingsStream(widget.email),
+      value: _streamWithCache(repo),
       child: _MyBookingsScaffold(
         email: widget.email,
         initialBookings: _bookings,
@@ -413,6 +477,7 @@ class _MyBookingsScaffold extends StatelessWidget {
                   }
                   final b = bookings[i - 1];
                   return BookingCard(
+                    key: ValueKey(b.id),
                     booking: b,
                     onViewDetails: () => Navigator.of(context).push(
                       fadeSlideRoute(

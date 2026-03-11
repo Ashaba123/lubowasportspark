@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/cache/local_cache.dart';
+import '../../core/utils/api_error_message.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'league_repository.dart';
@@ -25,6 +28,7 @@ class TeamDetailScreen extends StatefulWidget {
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   List<PlayerModel> _players = [];
   bool _loading = true;
+  String? _error;
   late String _teamName;
 
   @override
@@ -35,17 +39,36 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs);
+    final cacheKey = LocalCache.playersKey(widget.team.id);
+
+    final cached = cache.getList(cacheKey);
+    if (cached.isNotEmpty && mounted) {
+      setState(() {
+        _players = cached.map(PlayerModel.fromJson).toList();
+        _loading = false;
+        _error = null;
+      });
+    } else if (mounted) {
+      setState(() => _loading = true);
+    }
+
     try {
       final list = await widget.repository.getTeamPlayers(widget.team.id, forceRefresh: true);
+      await cache.setList(cacheKey, list.map((p) => p.toJson()).toList());
       if (!mounted) return;
       setState(() {
         _players = list;
         _loading = false;
+        _error = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(e);
+      });
     }
   }
 
@@ -61,11 +84,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         ),
       ),
     )
-        .then((deleted) {
+        .then((deleted) async {
       if (deleted == true && mounted) {
+        final updated = _players.where((p) => p.id != player.id).toList();
         setState(() {
-          _players = _players.where((p) => p.id != player.id).toList();
+          _players = updated;
         });
+        final prefs = await SharedPreferences.getInstance();
+        await LocalCache(prefs).setList(
+          LocalCache.playersKey(widget.team.id),
+          updated.map((p) => p.toJson()).toList(),
+        );
       }
     });
   }
@@ -101,6 +130,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (_error != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  _error!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                ),
+              ),
+            ],
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -201,9 +239,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         name: nameCtrl.text.trim(),
       );
       if (!mounted) return;
+      final updated = [..._players, newPlayer];
       setState(() {
-        _players = [..._players, newPlayer];
+        _players = updated;
       });
+      final prefs = await SharedPreferences.getInstance();
+      await LocalCache(prefs).setList(
+        LocalCache.playersKey(widget.team.id),
+        updated.map((p) => p.toJson()).toList(),
+      );
       messenger.showSnackBar(
         const SnackBar(content: Text('Player added')),
       );

@@ -81,4 +81,14 @@ class BookingItem {
         service: json['service'] as String?,
         createdAt: json['created_at'] as String?,
       );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'date': date,
+        'time_slot': timeSlot,
+        'contact_name': contactName,
+        'status': status,
+        if (service != null) 'service': service,
+        if (createdAt != null) 'created_at': createdAt,
+      };
 }

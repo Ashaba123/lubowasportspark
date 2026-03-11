@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/league/league_screen.dart';
@@ -17,6 +18,7 @@ void main() {
 
   setUp(() {
     mockDio = MockDio();
+    SharedPreferences.setMockInitialValues({});
   });
 
   testWidgets('LeagueScreen shows Leagues app bar and manage section', (WidgetTester tester) async {

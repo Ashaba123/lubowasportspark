@@ -32,6 +32,15 @@ class LeagueModel {
         createdAt: json['created_at'] as String?,
       );
 
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'name': name,
+        'code': code,
+        'legs': legs,
+        if (createdBy != null) 'created_by': createdBy,
+        if (createdAt != null) 'created_at': createdAt,
+      };
+
   static int? _optionalInt(dynamic v) {
     if (v == null) return null;
     if (v is int) return v;
@@ -53,6 +62,12 @@ class TeamModel {
         name: (json['name'] as String?) ?? '',
         leaderUserId: LeagueModel._optionalInt(json['leader_user_id']),
       );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'name': name,
+        if (leaderUserId != null) 'leader_user_id': leaderUserId,
+      };
 }
 
 /// Player (minimal).
@@ -70,6 +85,13 @@ class PlayerModel {
         goals: LeagueModel._optionalInt(json['goals']) ?? 0,
         userId: LeagueModel._optionalInt(json['user_id']),
       );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'name': name,
+        'goals': goals,
+        if (userId != null) 'user_id': userId,
+      };
 }
 
 /// Logged goal operation for a fixture (for PATCH/DELETE of individual goal resources).
@@ -98,6 +120,15 @@ class GoalLogEntry {
         goals: LeagueModel._optionalInt(json['goals']) ?? 0,
         createdAt: json['created_at'] as String?,
       );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'fixture_id': fixtureId,
+        'team_id': teamId,
+        'player_id': playerId,
+        'goals': goals,
+        if (createdAt != null) 'created_at': createdAt,
+      };
 }
 
 /// Fixture (match).
@@ -144,6 +175,21 @@ class FixtureModel {
         resultConfirmed: LeagueModel._optionalInt(json['result_confirmed']) ?? 0,
         sortOrder: LeagueModel._optionalInt(json['sort_order']),
       );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'home_team_id': homeTeamId,
+        'away_team_id': awayTeamId,
+        if (homeTeamName != null) 'home_team_name': homeTeamName,
+        if (awayTeamName != null) 'away_team_name': awayTeamName,
+        if (homeGoals != null) 'home_goals': homeGoals,
+        if (awayGoals != null) 'away_goals': awayGoals,
+        if (matchDate != null) 'match_date': matchDate,
+        if (matchTime != null) 'match_time': matchTime,
+        'started_at': startedAt,
+        'result_confirmed': resultConfirmed,
+        if (sortOrder != null) 'sort_order': sortOrder,
+      };
 
   bool get isFullTime => resultConfirmed == 1;
 }
