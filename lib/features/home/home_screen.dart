@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/api/api_client.dart';
+import '../../core/utils/api_error_message.dart';
+import '../../core/utils/app_connectivity.dart';
 import '../../shared/app_logo.dart';
+import '../../shared/football_loader.dart';
+import '../../shared/page_transitions.dart';
+import '../league/league_repository.dart';
+import '../league/public_league_screen.dart';
 
 /// Home tab: logo + tagline + 3–4 action cards. Mobile-first.
 /// [onNavigateToTab] switches bottom nav (1=Events, 2=Book, 3=League, 4=More).
@@ -101,6 +109,8 @@ class HomeScreen extends StatelessWidget {
                           subtitle: 'Activities, About us, Contact',
                           onTap: () => onNavigateToTab!(4),
                         ),
+                        const SizedBox(height: 24),
+                        const _PublicLeagueStatsSection(),
                       ],
                     ]),
                   ),
@@ -288,6 +298,136 @@ class _ActionCardState extends State<_ActionCard> {
               Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PublicLeagueStatsSection extends StatefulWidget {
+  const _PublicLeagueStatsSection();
+
+  @override
+  State<_PublicLeagueStatsSection> createState() => _PublicLeagueStatsSectionState();
+}
+
+class _PublicLeagueStatsSectionState extends State<_PublicLeagueStatsSection> {
+  late final LeagueRepository _repository =
+      LeagueRepository(apiClient: context.read<ApiClient>());
+  final _codeController = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadByCode() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      setState(() => _error = 'Enter a league code.');
+      return;
+    }
+    if (!await hasNetworkConnectivity()) {
+      setState(() => _error = userFriendlyApiErrorMessage(NoConnectivityException()));
+      return;
+    }
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
+    try {
+      final data = await _repository.getPublicLeague(code, forceRefresh: true);
+      if (!mounted) return;
+      setState(() => _loading = false);
+      await Navigator.of(context).push(
+        fadeSlideRoute(
+          builder: (_) => PublicLeagueScreen(
+            data: data,
+            repository: _repository,
+          ),
+        ),
+      );
+    } catch (e, stack) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error =
+            '${userFriendlyApiErrorMessage(e)}\n\nRaw (share if needed): $e\n$stack';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            cs.primary,
+            cs.primaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Public league stats',
+              style: theme.textTheme.titleLarge?.copyWith(color: cs.onPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Enter a league code to see standings, fixtures, and top scorers. No login needed.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onPrimary.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _codeController,
+                    decoration: const InputDecoration(
+                      hintText: 'League code (e.g. L755V9)',
+                      filled: true,
+                    ),
+                    textCapitalization: TextCapitalization.characters,
+                    onSubmitted: (_) => _loadByCode(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.tonal(
+                  onPressed: _loading ? null : _loadByCode,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(88, 48),
+                    foregroundColor: cs.primary,
+                    backgroundColor: cs.surface.withValues(alpha: 0.9),
+                  ),
+                  child: _loading
+                      ? const FootballLoader(size: 22)
+                      : const Text('View'),
+                ),
+              ],
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(color: cs.error),
+              ),
+            ],
+          ],
         ),
       ),
     );
