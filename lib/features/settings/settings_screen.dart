@@ -21,22 +21,10 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
           Text(
-            'Account & policies',
+            'Policies & rules',
             style: theme.textTheme.labelLarge?.copyWith(
               color: cs.onSurfaceVariant,
               fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            icon: Icons.person_outline,
-            title: 'Profile',
-            subtitle: 'Account & profile (coming soon)',
-            iconColor: cs.primary,
-            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
-            isPrimary: true,
-            onTap: () => Navigator.of(context).push(
-              fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
             ),
           ),
           const SizedBox(height: 12),

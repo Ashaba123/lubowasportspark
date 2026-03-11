@@ -17,6 +17,7 @@ import 'features/events/events_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/league/league_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/settings/profile_settings_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/splash/splash_screen.dart';
 import 'shared/textured_background.dart';
@@ -352,6 +353,18 @@ class _MoreTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _MoreCard(
+            icon: Icons.person_outline,
+            title: 'Profile',
+            subtitle: 'Account & league profile',
+            iconColor: cs.primary,
+            iconBg: cs.primary.withValues(alpha: 0.12),
+            isPrimary: false,
+            onTap: () => Navigator.of(context).push(
+              fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _MoreCard(
             icon: Icons.sports_soccer,
             title: 'Activities',
             subtitle: 'Futsal, Car Wash, Training, Events',
@@ -390,7 +403,7 @@ class _MoreTab extends StatelessWidget {
           _MoreCard(
             icon: Icons.settings_outlined,
             title: 'Settings',
-            subtitle: 'Profile, policies & rules',
+            subtitle: 'Policies & rules',
             iconColor: cs.secondary,
             iconBg: cs.secondary.withValues(alpha: 0.12),
             isPrimary: false,

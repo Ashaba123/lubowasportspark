@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/api/api_client.dart';
 import '../../core/utils/api_error_message.dart';
 import '../../core/utils/app_connectivity.dart';
-import '../../shared/app_logo.dart';
 import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'booking_repository.dart';
