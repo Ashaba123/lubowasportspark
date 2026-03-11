@@ -9,6 +9,7 @@ import '../../shared/football_loader.dart';
 import '../../shared/page_transitions.dart';
 import 'booking_repository.dart';
 import 'models/booking.dart';
+import 'my_bookings_screen.dart';
 
 // Converts "16:00" → "4pm", "09:30" → "9:30am"
 String _formatTimeSlot(String slot) {
@@ -197,7 +198,7 @@ class _BookingScreenState extends State<BookingScreen> {
             tooltip: 'My bookings',
             onPressed: () {
               Navigator.of(context).push(
-                fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                fadeSlideRoute(builder: (_) => const MyBookingsEntryScreen()),
               );
             },
           ),
@@ -289,7 +290,7 @@ class _BookingScreenState extends State<BookingScreen> {
           Card(
             child: InkWell(
               onTap: () => Navigator.of(context).push(
-                fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                fadeSlideRoute(builder: (_) => const MyBookingsEntryScreen()),
               ),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
@@ -596,7 +597,7 @@ class _BookingScreenState extends State<BookingScreen> {
             TextButton.icon(
               onPressed: () {
                 Navigator.of(context).push(
-                  fadeSlideRoute(builder: (_) => const _MyBookingsEntryScreen()),
+                  fadeSlideRoute(builder: (_) => const MyBookingsEntryScreen()),
                 );
               },
               icon: const Icon(Icons.list_alt),
