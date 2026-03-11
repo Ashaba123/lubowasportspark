@@ -224,11 +224,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _loading
                           ? null
                           : () async {
-                              final bool? created = await Navigator.of(context).push<bool>(
+                              final navigator = Navigator.of(context);
+                              final bool? created = await navigator.push<bool>(
                                 MaterialPageRoute(builder: (_) => const SignupScreen()),
                               );
                               if (created == true && mounted) {
-                                Navigator.of(context).pop(true);
+                                navigator.pop(true);
                               }
                             },
                       child: const Text(
