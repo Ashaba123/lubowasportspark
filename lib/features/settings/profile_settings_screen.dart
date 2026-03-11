@@ -8,7 +8,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/auth_repository.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/core/models/wp_user.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/login_screen.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -54,12 +56,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   static const String _avatarPathKey = 'avatar_path';
   static const String _cachedMePlayerKey = 'cached_me_player';
   static const String _cachedLeagueRolesKey = 'cached_league_roles';
+  static const String _cachedUserKey = 'cached_wp_user';
 
   bool _hasToken = false;
   String? _username;
   String? _leagueUserSummary;
   MePlayer? _mePlayer;
   LeagueRoles? _roles;
+  WpUser? _currentUser;
   bool _loading = true;
   File? _avatarFile;
   final ImagePicker _imagePicker = ImagePicker();
@@ -113,11 +117,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final rolesJson = prefs.getString(_cachedLeagueRolesKey);
     final playerJson = prefs.getString(_cachedMePlayerKey);
-    if (rolesJson == null && playerJson == null) {
+    final userJson = prefs.getString(_cachedUserKey);
+    if (rolesJson == null && playerJson == null && userJson == null) {
       return;
     }
     LeagueRoles? roles;
     MePlayer? player;
+    WpUser? user;
     try {
       if (rolesJson != null) {
         roles = LeagueRoles.fromJson(jsonDecode(rolesJson) as Map<String, dynamic>);
@@ -125,17 +131,21 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (playerJson != null) {
         player = MePlayer.fromJson(jsonDecode(playerJson) as Map<String, dynamic>);
       }
+      if (userJson != null) {
+        user = WpUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+      }
     } catch (_) {
       // Ignore cache decoding issues; will be replaced by fresh data.
     }
     if (!mounted) return;
-    if (roles == null && player == null) {
+    if (roles == null && player == null && user == null) {
       return;
     }
     final summary = roles != null ? _buildLeagueUserSummary(roles, player) : null;
     setState(() {
       _roles = roles ?? _roles;
       _mePlayer = player ?? _mePlayer;
+      _currentUser = user ?? _currentUser;
       _leagueUserSummary = summary ?? _leagueUserSummary;
       _loading = false;
     });
@@ -146,7 +156,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     _authCheckInProgress = true;
     final tokenStorage = context.read<TokenStorage>();
     final token = await tokenStorage.getToken();
-    if (!mounted) return;
+    if (!mounted) {
+      _authCheckInProgress = false;
+      return;
+    }
     final hasToken = token != null && token.isNotEmpty;
     if (!hasToken) {
       setState(() {
@@ -160,16 +173,23 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _authCheckInProgress = false;
       return;
     }
+    final apiClient = context.read<ApiClient>();
+    final leagueRepository = LeagueRepository(apiClient: apiClient);
+    final authRepository = AuthRepository(apiClient: apiClient);
     setState(() => _username = _usernameFromToken(token));
     try {
-      final repo = LeagueRepository(apiClient: context.read<ApiClient>());
-      final roles = await repo.getMyLeagueRoles(forceRefresh: true);
-      final player = await repo.getMyPlayer(forceRefresh: true);
+      final prefs = await SharedPreferences.getInstance();
+      final user = await authRepository.getCurrentUser();
+      final roles = await leagueRepository.getMyLeagueRoles(forceRefresh: true);
+      final player = await leagueRepository.getMyPlayer(forceRefresh: true);
       if (!mounted) return;
       await _saveLeagueDataToCache(roles, player);
+      await prefs.setString(_cachedUserKey, jsonEncode(user.toJson()));
       final summary = _buildLeagueUserSummary(roles, player);
+      if (!mounted) return;
       setState(() {
         _hasToken = true;
+        _currentUser = user;
         _leagueUserSummary = summary;
         _mePlayer = player;
         _roles = roles;
@@ -179,6 +199,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (!mounted) return;
       setState(() {
         _hasToken = true;
+        _currentUser = null;
         _leagueUserSummary = 'Logged in for leagues.';
         _mePlayer = null;
         _roles = null;
@@ -196,6 +217,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     await prefs.remove(_avatarPathKey);
     await prefs.remove(_cachedMePlayerKey);
     await prefs.remove(_cachedLeagueRolesKey);
+    await prefs.remove(_cachedUserKey);
     if (!mounted) return;
     setState(() {
       _hasToken = false;
@@ -203,6 +225,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _leagueUserSummary = null;
       _mePlayer = null;
       _roles = null;
+      _currentUser = null;
       _avatarFile = null;
     });
   }
@@ -257,7 +280,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 children: [
                   _hasToken
                       ? _ProfileHeader(
-                          username: _username,
+                          user: _currentUser,
+                          usernameFallback: _username,
                           mePlayer: _mePlayer,
                           roles: _roles,
                           avatarFile: _avatarFile,
@@ -280,14 +304,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
-    required this.username,
+    required this.user,
+    required this.usernameFallback,
     required this.mePlayer,
     required this.roles,
     required this.avatarFile,
     required this.onEditAvatar,
   });
 
-  final String? username;
+  final WpUser? user;
+  final String? usernameFallback;
   final MePlayer? mePlayer;
   final LeagueRoles? roles;
   final File? avatarFile;
@@ -304,8 +330,9 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final displayName =
-        ((mePlayer != null && mePlayer!.name.isNotEmpty) ? mePlayer!.name : null) ?? username ?? 'Player';
+    final displayName = (user?.name != null && user!.name.isNotEmpty)
+        ? user!.name
+        : (usernameFallback ?? 'Player');
     final goals = mePlayer?.goals ?? 0;
     final leagues = roles?.managedLeagueIds.length ?? 0;
     final teams = roles?.ledTeamIds.length ?? 0;

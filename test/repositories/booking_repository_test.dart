@@ -76,7 +76,7 @@ void main() {
             queryParameters: {
               'contact_email': 'user@example.com',
               'per_page': 100,
-              'sort': '-created_at',
+              'sort': 'created_at',
             },
           )).called(1);
     });

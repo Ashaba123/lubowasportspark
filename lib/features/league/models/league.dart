@@ -328,6 +328,7 @@ class MePlayer {
     required this.name,
     required this.teamId,
     required this.goals,
+    this.userId,
     this.teamName,
     this.leagueId,
     this.leagueName,
@@ -337,6 +338,7 @@ class MePlayer {
   final String name;
   final int teamId;
   final int goals;
+   final int? userId;
   final String? teamName;
   final int? leagueId;
   final String? leagueName;
@@ -346,6 +348,7 @@ class MePlayer {
         name: (json['name'] as String?) ?? '',
         teamId: LeagueModel._toInt(json['team_id']),
         goals: LeagueModel._optionalInt(json['goals']) ?? 0,
+        userId: LeagueModel._optionalInt(json['user_id']),
         teamName: json['team_name'] as String?,
         leagueId: LeagueModel._optionalInt(json['league_id']),
         leagueName: json['league_name'] as String?,
@@ -357,6 +360,7 @@ class MePlayer {
       'name': name,
       'team_id': teamId,
       'goals': goals,
+      if (userId != null) 'user_id': userId,
       'team_name': teamName,
       'league_id': leagueId,
       'league_name': leagueName,

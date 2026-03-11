@@ -15,6 +15,7 @@ class AppConstants {
   /// Paths (relative to base URL)
   static const String pathPosts = '/wp/v2/posts';
   static const String pathPages = '/wp/v2/pages';
+  static const String pathWpCurrentUser = '/wp/v2/users/me';
   static const String pathJwtToken = '/jwt-auth/v1/token';
 
   /// Lubowa API (bookings, leagues)
@@ -23,6 +24,8 @@ class AppConstants {
   static const String pathLubowaPublicLeague = '/lubowa/v1/public/leagues';
   static const String pathLubowaMeRoles = '/lubowa/v1/me/league_roles';
   static const String pathLubowaMePlayer = '/lubowa/v1/me/player';
+  static const String pathLubowaSignup = '/lubowa/v1/signup';
+  static const String pathLubowaGoogleLogin = '/lubowa/v1/google_login';
 
   /// WordPress page slugs for app screens (match site URLs: /, /activities/, /about-us/, /contact/, /events1/).
   static const String slugFrontPage = 'home';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/auth/auth_repository.dart';
@@ -9,6 +10,7 @@ import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/features/league/signup_screen.dart';
 
 /// JWT login. On success stores token and pops with true.
 class LoginScreen extends StatefulWidget {
@@ -27,12 +29,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   AuthRepository? _authRepo;
   TokenStorage? _tokenStorage;
+  GoogleSignIn? _googleSignIn;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _authRepo ??= AuthRepository(apiClient: context.read<ApiClient>());
     _tokenStorage ??= context.read<TokenStorage>();
+    _googleSignIn ??= GoogleSignIn(
+      scopes: const <String>['email', 'profile'],
+    );
   }
 
   @override
@@ -61,6 +67,48 @@ class _LoginScreenState extends State<LoginScreen> {
       await _tokenStorage!.setToken(token);
       if (!mounted) return;
       navigator.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = userFriendlyApiErrorMessage(e);
+      });
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    if (!await hasNetworkConnectivity()) {
+      setState(() => _error = userFriendlyApiErrorMessage(NoConnectivityException()));
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final GoogleSignInAccount? account = await _googleSignIn!.signIn();
+      if (account == null) {
+        setState(() => _loading = false);
+        return;
+      }
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final String? idToken = auth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        setState(() {
+          _loading = false;
+          _error = 'Google sign-in did not return a valid token.';
+        });
+        return;
+      }
+      final result = await _authRepo!.loginWithGoogle(
+        idToken,
+        displayName: account.displayName,
+      );
+      if (result.token.isNotEmpty) {
+        await _tokenStorage!.setToken(result.token);
+      }
+      if (!mounted) return;
+      Navigator.of(context).pop<bool>(true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -164,18 +212,43 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const Text('Log in'),
               ),
               const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _loginWithGoogle,
+                icon: const Icon(Icons.login),
+                label: const Text('Continue with Google'),
+              ),
               Center(
-                child: TextButton(
-                  onPressed: () async {
-                    final uri = Uri.parse('${AppConstants.websiteUrl}/contact');
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
-                  },
-                  child: const Text(
-                    'Don\'t have a login yet? Ask the park staff to create one for you or contact us on the website.',
-                    textAlign: TextAlign.center,
-                  ),
+                child: Column(
+                  children: [
+                    TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () async {
+                              final bool? created = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(builder: (_) => const SignupScreen()),
+                              );
+                              if (created == true && mounted) {
+                                Navigator.of(context).pop(true);
+                              }
+                            },
+                      child: const Text(
+                        'New to Lubowa app? Create an account.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final uri = Uri.parse('${AppConstants.websiteUrl}/contact');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      child: const Text(
+                        'Prefer staff to set up your access? Contact us on the website.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

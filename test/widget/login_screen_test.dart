@@ -23,6 +23,7 @@ void main() {
     expect(find.text('Login'), findsOneWidget);
     expect(find.text('Login to manage your league'), findsOneWidget);
     expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(2));
   });
 

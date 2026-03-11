@@ -58,8 +58,8 @@ class _LeagueScreenState extends State<LeagueScreen> {
                                   style: theme.textTheme.titleMedium),
                               const SizedBox(height: 4),
                               Text(
-                                'Ask the Lubowa Sports Park staff to create a login for you. '
-                                'Use that account to create leagues, add teams and players, and generate fixtures.',
+                                'Sign in or create an account to manage your own leagues. '
+                                'You can still ask the Lubowa Sports Park staff to help if you prefer.',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
