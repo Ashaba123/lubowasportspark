@@ -1,98 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lubowa_sports_park/core/api/api_client.dart';
-import 'package:lubowa_sports_park/core/cache/local_cache.dart';
-import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/app_logo.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/booking/booking_card.dart';
 import 'package:lubowa_sports_park/features/booking/booking_detail_screen.dart';
-import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
+import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 
-class MyBookingsScreen extends StatelessWidget {
+class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key, required this.initialBookings, required this.email});
 
   final List<BookingItem> initialBookings;
   final String email;
 
   @override
+  State<MyBookingsScreen> createState() => _MyBookingsScreenState();
+}
+
+class _MyBookingsScreenState extends State<MyBookingsScreen> {
+  int _reloadToken = 0;
+
+  Future<MyBookingsState> _loadBookings(BuildContext context) async {
+    final BookingRepository repository = BookingRepository(apiClient: context.read<ApiClient>());
+    try {
+      final List<BookingItem> list =
+          await repository.getByEmail(widget.email, forceRefresh: true);
+      return MyBookingsState(bookings: list, error: null);
+    } catch (e) {
+      return MyBookingsState(bookings: const <BookingItem>[], error: e.toString());
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _reloadToken++;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<MyBookingsController>(
-      create: (BuildContext ctx) => MyBookingsController(
-        repository: BookingRepository(apiClient: ctx.read<ApiClient>()),
-        email: email,
-        initialBookings: initialBookings,
+    return FutureProvider<MyBookingsState>(
+      key: ValueKey<int>(_reloadToken),
+      initialData: MyBookingsState(bookings: widget.initialBookings, error: null),
+      create: (BuildContext ctx) => _loadBookings(ctx),
+      child: _MyBookingsView(
+        email: widget.email,
+        onRefresh: _refresh,
       ),
-      child: const _MyBookingsView(),
     );
   }
 }
 
-class MyBookingsController extends ChangeNotifier {
-  MyBookingsController({
-    required this.repository,
-    required this.email,
-    required List<BookingItem> initialBookings,
-  }) : _bookings = List<BookingItem>.from(initialBookings) {
-    if (_bookings.isEmpty) {
-      refresh(showLoader: true);
-    }
-  }
+class MyBookingsState {
+  MyBookingsState({required this.bookings, this.error});
 
-  final BookingRepository repository;
-  final String email;
-
-  List<BookingItem> _bookings;
-  bool _loading = false;
-  String? _error;
-
-  List<BookingItem> get bookings => _bookings;
-  bool get isLoading => _loading;
-  String? get error => _error;
-
-  Future<void> refresh({bool showLoader = false}) async {
-    if (showLoader) {
-      _loading = true;
-      _error = null;
-      notifyListeners();
-    }
-    try {
-      final List<BookingItem> list =
-          await repository.getByEmail(email, forceRefresh: true);
-      _bookings = list;
-      _loading = false;
-      _error = null;
-      notifyListeners();
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await LocalCache(prefs).setList(
-        LocalCache.bookingsKey(email),
-        list.map((BookingItem b) => b.toJson()).toList(),
-      );
-    } catch (e) {
-      _loading = false;
-      _error = userFriendlyApiErrorMessage(e);
-      notifyListeners();
-    }
-  }
+  final List<BookingItem> bookings;
+  final String? error;
 }
 
 class _MyBookingsView extends StatelessWidget {
-  const _MyBookingsView();
+  const _MyBookingsView({required this.email, required this.onRefresh});
+
+  final String email;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    final MyBookingsController controller =
-        context.watch<MyBookingsController>();
+    final MyBookingsState state = context.watch<MyBookingsState>();
     return _MyBookingsScaffold(
-      email: controller.email,
-      bookings: controller.bookings,
-      loading: controller.isLoading,
-      error: controller.error,
-      onRefresh: () => controller.refresh(showLoader: false),
+      email: email,
+      bookings: state.bookings,
+      loading: state.bookings.isEmpty,
+      error: state.error,
+      onRefresh: onRefresh,
     );
   }
 }

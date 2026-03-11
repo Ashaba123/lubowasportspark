@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
@@ -55,7 +53,7 @@ class BookingRepository {
       queryParameters: {
         'contact_email': contactEmail.trim(),
         'per_page': 100,
-        'sort': '-created_at',
+        'sort': 'created_at',
       },
       options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
     );
@@ -63,50 +61,6 @@ class BookingRepository {
     if (raw == null) return [];
     final list = _listFromPaginated(raw);
     return list.map((e) => BookingItem.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  /// Poll bookings for a given [contactEmail] every [interval] and emit updates as a stream.
-  /// Uses [getByEmail] with `forceRefresh: true` so Dio's cache is bypassed on each tick.
-  Stream<List<BookingItem>> getBookingsStream(
-    String contactEmail, {
-    Duration interval = const Duration(seconds: 3),
-  }) async* {
-    final email = contactEmail.trim();
-    if (email.isEmpty) {
-      yield const <BookingItem>[];
-      return;
-    }
-    yield* _poll<List<BookingItem>>(
-      () => getByEmail(email, forceRefresh: true),
-      interval,
-    );
-  }
-
-  Stream<T> _poll<T>(Future<T> Function() fetch, Duration interval) {
-    final controller = StreamController<T>();
-    Timer? timer;
-
-    Future<void> tick() async {
-      try {
-        final value = await fetch();
-        if (!controller.isClosed) controller.add(value);
-      } catch (e, s) {
-        if (!controller.isClosed) controller.addError(e, s);
-      }
-    }
-
-    controller.onListen = () {
-      tick();
-      timer = Timer.periodic(interval, (_) => tick());
-    };
-    controller.onCancel = () {
-      timer?.cancel();
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
-
-    return controller.stream;
   }
 
   static List<dynamic> _listFromPaginated(dynamic raw) {

@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lubowa_sports_park/core/api/api_client.dart';
-import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/booking/my_bookings_screen.dart';
-
-const String _lastEmailKey = 'last_bookings_email';
 
 class MyBookingsEntryScreen extends StatefulWidget {
   const MyBookingsEntryScreen({super.key});
@@ -29,15 +24,6 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
   @override
   void initState() {
     super.initState();
-    _restoreLastEmail();
-  }
-
-  Future<void> _restoreLastEmail() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String lastEmail = prefs.getString(_lastEmailKey) ?? '';
-    if (lastEmail.isNotEmpty && mounted) {
-      _emailCtrl.text = lastEmail;
-    }
   }
 
   @override
@@ -64,16 +50,7 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
       _loading = true;
     });
     try {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final LocalCache cache = LocalCache(prefs);
-      final String cacheKey = LocalCache.bookingsKey(email);
-
-      final List<Map<String, dynamic>> cached = cache.getList(cacheKey);
-      final List<BookingItem> cachedBookings = cached.map(BookingItem.fromJson).toList();
-
       final List<BookingItem> list = await _repository!.getByEmail(email, forceRefresh: true);
-      await cache.setList(cacheKey, list.map((BookingItem b) => b.toJson()).toList());
-      await prefs.setString(_lastEmailKey, email);
 
       if (!mounted) return;
       setState(() {
@@ -82,27 +59,12 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
       Navigator.of(context).pushReplacement(
         fadeSlideRoute(
           builder: (_) => MyBookingsScreen(
-            initialBookings: list.isNotEmpty ? list : cachedBookings,
+            initialBookings: list,
             email: email,
           ),
         ),
       );
     } catch (e, stack) {
-      if (!mounted) return;
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final List<Map<String, dynamic>> cached =
-          LocalCache(prefs).getList(LocalCache.bookingsKey(email));
-      if (cached.isNotEmpty && mounted) {
-        Navigator.of(context).pushReplacement(
-          fadeSlideRoute(
-            builder: (_) => MyBookingsScreen(
-              initialBookings: cached.map(BookingItem.fromJson).toList(),
-              email: email,
-            ),
-          ),
-        );
-        return;
-      }
       if (!mounted) return;
       setState(() {
         _loading = false;
