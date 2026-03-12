@@ -84,17 +84,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         ),
       ),
     )
-        .then((deleted) async {
-      if (deleted == true && mounted) {
-        final updated = _players.where((p) => p.id != player.id).toList();
-        setState(() {
-          _players = updated;
-        });
-        final prefs = await SharedPreferences.getInstance();
-        await LocalCache(prefs).setList(
-          LocalCache.playersKey(widget.team.id),
-          updated.map((p) => p.toJson()).toList(),
-        );
+        .then((changed) async {
+      if (changed == true && mounted) {
+        await _load();
       }
     });
   }

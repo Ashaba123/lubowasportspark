@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
@@ -27,66 +27,82 @@ class LeagueListScreen extends StatefulWidget {
 }
 
 class _LeagueListScreenState extends State<LeagueListScreen> {
-  List<LeagueModel> _leagues = const [];
-  bool _loading = true;
-  String? _error;
+  int _reloadToken = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadCache();
-    _loadLeagues(forceRefresh: true);
-  }
-
-  Future<void> _loadCache() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cached = LocalCache(prefs).getList(LocalCache.leaguesKey);
-    if (cached.isNotEmpty && mounted) {
-      setState(() {
-        _leagues = cached.map(LeagueModel.fromJson).toList();
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadLeagues({bool forceRefresh = false}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<LeagueListState> _loadLeagues(BuildContext context) async {
+    final repo = widget.repository;
     try {
-      final list = await widget.repository.getLeagues(forceRefresh: forceRefresh);
-      if (!mounted) return;
-      setState(() {
-        _leagues = list;
-        _loading = false;
-      });
+      final list = await repo.getLeagues(forceRefresh: true);
       final prefs = await SharedPreferences.getInstance();
       await LocalCache(prefs).setList(
         LocalCache.leaguesKey,
         list.map((l) => l.toJson()).toList(),
       );
+      return LeagueListState(leagues: list, error: null);
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      return LeagueListState(leagues: const <LeagueModel>[], error: e.toString());
     }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _reloadToken++;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final title = widget.filterManaged ? 'Leagues I manage' : 'Teams I lead';
+    return FutureProvider<LeagueListState>(
+      key: ValueKey<int>(_reloadToken),
+      initialData: LeagueListState(leagues: const <LeagueModel>[], error: null),
+      create: (ctx) => _loadLeagues(ctx),
+      child: _LeagueListView(
+        title: title,
+        filterManaged: widget.filterManaged,
+        managedIds: widget.managedIds,
+        repository: widget.repository,
+        onRefresh: _refresh,
+      ),
+    );
+  }
+}
+
+class LeagueListState {
+  LeagueListState({required this.leagues, this.error});
+
+  final List<LeagueModel> leagues;
+  final String? error;
+}
+
+class _LeagueListView extends StatelessWidget {
+  const _LeagueListView({
+    required this.title,
+    required this.filterManaged,
+    required this.managedIds,
+    required this.repository,
+    required this.onRefresh,
+  });
+
+  final String title;
+  final bool filterManaged;
+  final List<int> managedIds;
+  final LeagueRepository repository;
+  final Future<void> Function() onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<LeagueListState>();
+    final loading = state.leagues.isEmpty && state.error == null;
     return _LeagueListScaffold(
       title: title,
-      filterManaged: widget.filterManaged,
-      managedIds: widget.managedIds,
-      leagues: _leagues,
-      loading: _loading,
-      error: _error,
-      repository: widget.repository,
-      onRefresh: () => _loadLeagues(forceRefresh: true),
+      filterManaged: filterManaged,
+      managedIds: managedIds,
+      leagues: state.leagues,
+      loading: loading,
+      error: state.error,
+      repository: repository,
+      onRefresh: onRefresh,
     );
   }
 }

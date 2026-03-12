@@ -25,24 +25,8 @@ class PublicLeagueScreen extends StatelessWidget {
     }
     return Provider<LeagueRepository>.value(
       value: repo,
-      child: StreamProvider<PublicLeagueResponse>.value(
-        initialData: data,
-        value: repo.getPublicLeagueStream(data.league.code),
-        child: _PublicLeagueStreamBody(initial: data),
-      ),
+      child: _PublicLeagueScaffold(data: data),
     );
-  }
-}
-
-class _PublicLeagueStreamBody extends StatelessWidget {
-  const _PublicLeagueStreamBody({required this.initial});
-
-  final PublicLeagueResponse initial;
-
-  @override
-  Widget build(BuildContext context) {
-    final latest = context.watch<PublicLeagueResponse>();
-    return _PublicLeagueScaffold(data: latest);
   }
 }
 

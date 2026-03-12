@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
@@ -36,24 +33,13 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   }
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cache = LocalCache(prefs);
-    final cacheKey = LocalCache.teamsKey(widget.league.id);
-
-    final cached = cache.getList(cacheKey);
-    if (cached.isNotEmpty && mounted) {
-      setState(() {
-        _teams = cached.map(TeamModel.fromJson).toList();
-        _loading = false;
-        _error = null;
-      });
-    } else if (mounted) {
-      setState(() => _loading = true);
-    }
-
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final teams = await widget.repository.getTeams(widget.league.id, forceRefresh: true);
-      await cache.setList(cacheKey, teams.map((t) => t.toJson()).toList());
       if (!mounted) return;
       setState(() {
         _teams = teams;
@@ -253,11 +239,6 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         setState(() {
           _teams = updatedTeams;
         });
-        final prefs = await SharedPreferences.getInstance();
-        await LocalCache(prefs).setList(
-          LocalCache.teamsKey(widget.league.id),
-          updatedTeams.map((t) => t.toJson()).toList(),
-        );
       }
     });
   }
@@ -297,11 +278,6 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       setState(() {
         _teams = updatedTeams;
       });
-      final prefs = await SharedPreferences.getInstance();
-      await LocalCache(prefs).setList(
-        LocalCache.teamsKey(widget.league.id),
-        updatedTeams.map((t) => t.toJson()).toList(),
-      );
       messenger.showSnackBar(
         const SnackBar(content: Text('Team added')),
       );
