@@ -72,7 +72,13 @@ class TeamModel {
 
 /// Player (minimal).
 class PlayerModel {
-  const PlayerModel({required this.id, required this.name, this.goals = 0, this.userId, this.teamId,});
+  const PlayerModel({
+    required this.id,
+    required this.name,
+    this.goals = 0,
+    this.userId,
+    this.teamId,
+  });
 
   final int id;
   final String name;
@@ -93,7 +99,7 @@ class PlayerModel {
         'name': name,
         'goals': goals,
         if (userId != null) 'user_id': userId,
-        if (teamId != null) 'team_id': teamId,  
+        if (teamId != null) 'team_id': teamId,
       };
 }
 
@@ -146,7 +152,7 @@ class FixtureModel {
     this.awayGoals,
     this.matchDate,
     this.matchTime,
-    this.startedAt,
+    this.startedAt = false,
     this.resultConfirmed = 0,
     this.sortOrder,
   });
@@ -160,7 +166,7 @@ class FixtureModel {
   final int? awayGoals;
   final String? matchDate;
   final String? matchTime;
-  final bool? startedAt;
+  final bool startedAt;
   final int resultConfirmed;
   final int? sortOrder;
 
@@ -174,8 +180,12 @@ class FixtureModel {
         awayGoals: LeagueModel._optionalInt(json['away_goals']),
         matchDate: json['match_date'] as String?,
         matchTime: json['match_time'] as String?,
-        startedAt: json['started_at'] == true || json['started_at'] == 1,
-        resultConfirmed: LeagueModel._optionalInt(json['result_confirmed']) ?? 0,
+        startedAt: json['started_at'] == true ||
+            json['started_at'] == 1 ||
+            (json['started_at'] is String &&
+                (json['started_at'] as String).isNotEmpty),
+        resultConfirmed:
+            LeagueModel._optionalInt(json['result_confirmed']) ?? 0,
         sortOrder: LeagueModel._optionalInt(json['sort_order']),
       );
 
@@ -195,6 +205,7 @@ class FixtureModel {
       };
 
   bool get isFullTime => resultConfirmed == 1;
+  bool get isStarted => startedAt;
 }
 
 /// Standings row (team, points, W/D/L).
@@ -227,7 +238,11 @@ class StandingsRow {
 
 /// Top scorer entry.
 class TopScorerEntry {
-  const TopScorerEntry({required this.playerId, required this.playerName, required this.goals, this.teamName});
+  const TopScorerEntry(
+      {required this.playerId,
+      required this.playerName,
+      required this.goals,
+      this.teamName});
 
   final int playerId;
   final String playerName;
@@ -262,10 +277,21 @@ class PublicLeagueResponse {
     final fixturesList = json['fixtures'] as List<dynamic>?;
     final topList = json['top_scorers'] as List<dynamic>?;
     return PublicLeagueResponse(
-      league: leagueObj != null ? LeagueModel.fromJson(leagueObj) : const LeagueModel(id: 0, name: '', code: ''),
-      standings: standingsList?.map((e) => StandingsRow.fromJson(e as Map<String, dynamic>)).toList() ?? [],
-      fixtures: fixturesList?.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>)).toList() ?? [],
-      topScorers: topList?.map((e) => TopScorerEntry.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      league: leagueObj != null
+          ? LeagueModel.fromJson(leagueObj)
+          : const LeagueModel(id: 0, name: '', code: ''),
+      standings: standingsList
+              ?.map((e) => StandingsRow.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      fixtures: fixturesList
+              ?.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      topScorers: topList
+              ?.map((e) => TopScorerEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }
@@ -286,9 +312,14 @@ class PublicResultsResponse {
     final leagueObj = json['league'] as Map<String, dynamic>?;
     final resultsList = json['results'] as List<dynamic>?;
     return PublicResultsResponse(
-      league: leagueObj != null ? LeagueModel.fromJson(leagueObj) : const LeagueModel(id: 0, name: '', code: ''),
+      league: leagueObj != null
+          ? LeagueModel.fromJson(leagueObj)
+          : const LeagueModel(id: 0, name: '', code: ''),
       date: (json['date'] as String?) ?? '',
-      results: resultsList?.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>)).toList() ?? [],
+      results: resultsList
+              ?.map((e) => FixtureModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }
@@ -310,8 +341,16 @@ class LeagueRoles {
     final led = json['led_team_ids'] as List<dynamic>?;
     return LeagueRoles(
       canCreateLeague: json['can_create_league'] == true,
-      managedLeagueIds: managed?.map((e) => LeagueModel._toInt(e)).where((v) => v != 0).toList() ?? [],
-      ledTeamIds: led?.map((e) => LeagueModel._toInt(e)).where((v) => v != 0).toList() ?? [],
+      managedLeagueIds: managed
+              ?.map((e) => LeagueModel._toInt(e))
+              .where((v) => v != 0)
+              .toList() ??
+          [],
+      ledTeamIds: led
+              ?.map((e) => LeagueModel._toInt(e))
+              .where((v) => v != 0)
+              .toList() ??
+          [],
     );
   }
 
@@ -341,7 +380,7 @@ class MePlayer {
   final String name;
   final int teamId;
   final int goals;
-   final int? userId;
+  final int? userId;
   final String? teamName;
   final int? leagueId;
   final String? leagueName;

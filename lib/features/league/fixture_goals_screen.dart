@@ -41,11 +41,17 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
     final homeKey = LocalCache.playersKey(widget.fixture.homeTeamId);
     final awayKey = LocalCache.playersKey(widget.fixture.awayTeamId);
 
-    final cachedGoals = cache.getList(goalsKey).map(GoalLogEntry.fromJson).toList();
-    final cachedHomePlayers = cache.getList(homeKey).map(PlayerModel.fromJson).toList();
-    final cachedAwayPlayers = cache.getList(awayKey).map(PlayerModel.fromJson).toList();
+    final cachedGoals =
+        cache.getList(goalsKey).map(GoalLogEntry.fromJson).toList();
+    final cachedHomePlayers =
+        cache.getList(homeKey).map(PlayerModel.fromJson).toList();
+    final cachedAwayPlayers =
+        cache.getList(awayKey).map(PlayerModel.fromJson).toList();
 
-    if ((cachedGoals.isNotEmpty || cachedHomePlayers.isNotEmpty || cachedAwayPlayers.isNotEmpty) && mounted) {
+    if ((cachedGoals.isNotEmpty ||
+            cachedHomePlayers.isNotEmpty ||
+            cachedAwayPlayers.isNotEmpty) &&
+        mounted) {
       final map = <int, PlayerModel>{
         for (final p in cachedHomePlayers) p.id: p,
         for (final p in cachedAwayPlayers) p.id: p,
@@ -183,7 +189,8 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -207,7 +214,7 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
           FilledButton(
             onPressed: () {
               final n = int.tryParse(ctrl.text.trim());
-              if (n == null || n < 0) return;
+              if (n == null || n < 1) return;
               Navigator.of(ctx).pop(true);
             },
             child: const Text('Save'),
@@ -217,7 +224,7 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
     );
     if (ok != true || !mounted) return;
     final n = int.tryParse(ctrl.text.trim());
-    if (n == null || n < 0) return;
+    if (n == null || n < 1) return;
     try {
       await widget.repository.updateFixtureGoal(
         fixtureId: widget.fixture.id,
@@ -233,7 +240,8 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -282,7 +290,8 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -335,7 +344,8 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
                   _error!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: colorScheme.error),
                 ),
               ),
             ],

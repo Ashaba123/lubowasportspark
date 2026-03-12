@@ -6,15 +6,24 @@ extension PlayersRepository on LeagueRepository {
   Future<List<PlayerModel>> getTeamPlayers(int teamId, {bool forceRefresh = false}) async {
     const String basePath = '/lubowa/v1/teams';
     final String path = '$basePath/$teamId/players';
-    Response<dynamic> response;
-    if (forceRefresh) {
-      response = await _dio.get<dynamic>(
-        path,
-        options: Options(extra: <String, Object>{'dio_cache_force_refresh': true}),
-      );
-    } else {
-      response = await _dio.get<dynamic>(path);
-    }
+    final Map<String, dynamic> queryParameters = <String, dynamic>{
+      'per_page': 100,
+      if (forceRefresh) '_': DateTime.now().millisecondsSinceEpoch,
+    };
+    final Options? options = forceRefresh
+        ? Options(
+            extra: <String, Object>{'dio_cache_force_refresh': true},
+            headers: <String, String>{
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+          )
+        : null;
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+    );
     final List<dynamic> list = LeagueRepository.listFromPaginated(response.data);
     return list.map((dynamic e) => PlayerModel.fromJson(e as Map<String, dynamic>)).toList();
   }

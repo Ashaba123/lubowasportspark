@@ -39,11 +39,13 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       widget.repository.getTeams(widget.league.id, forceRefresh: true);
 
   /// Reassign the future so FutureBuilder re-runs the fetch.
-  void _refresh() {
+  Future<void> _refresh() async {
     if (!mounted) return;
+    final Future<List<TeamModel>> nextFuture = _fetchTeams();
     setState(() {
-      _teamsFuture = _fetchTeams();
+      _teamsFuture = nextFuture;
     });
+    await nextFuture;
   }
 
   @override
@@ -82,7 +84,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
               : null;
 
           return RefreshIndicator(
-            onRefresh: () async => _refresh(),
+            onRefresh: _refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
@@ -260,8 +262,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           repository: widget.repository,
         ),
       ),
-    )
-        .then((_) => _refresh()); // ✅ always refresh — covers rename, delete, etc.
+    ).then((_) => _refresh()); // ✅ always refresh — covers rename, delete, etc.
   }
 
   Future<void> _showAddTeam(
@@ -297,7 +298,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         widget.league.id,
         name: nameCtrl.text.trim(),
       );
-      _refresh(); // ✅ re-fetch so new team appears from server
+      await _refresh(); // ✅ re-fetch so new team appears from server
       messenger.showSnackBar(const SnackBar(content: Text('Team added')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));

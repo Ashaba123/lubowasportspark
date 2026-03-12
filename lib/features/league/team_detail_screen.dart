@@ -52,11 +52,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   /// Reassign the future so FutureBuilder re-runs the fetch.
-  void _refresh() {
+  Future<void> _refresh() async {
     if (!mounted) return;
+    final Future<List<PlayerModel>> nextFuture = _fetchPlayers();
     setState(() {
-      _playersFuture = _fetchPlayers();
+      _playersFuture = nextFuture;
     });
+    await nextFuture;
   }
 
   void _openPlayer(BuildContext context, PlayerModel player) {
@@ -110,7 +112,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               : null;
 
           return RefreshIndicator(
-            onRefresh: () async => _refresh(),
+            onRefresh: _refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
@@ -257,7 +259,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         widget.team.id,
         name: nameCtrl.text.trim(),
       );
-      _refresh(); // ✅ re-fetch so new player appears from server
+      await _refresh(); // ✅ re-fetch so new player appears from server
       messenger.showSnackBar(const SnackBar(content: Text('Player added')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));

@@ -149,7 +149,11 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        )).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}});
@@ -219,7 +223,11 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        )).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({
@@ -290,7 +298,11 @@ void main() {
       }
       return responseOk<Map<String, dynamic>>({});
     });
-    when(() => mockDio.get<dynamic>(any(), options: any(named: 'options'))).thenAnswer((inv) async {
+    when(() => mockDio.get<dynamic>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        )).thenAnswer((inv) async {
       final path = inv.positionalArguments.first as String;
       if (path == '${AppConstants.pathLubowaLeagues}/1/teams') {
         return responseOk<dynamic>({

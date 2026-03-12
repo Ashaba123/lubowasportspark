@@ -26,6 +26,7 @@ class FixtureEditScreen extends StatefulWidget {
 class _FixtureEditScreenState extends State<FixtureEditScreen> {
   late final TextEditingController _homeCtrl;
   late final TextEditingController _awayCtrl;
+  late bool _started;
   bool _saving = false;
 
   @override
@@ -33,6 +34,7 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
     super.initState();
     _homeCtrl = TextEditingController(text: '${widget.fixture.homeGoals ?? 0}');
     _awayCtrl = TextEditingController(text: '${widget.fixture.awayGoals ?? 0}');
+    _started = widget.fixture.isStarted;
   }
 
   @override
@@ -58,7 +60,8 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         awayGoals: a,
       );
       if (!mounted) return;
-      if ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0) {
+      if (updated.isStarted &&
+          ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0)) {
         await _showAssignGoalsDialog(updated);
       }
       if (mounted) {
@@ -66,7 +69,8 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
+      messenger.showSnackBar(
+          SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -74,9 +78,15 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
 
   Future<void> _markFullTime() async {
     if (widget.fixture.isFullTime) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (!_started) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Start the match first')),
+      );
+      return;
+    }
     final h = _homeGoals;
     final a = _awayGoals;
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
     try {
       final updated = await widget.repository.updateFixture(
@@ -86,7 +96,8 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         resultConfirmed: 1,
       );
       if (!mounted) return;
-      if ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0) {
+      if (updated.isStarted &&
+          ((updated.homeGoals ?? 0) > 0 || (updated.awayGoals ?? 0) > 0)) {
         await _showAssignGoalsDialog(updated);
       }
       if (mounted) {
@@ -94,7 +105,32 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
+      messenger.showSnackBar(
+          SnackBar(content: Text(userFriendlyApiErrorMessage(e))));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _startMatch() async {
+    if (_started || widget.fixture.isFullTime) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _saving = true);
+    try {
+      final updated = await widget.repository.updateFixture(
+        widget.fixture.id,
+        startedAt: true,
+      );
+      if (!mounted) return;
+      setState(() {
+        _started = updated.isStarted;
+      });
+      widget.onSaved(updated);
+      messenger.showSnackBar(const SnackBar(content: Text('Match started')));
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(userFriendlyApiErrorMessage(e))),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -132,14 +168,33 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
                   if (widget.fixture.isFullTime) ...[
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        color:
+                            colorScheme.primaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         'Full time — score locked',
-                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.primary),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: colorScheme.primary),
+                      ),
+                    ),
+                  ] else if (_started) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Match in progress',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: colorScheme.secondary),
                       ),
                     ),
                   ],
@@ -161,10 +216,22 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
             },
             icon: const Icon(Icons.sports_score),
             label: const Text('Goal log'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48)),
           ),
           if (!widget.fixture.isFullTime) ...[
             const SizedBox(height: 24),
+            if (!_started) ...[
+              FilledButton.tonal(
+                onPressed: _saving ? null : _startMatch,
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48)),
+                child: _saving
+                    ? const FootballLoader(size: 22)
+                    : const Text('Start match'),
+              ),
+              const SizedBox(height: 12),
+            ],
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -185,7 +252,8 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         '–',
-                        style: theme.textTheme.titleLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
                     Expanded(
@@ -206,13 +274,17 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _saving ? null : _save,
-              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-              child: _saving ? const FootballLoader(size: 22) : const Text('Save score'),
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48)),
+              child: _saving
+                  ? const FootballLoader(size: 22)
+                  : const Text('Save score'),
             ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: _saving ? null : _markFullTime,
-              style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48)),
               child: const Text('Mark full time'),
             ),
           ],
@@ -285,7 +357,8 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Add goals — ${isHome ? widget.fixture.homeTeamName ?? "Home" : widget.fixture.awayTeamName ?? "Away"}'),
+          title: Text(
+              'Add goals — ${isHome ? widget.fixture.homeTeamName ?? "Home" : widget.fixture.awayTeamName ?? "Away"}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -421,4 +494,3 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
     );
   }
 }
-

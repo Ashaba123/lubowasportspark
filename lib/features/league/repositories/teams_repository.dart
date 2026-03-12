@@ -5,15 +5,24 @@ extension TeamsRepository on LeagueRepository {
   /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after adding a team).
   Future<List<TeamModel>> getTeams(int leagueId, {bool forceRefresh = false}) async {
     final String path = '${AppConstants.pathLubowaLeagues}/$leagueId/teams';
-    Response<dynamic> response;
-    if (forceRefresh) {
-      response = await _dio.get<dynamic>(
-        path,
-        options: Options(extra: <String, Object>{'dio_cache_force_refresh': true}),
-      );
-    } else {
-      response = await _dio.get<dynamic>(path);
-    }
+    final Map<String, dynamic> queryParameters = <String, dynamic>{
+      'per_page': 100,
+      if (forceRefresh) '_': DateTime.now().millisecondsSinceEpoch,
+    };
+    final Options? options = forceRefresh
+        ? Options(
+            extra: <String, Object>{'dio_cache_force_refresh': true},
+            headers: <String, String>{
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+          )
+        : null;
+    final Response<dynamic> response = await _dio.get<dynamic>(
+      path,
+      queryParameters: queryParameters,
+      options: options,
+    );
     final List<dynamic> list = LeagueRepository.listFromPaginated(response.data);
     return list.map((dynamic e) => TeamModel.fromJson(e as Map<String, dynamic>)).toList();
   }
