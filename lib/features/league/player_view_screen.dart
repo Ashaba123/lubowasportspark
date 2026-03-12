@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/stat_chip.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Single player view: name, team, league, goals.
 class PlayerViewScreen extends StatefulWidget {
@@ -34,6 +36,15 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
     super.initState();
     _goals = widget.player.goals;
     _playerName = widget.player.name;
+  }
+
+  /// Clears the cached players list for this team so TeamDetailScreen
+  /// is forced to fetch fresh data from the server on next load.
+  Future<void> _invalidatePlayersCache() async {
+    final tid = widget.player.teamId;
+    if (tid == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await LocalCache(prefs).setList(LocalCache.playersKey(tid), []);
   }
 
   Future<void> _showAddGoalsDialog() async {
@@ -85,6 +96,7 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
     setState(() => _updating = true);
     try {
       await widget.repository.updatePlayer(widget.player.id, goals: newTotal);
+      await _invalidatePlayersCache(); // ✅ clear stale cache
       if (!mounted) return;
       setState(() {
         _goals = newTotal;
@@ -136,12 +148,12 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
         widget.player.id,
         name: nameCtrl.text.trim(),
       );
+      await _invalidatePlayersCache(); // ✅ clear stale cache
       if (!mounted) return;
       setState(() {
         _playerName = updated.name;
         _changed = true;
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Player updated')),
       );
@@ -179,6 +191,7 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
     setState(() => _updating = true);
     try {
       await widget.repository.deletePlayer(widget.player.id);
+      await _invalidatePlayersCache(); // ✅ clear stale cache
       if (!mounted) return;
       Navigator.of(context).pop(true);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -215,12 +228,12 @@ class _PlayerViewScreenState extends State<PlayerViewScreen> {
     try {
       final updated =
           await widget.repository.updatePlayer(widget.player.id, goals: 0);
+      await _invalidatePlayersCache(); // ✅ clear stale cache
       if (!mounted) return;
       setState(() {
         _goals = updated.goals;
         _changed = true;
       });
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Goals reset')),
       );

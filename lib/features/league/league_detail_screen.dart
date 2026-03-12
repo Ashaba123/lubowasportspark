@@ -10,7 +10,11 @@ import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/team_detail_screen.dart';
 
 class LeagueDetailScreen extends StatefulWidget {
-  const LeagueDetailScreen({super.key, required this.league, required this.repository});
+  const LeagueDetailScreen({
+    super.key,
+    required this.league,
+    required this.repository,
+  });
 
   final LeagueModel league;
   final LeagueRepository repository;
@@ -20,51 +24,33 @@ class LeagueDetailScreen extends StatefulWidget {
 }
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
-  List<TeamModel> _teams = [];
-  bool _loading = true;
-  String? _error;
   late String _leagueName;
+  // The future driving the FutureBuilder. Reassigning this triggers a rebuild.
+  late Future<List<TeamModel>> _teamsFuture;
 
   @override
   void initState() {
     super.initState();
     _leagueName = widget.league.name;
-    _load();
+    _teamsFuture = _fetchTeams();
   }
 
-  Future<void> _load() async {
+  Future<List<TeamModel>> _fetchTeams() =>
+      widget.repository.getTeams(widget.league.id, forceRefresh: true);
+
+  /// Reassign the future so FutureBuilder re-runs the fetch.
+  void _refresh() {
     if (!mounted) return;
     setState(() {
-      _loading = true;
-      _error = null;
+      _teamsFuture = _fetchTeams();
     });
-    try {
-      final teams = await widget.repository.getTeams(widget.league.id, forceRefresh: true);
-      if (!mounted) return;
-      setState(() {
-        _teams = teams;
-        _loading = false;
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = userFriendlyApiErrorMessage(e);
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: Text(_leagueName)),
-        body: const Center(child: FootballLoader()),
-      );
-    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_leagueName),
@@ -81,131 +67,173 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: FutureBuilder<List<TeamModel>>(
+        future: _teamsFuture,
+        builder: (context, snapshot) {
+          // Show full-screen loader only on the very first load (no data yet).
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return const Center(child: FootballLoader());
+          }
+
+          final teams = snapshot.data ?? [];
+          final error = snapshot.hasError
+              ? userFriendlyApiErrorMessage(snapshot.error!)
+              : null;
+
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                // League info card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_leagueName, style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Code: ${widget.league.code}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Inline error (keeps list visible)
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      error,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: colorScheme.error),
+                    ),
+                  ),
+                ],
+
+                // Subtle loading indicator while refreshing with existing data
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    snapshot.hasData) ...[
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(),
+                ],
+
+                const SizedBox(height: 24),
+
+                // Teams header
+                Row(
                   children: [
-                    Text(_leagueName, style: theme.textTheme.titleLarge),
-                    const SizedBox(height: 4),
+                    Text('Teams', style: theme.textTheme.titleLarge),
+                    const SizedBox(width: 8),
                     Text(
-                      'Code: ${widget.league.code}',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      '(${teams.length})',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: () => _showAddTeam(context, teams),
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Add team'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 40),
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  _error!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Text('Teams', style: theme.textTheme.titleLarge),
-                const SizedBox(width: 8),
-                Text(
-                  '(${_teams.length})',
-                  style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: () => _showAddTeam(context),
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Add team'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
+                const SizedBox(height: 8),
+
+                // Teams list
+                Card(
+                  child: Column(
+                    children: [
+                      ...teams.map(
+                        (t) => ListTile(
+                          leading: Icon(Icons.groups_outlined,
+                              color: colorScheme.primary),
+                          title:
+                              Text(t.name, style: theme.textTheme.bodyLarge),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _openTeam(context, t),
+                        ),
+                      ),
+                      if (teams.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Add at least 2 teams to generate fixtures.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Column(
-                children: [
-                  ..._teams.map(
-                    (t) => ListTile(
-                      leading: Icon(Icons.groups_outlined, color: colorScheme.primary),
-                      title: Text(t.name, style: theme.textTheme.bodyLarge),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _openTeam(context, t),
-                    ),
-                  ),
-                  if (_teams.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Add at least 2 teams to generate fixtures.',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+
+                const SizedBox(height: 24),
+
+                // Fixtures header
+                Row(
+                  children: [
+                    Text('Fixtures', style: theme.textTheme.titleLarge),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: teams.length < 2
+                          ? null
+                          : () => _openFixtures(context),
+                      icon: const Icon(Icons.calendar_month, size: 20),
+                      label: const Text('Open fixtures'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 40),
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                       ),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Text('Fixtures', style: theme.textTheme.titleLarge),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: _teams.length < 2
-                      ? null
-                      : () => _openFixtures(context),
-                  icon: const Icon(Icons.calendar_month, size: 20),
-                  label: const Text('Open fixtures'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                  ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                if (teams.length < 2)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Add at least 2 teams to generate fixtures.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  )
+                else
+                  Card(
+                    child: ListTile(
+                      leading: Icon(Icons.sports_soccer_outlined,
+                          color: colorScheme.primary),
+                      title: Text(
+                        'Generate fixtures, edit scores, add goals, mark full time',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _openFixtures(context),
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 8),
-            if (_teams.length < 2)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Add at least 2 teams to generate fixtures.',
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                ),
-              )
-            else
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.sports_soccer_outlined, color: colorScheme.primary),
-                  title: Text(
-                    'Generate fixtures, edit scores, add goals, mark full time',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _openFixtures(context),
-                ),
-              ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   void _openFixtures(BuildContext context) {
-    if (_teams.length < 2) return;
     Navigator.of(context).push(
       fadeSlideRoute(
         builder: (_) => ChangeNotifierProvider<FixturesPollingNotifier>(
@@ -233,17 +261,11 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         ),
       ),
     )
-        .then((deleted) async {
-      if (deleted == true && mounted) {
-        final updatedTeams = _teams.where((t) => t.id != team.id).toList();
-        setState(() {
-          _teams = updatedTeams;
-        });
-      }
-    });
+        .then((_) => _refresh()); // ✅ always refresh — covers rename, delete, etc.
   }
 
-  Future<void> _showAddTeam(BuildContext context) async {
+  Future<void> _showAddTeam(
+      BuildContext context, List<TeamModel> currentTeams) async {
     final messenger = ScaffoldMessenger.of(context);
     final nameCtrl = TextEditingController();
     final ok = await showDialog<bool>(
@@ -256,7 +278,9 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -269,18 +293,12 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     );
     if (ok != true || !mounted) return;
     try {
-      final newTeam = await widget.repository.addTeam(
+      await widget.repository.addTeam(
         widget.league.id,
         name: nameCtrl.text.trim(),
       );
-      if (!mounted) return;
-      final updatedTeams = [..._teams, newTeam];
-      setState(() {
-        _teams = updatedTeams;
-      });
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Team added')),
-      );
+      _refresh(); // ✅ re-fetch so new team appears from server
+      messenger.showSnackBar(const SnackBar(content: Text('Team added')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
@@ -298,7 +316,9 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -317,9 +337,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         name: nameCtrl.text.trim(),
       );
       if (!mounted) return;
-      setState(() {
-        _leagueName = updated.name;
-      });
+      setState(() => _leagueName = updated.name);
       messenger.showSnackBar(const SnackBar(content: Text('League updated')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
@@ -331,9 +349,12 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete league'),
-        content: const Text('Are you sure you want to delete this league? This cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete this league? This cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Delete'),
@@ -353,4 +374,3 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     }
   }
 }
-

@@ -72,18 +72,20 @@ class TeamModel {
 
 /// Player (minimal).
 class PlayerModel {
-  const PlayerModel({required this.id, required this.name, this.goals = 0, this.userId});
+  const PlayerModel({required this.id, required this.name, this.goals = 0, this.userId, this.teamId,});
 
   final int id;
   final String name;
   final int goals;
   final int? userId;
+  final int? teamId;
 
   factory PlayerModel.fromJson(Map<String, dynamic> json) => PlayerModel(
         id: LeagueModel._toInt(json['id']),
         name: (json['name'] as String?) ?? '',
         goals: LeagueModel._optionalInt(json['goals']) ?? 0,
         userId: LeagueModel._optionalInt(json['user_id']),
+        teamId: LeagueModel._optionalInt(json['team_id']),
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -91,6 +93,7 @@ class PlayerModel {
         'name': name,
         'goals': goals,
         if (userId != null) 'user_id': userId,
+        if (teamId != null) 'team_id': teamId,  
       };
 }
 

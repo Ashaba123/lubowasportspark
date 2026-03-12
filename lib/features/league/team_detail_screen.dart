@@ -26,50 +26,37 @@ class TeamDetailScreen extends StatefulWidget {
 }
 
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
-  List<PlayerModel> _players = [];
-  bool _loading = true;
-  String? _error;
   late String _teamName;
+  // The future driving the FutureBuilder. Reassigning triggers a rebuild.
+  late Future<List<PlayerModel>> _playersFuture;
 
   @override
   void initState() {
     super.initState();
     _teamName = widget.team.name;
-    _load();
+    _playersFuture = _fetchPlayers();
   }
 
-  Future<void> _load() async {
+  /// Fetches players fresh from server and updates the local cache.
+  Future<List<PlayerModel>> _fetchPlayers() async {
     final prefs = await SharedPreferences.getInstance();
     final cache = LocalCache(prefs);
     final cacheKey = LocalCache.playersKey(widget.team.id);
 
-    final cached = cache.getList(cacheKey);
-    if (cached.isNotEmpty && mounted) {
-      setState(() {
-        _players = cached.map(PlayerModel.fromJson).toList();
-        _loading = false;
-        _error = null;
-      });
-    } else if (mounted) {
-      setState(() => _loading = true);
-    }
+    final list = await widget.repository.getTeamPlayers(
+      widget.team.id,
+      forceRefresh: true,
+    );
+    await cache.setList(cacheKey, list.map((p) => p.toJson()).toList());
+    return list;
+  }
 
-    try {
-      final list = await widget.repository.getTeamPlayers(widget.team.id, forceRefresh: true);
-      await cache.setList(cacheKey, list.map((p) => p.toJson()).toList());
-      if (!mounted) return;
-      setState(() {
-        _players = list;
-        _loading = false;
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = userFriendlyApiErrorMessage(e);
-      });
-    }
+  /// Reassign the future so FutureBuilder re-runs the fetch.
+  void _refresh() {
+    if (!mounted) return;
+    setState(() {
+      _playersFuture = _fetchPlayers();
+    });
   }
 
   void _openPlayer(BuildContext context, PlayerModel player) {
@@ -84,23 +71,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         ),
       ),
     )
-        .then((changed) async {
-      if (changed == true && mounted) {
-        await _load();
-      }
-    });
+        .then((_) => _refresh()); // ✅ always refresh on return
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: Text(_teamName)),
-        body: const Center(child: FootballLoader()),
-      );
-    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_teamName),
@@ -117,85 +95,132 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (_error != null) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  _error!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                ),
-              ),
-            ],
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(Icons.groups, color: colorScheme.primary, size: 32),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_teamName, style: theme.textTheme.titleLarge),
-                          Text(
-                            '${_players.length}/8 players',
-                            style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                          ),
-                        ],
-                      ),
+      body: FutureBuilder<List<PlayerModel>>(
+        future: _playersFuture,
+        builder: (context, snapshot) {
+          // Full-screen loader only on the very first load (no data yet)
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return const Center(child: FootballLoader());
+          }
+
+          final players = snapshot.data ?? [];
+          final error = snapshot.hasError
+              ? userFriendlyApiErrorMessage(snapshot.error!)
+              : null;
+
+          return RefreshIndicator(
+            onRefresh: () async => _refresh(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Inline error — keeps the list visible
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      error,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: colorScheme.error),
                     ),
-                  ],
+                  ),
+
+                // Subtle progress bar while refreshing with existing data
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    snapshot.hasData) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: 8),
+                ],
+
+                // Team summary card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.groups,
+                            color: colorScheme.primary, size: 32),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_teamName,
+                                  style: theme.textTheme.titleLarge),
+                              Text(
+                                '${players.length}/8 players',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Players', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Card(
-              child: Column(
-                children: [
-                  ..._players.map(
-                    (p) => ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.primaryContainer,
-                        child: Text(
-                          '${p.goals}',
-                          style: theme.textTheme.labelLarge?.copyWith(color: colorScheme.primary),
+
+                const SizedBox(height: 16),
+                Text('Players', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 8),
+
+                // Players list
+                Card(
+                  child: Column(
+                    children: [
+                      if (players.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'No players yet. Add up to 8.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ...players.map(
+                        (p) => ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer,
+                            child: Text(
+                              '${p.goals}',
+                              style: theme.textTheme.labelLarge
+                                  ?.copyWith(color: colorScheme.primary),
+                            ),
+                          ),
+                          title:
+                              Text(p.name, style: theme.textTheme.bodyLarge),
+                          subtitle: Text(
+                            '${p.goals} goals',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant),
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => _openPlayer(context, p),
                         ),
                       ),
-                      title: Text(p.name, style: theme.textTheme.bodyLarge),
-                      subtitle: Text(
-                        '${p.goals} goals',
-                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _openPlayer(context, p),
+                    ],
+                  ),
+                ),
+
+                // Add player button (only if under limit)
+                if (players.length < 8) ...[
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => _showAddPlayer(context),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Add player'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            if (_players.length < 8) ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => _showAddPlayer(context),
-                icon: const Icon(Icons.person_add),
-                label: const Text('Add player'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                ),
-              ),
-            ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -212,7 +237,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -226,23 +253,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (ok != true || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final newPlayer = await widget.repository.addPlayer(
+      await widget.repository.addPlayer(
         widget.team.id,
         name: nameCtrl.text.trim(),
       );
-      if (!mounted) return;
-      final updated = [..._players, newPlayer];
-      setState(() {
-        _players = updated;
-      });
-      final prefs = await SharedPreferences.getInstance();
-      await LocalCache(prefs).setList(
-        LocalCache.playersKey(widget.team.id),
-        updated.map((p) => p.toJson()).toList(),
-      );
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Player added')),
-      );
+      _refresh(); // ✅ re-fetch so new player appears from server
+      messenger.showSnackBar(const SnackBar(content: Text('Player added')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
     }
@@ -260,7 +276,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) return;
@@ -279,9 +297,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         name: nameCtrl.text.trim(),
       );
       if (!mounted) return;
-      setState(() {
-        _teamName = updated.name;
-      });
+      setState(() => _teamName = updated.name);
       messenger.showSnackBar(const SnackBar(content: Text('Team updated')));
     } catch (e) {
       messenger.showSnackBar(SnackBar(content: Text('$e')));
@@ -293,9 +309,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete team'),
-        content: const Text('Are you sure you want to delete this team? This cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete this team? This cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Delete'),
@@ -315,4 +334,3 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 }
-
