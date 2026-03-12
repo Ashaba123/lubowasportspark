@@ -403,14 +403,43 @@ class _ProfileHeader extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: Row(
-              children: [
-                _ProfileStat(label: 'Goals', value: goals.toString(), icon: Icons.sports_soccer),
-                const SizedBox(width: 8),
-                _ProfileStat(label: 'Leagues', value: leagues.toString(), icon: Icons.emoji_events_outlined),
-                const SizedBox(width: 8),
-                _ProfileStat(label: 'Teams', value: teams.toString(), icon: Icons.groups_2_outlined),
-              ],
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double maxWidth = constraints.maxWidth;
+                final int columns = maxWidth >= 420 ? 3 : (maxWidth >= 280 ? 2 : 1);
+                final double spacing = 8;
+                final double itemWidth = (maxWidth - (spacing * (columns - 1))) / columns;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: [
+                    SizedBox(
+                      width: itemWidth,
+                      child: _ProfileStat(
+                        label: 'Goals',
+                        value: goals.toString(),
+                        icon: Icons.sports_soccer,
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _ProfileStat(
+                        label: 'Leagues',
+                        value: leagues.toString(),
+                        icon: Icons.emoji_events_outlined,
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _ProfileStat(
+                        label: 'Teams',
+                        value: teams.toString(),
+                        icon: Icons.groups_2_outlined,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -434,19 +463,20 @@ class _ProfileStat extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: cs.primary),
-            const SizedBox(width: 6),
-            Column(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: cs.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -457,11 +487,12 @@ class _ProfileStat extends StatelessWidget {
                 Text(
                   label,
                   style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

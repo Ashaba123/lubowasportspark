@@ -24,6 +24,7 @@ import 'package:lubowa_sports_park/features/settings/profile_settings_screen.dar
 import 'package:lubowa_sports_park/features/settings/settings_screen.dart';
 import 'package:lubowa_sports_park/features/splash/splash_screen.dart';
 import 'package:lubowa_sports_park/shared/textured_background.dart';
+import 'package:lubowa_sports_park/shared/responsive_app_frame.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +73,9 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
               Widget? child,
             ) => _ConnectivityPopupHost(
               navigatorKey: _navigatorKey,
-              child: child ?? const SizedBox.shrink(),
+              child: ResponsiveAppFrame(
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
             home: const _AppRoot(),
           );

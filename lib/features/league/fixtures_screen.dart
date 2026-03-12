@@ -133,34 +133,58 @@ class FixturesScreen extends StatelessWidget {
                       ),
                     )
                   else
-                    Card(
-                      child: Column(
-                        children: fixtures
-                            .map(
-                              (f) => ListTile(
-                                title: Text(
-                                  '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                                subtitle: Text(
-                                  '${f.homeGoals ?? 0} – ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}',
-                                ),
-                                trailing: const Icon(Icons.edit_outlined),
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    fadeSlideRoute(
-                                      builder: (_) => FixtureEditScreen(
-                                        fixture: f,
-                                        repository: repository,
-                                        onSaved: (updated) => context.read<FixturesPollingNotifier>().updateFixture(updated),
-                                      ),
-                                    ),
-                                  );
-                                },
+                    Column(
+                      children: [
+                        Card(
+                          color: colorScheme.secondaryContainer.withValues(alpha: 0.4),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.touch_app_outlined,
+                              color: colorScheme.secondary,
+                            ),
+                            title: Text(
+                              'Tap a fixture to continue',
+                              style: theme.textTheme.titleSmall,
+                            ),
+                            subtitle: Text(
+                              'Open a fixture to start the match, save score, and mark full time.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
-                            )
-                            .toList(),
-                      ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Card(
+                          child: Column(
+                            children: fixtures
+                                .map(
+                                  (f) => ListTile(
+                                    title: Text(
+                                      '${f.homeTeamName ?? "?"} vs ${f.awayTeamName ?? "?"}',
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                    subtitle: Text(
+                                      '${f.homeGoals ?? 0} – ${f.awayGoals ?? 0}${f.isFullTime ? " (FT)" : ""}',
+                                    ),
+                                    trailing: const Icon(Icons.edit_outlined),
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        fadeSlideRoute(
+                                          builder: (_) => FixtureEditScreen(
+                                            fixture: f,
+                                            repository: repository,
+                                            onSaved: (updated) => context.read<FixturesPollingNotifier>().updateFixture(updated),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ],
                     ),
                 ],
               ),
