@@ -107,7 +107,7 @@ class _LeagueListView extends StatelessWidget {
   }
 }
 
-class _LeagueListScaffold extends StatelessWidget {
+class _LeagueListScaffold extends StatefulWidget {
   const _LeagueListScaffold({
     required this.title,
     required this.filterManaged,
@@ -129,25 +129,65 @@ class _LeagueListScaffold extends StatelessWidget {
   final Future<void> Function() onRefresh;
 
   @override
+  State<_LeagueListScaffold> createState() => _LeagueListScaffoldState();
+}
+
+class _LeagueListScaffoldState extends State<_LeagueListScaffold> {
+  Future<bool> _confirmDeleteLeague(LeagueModel league) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete league'),
+        content: Text(
+          'Delete ${league.name}? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.repository.deleteLeague(league.id);
+      if (!mounted) return false;
+      messenger.showSnackBar(const SnackBar(content: Text('League deleted')));
+      await widget.onRefresh();
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final allLeagues = leagues;
-    final filteredLeagues = filterManaged
-        ? allLeagues.where((l) => managedIds.contains(l.id)).toList()
+    final allLeagues = widget.leagues;
+    final filteredLeagues = widget.filterManaged
+        ? allLeagues.where((l) => widget.managedIds.contains(l.id)).toList()
         : allLeagues;
 
-    if (loading && allLeagues.isEmpty) {
+    if (widget.loading && allLeagues.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(title: Text(widget.title)),
         body: const Center(child: FootballLoader()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(widget.title)),
       body: RefreshIndicator(
-        onRefresh: onRefresh,
+        onRefresh: widget.onRefresh,
         child: filteredLeagues.isEmpty
             ? ListView(
                 padding: const EdgeInsets.all(24),
@@ -156,13 +196,13 @@ class _LeagueListScaffold extends StatelessWidget {
                   Icon(Icons.emoji_events_outlined, size: 64, color: colorScheme.onSurfaceVariant),
                   const SizedBox(height: 24),
                   Text(
-                    filterManaged ? 'No leagues yet' : 'No teams yet',
+                    widget.filterManaged ? 'No leagues yet' : 'No teams yet',
                     style: theme.textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    filterManaged
+                    widget.filterManaged
                         ? 'Create a league from the Leagues tab, or ask park staff to add you as a league manager.'
                         : 'You\'ll see leagues here once you\'re set as a team leader.',
                     style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -175,11 +215,11 @@ class _LeagueListScaffold extends StatelessWidget {
                 itemCount: filteredLeagues.length,
                 itemBuilder: (_, i) {
                   final l = filteredLeagues[i];
-                  return Card(
+                  final card = Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
                       onTap: () => Navigator.of(context).push(
-                        fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: repository)),
+                        fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: widget.repository)),
                       ),
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
@@ -213,6 +253,25 @@ class _LeagueListScaffold extends StatelessWidget {
                         ),
                       ),
                     ),
+                  );
+                  if (!widget.filterManaged) {
+                    return card;
+                  }
+                  return Dismissible(
+                    key: ValueKey<int>(l.id),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (_) => _confirmDeleteLeague(l),
+                    background: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.delete_outline, color: colorScheme.onErrorContainer),
+                    ),
+                    child: card,
                   );
                 },
               ),

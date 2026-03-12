@@ -61,6 +61,41 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     await nextFuture;
   }
 
+  Future<bool> _confirmDeletePlayerFromList(PlayerModel player) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete player'),
+        content: Text(
+          'Delete ${player.name}? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.repository.deletePlayer(player.id);
+      if (!mounted) return false;
+      messenger.showSnackBar(const SnackBar(content: Text('Player deleted')));
+      await _refresh();
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return false;
+    }
+  }
+
   void _openPlayer(BuildContext context, PlayerModel player) {
     Navigator.of(context)
         .push<bool>(
@@ -180,27 +215,41 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                                 color: colorScheme.onSurfaceVariant),
                           ),
                         ),
-                      ...players.map(
-                        (p) => ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: colorScheme.primaryContainer,
-                            child: Text(
-                              '${p.goals}',
-                              style: theme.textTheme.labelLarge
-                                  ?.copyWith(color: colorScheme.primary),
+                      ...players.map((p) {
+                        return Dismissible(
+                          key: ValueKey<int>(p.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) => _confirmDeletePlayerFromList(p),
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            color: colorScheme.errorContainer,
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: colorScheme.onErrorContainer,
                             ),
                           ),
-                          title:
-                              Text(p.name, style: theme.textTheme.bodyLarge),
-                          subtitle: Text(
-                            '${p.goals} goals',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: colorScheme.primaryContainer,
+                              child: Text(
+                                '${p.goals}',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(color: colorScheme.primary),
+                              ),
+                            ),
+                            title:
+                                Text(p.name, style: theme.textTheme.bodyLarge),
+                            subtitle: Text(
+                              '${p.goals} goals',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant),
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _openPlayer(context, p),
                           ),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _openPlayer(context, p),
-                        ),
-                      ),
+                        );
+                      }),
                     ],
                   ),
                 ),

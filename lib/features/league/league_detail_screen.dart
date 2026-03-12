@@ -48,6 +48,41 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     await nextFuture;
   }
 
+  Future<bool> _confirmDeleteTeamFromList(TeamModel team) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete team'),
+        content: Text(
+          'Delete ${team.name}? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return false;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.repository.deleteTeam(team.id);
+      if (!mounted) return false;
+      messenger.showSnackBar(const SnackBar(content: Text('Team deleted')));
+      await _refresh();
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -159,16 +194,30 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                 Card(
                   child: Column(
                     children: [
-                      ...teams.map(
-                        (t) => ListTile(
-                          leading: Icon(Icons.groups_outlined,
-                              color: colorScheme.primary),
-                          title:
-                              Text(t.name, style: theme.textTheme.bodyLarge),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _openTeam(context, t),
-                        ),
-                      ),
+                      ...teams.map((t) {
+                        return Dismissible(
+                          key: ValueKey<int>(t.id),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (_) => _confirmDeleteTeamFromList(t),
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            color: colorScheme.errorContainer,
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: colorScheme.onErrorContainer,
+                            ),
+                          ),
+                          child: ListTile(
+                            leading: Icon(Icons.groups_outlined,
+                                color: colorScheme.primary),
+                            title:
+                                Text(t.name, style: theme.textTheme.bodyLarge),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _openTeam(context, t),
+                          ),
+                        );
+                      }),
                       if (teams.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(24),

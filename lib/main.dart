@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,6 +10,7 @@ import 'package:lubowa_sports_park/core/api/app_api_provider.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/app_state.dart';
 import 'package:lubowa_sports_park/core/theme/app_theme.dart';
+import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/activities/activities_screen.dart';
 import 'package:lubowa_sports_park/features/about/about_screen.dart';
@@ -39,6 +42,7 @@ class LubowaSportsParkApp extends StatefulWidget {
 }
 
 class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final ApiClient _apiClient = createAppApiClient(
     tokenGetter: () => widget.tokenStorage.currentToken,
     onUnauthorized: () => widget.tokenStorage.clear(),
@@ -62,11 +66,116 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
             debugShowCheckedModeBanner: false,
             darkTheme: AppTheme.dark,
             themeMode: appState.themeMode,
+            navigatorKey: _navigatorKey,
+            builder: (
+              BuildContext context,
+              Widget? child,
+            ) => _ConnectivityPopupHost(
+              navigatorKey: _navigatorKey,
+              child: child ?? const SizedBox.shrink(),
+            ),
             home: const _AppRoot(),
           );
         },
       ),
     );
+  }
+}
+
+class _ConnectivityPopupHost extends StatefulWidget {
+  const _ConnectivityPopupHost({
+    required this.navigatorKey,
+    required this.child,
+  });
+  final GlobalKey<NavigatorState> navigatorKey;
+  final Widget child;
+  @override
+  State<_ConnectivityPopupHost> createState() => _ConnectivityPopupHostState();
+}
+
+class _ConnectivityPopupHostState extends State<_ConnectivityPopupHost> {
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _isOfflineDialogVisible = false;
+  @override
+  void initState() {
+    super.initState();
+    _connectivitySubscription = onConnectivityChanged.listen(
+      _handleConnectivityChanged,
+    );
+    _checkInitialConnectivity();
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
+  }
+
+  void _handleConnectivityChanged(List<ConnectivityResult> results) {
+    final bool isConnected = _hasConnection(results);
+    if (isConnected) {
+      _hideOfflineDialog();
+      return;
+    }
+    _showOfflineDialog();
+  }
+
+  bool _hasConnection(List<ConnectivityResult> results) {
+    if (results.isEmpty) return false;
+    return results.any((ConnectivityResult result) {
+      return result != ConnectivityResult.none;
+    });
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    final bool isConnected = await hasNetworkConnectivity();
+    if (!mounted || isConnected) return;
+    _showOfflineDialog();
+  }
+
+  void _showOfflineDialog() {
+    if (_isOfflineDialogVisible) return;
+    final BuildContext? dialogContext = widget.navigatorKey.currentContext;
+    if (dialogContext == null) return;
+    _isOfflineDialogVisible = true;
+    unawaited(
+      showDialog<void>(
+        context: dialogContext,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('No internet connection'),
+            content: const Text(
+              'Please connect to the internet to continue using the app.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final bool isConnected = await hasNetworkConnectivity();
+                  if (!context.mounted || !isConnected) return;
+                  Navigator.of(context, rootNavigator: true).pop();
+                },
+                child: const Text('I connected'),
+              ),
+            ],
+          );
+        },
+      ).whenComplete(() {
+        _isOfflineDialogVisible = false;
+      }),
+    );
+  }
+
+  void _hideOfflineDialog() {
+    if (!_isOfflineDialogVisible) return;
+    final NavigatorState? navigator = widget.navigatorKey.currentState;
+    if (navigator == null || !navigator.canPop()) return;
+    navigator.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
 
