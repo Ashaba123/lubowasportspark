@@ -111,6 +111,24 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
   List<PlayerModel> get _allPlayers =>
       _playerMap.values.toList()..sort((a, b) => a.name.compareTo(b.name));
 
+  Future<void> _syncPlayerGoalsDelta({
+    required int playerId,
+    required int deltaGoals,
+  }) async {
+    final player = _playerMap[playerId];
+    if (player == null) return;
+    final nextGoals = player.goals + deltaGoals;
+    final safeGoals = nextGoals < 0 ? 0 : nextGoals;
+    final updated = await widget.repository.updatePlayer(
+      player.id,
+      goals: safeGoals,
+    );
+    _playerMap = <int, PlayerModel>{
+      ..._playerMap,
+      updated.id: updated,
+    };
+  }
+
   Future<void> _addGoal() async {
     final players = _allPlayers;
     if (players.isEmpty) {
@@ -180,6 +198,10 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         playerId: player.id,
         goals: n,
       );
+      await _syncPlayerGoalsDelta(
+        playerId: player.id,
+        deltaGoals: n,
+      );
       if (!mounted) return;
       await _load();
       if (mounted) {
@@ -231,6 +253,10 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         goalId: entry.id,
         goals: n,
       );
+      await _syncPlayerGoalsDelta(
+        playerId: entry.playerId,
+        deltaGoals: n - entry.goals,
+      );
       if (!mounted) return;
       await _load();
       if (mounted) {
@@ -272,17 +298,12 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         fixtureId: widget.fixture.id,
         goalId: entry.id,
       );
-      if (!mounted) return;
-      final updated = _goals.where((g) => g.id != entry.id).toList();
-      setState(() {
-        _goals = updated;
-      });
-      SharedPreferences.getInstance().then(
-        (prefs) => LocalCache(prefs).setList(
-          LocalCache.goalsKey(widget.fixture.id),
-          updated.map((g) => g.toJson()).toList(),
-        ),
+      await _syncPlayerGoalsDelta(
+        playerId: entry.playerId,
+        deltaGoals: -entry.goals,
       );
+      if (!mounted) return;
+      await _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Goal entry deleted')),

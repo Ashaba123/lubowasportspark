@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
@@ -411,6 +413,11 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
         playerId: player.id,
         goals: n,
       );
+      await widget.repository.updatePlayer(
+        player.id,
+        goals: player.goals + n,
+      );
+      await _refreshPlayersAndCache();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Goals recorded')),
@@ -423,6 +430,32 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
         );
       }
     }
+  }
+
+  Future<void> _refreshPlayersAndCache() async {
+    final homePlayers = await widget.repository.getTeamPlayers(
+      widget.fixture.homeTeamId,
+      forceRefresh: true,
+    );
+    final awayPlayers = await widget.repository.getTeamPlayers(
+      widget.fixture.awayTeamId,
+      forceRefresh: true,
+    );
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs);
+    await cache.setList(
+      LocalCache.playersKey(widget.fixture.homeTeamId),
+      homePlayers.map((p) => p.toJson()).toList(),
+    );
+    await cache.setList(
+      LocalCache.playersKey(widget.fixture.awayTeamId),
+      awayPlayers.map((p) => p.toJson()).toList(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _homePlayers = homePlayers..sort((a, b) => a.name.compareTo(b.name));
+      _awayPlayers = awayPlayers..sort((a, b) => a.name.compareTo(b.name));
+    });
   }
 
   @override
