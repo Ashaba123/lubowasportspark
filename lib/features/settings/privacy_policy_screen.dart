@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
@@ -72,6 +73,20 @@ class PrivacyPolicyScreen extends StatelessWidget {
               'The final, legally binding privacy policy may be provided by Lubowa Sports Park and can replace this summary text.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => launchUrl(
+                Uri.parse('https://lubowasportspark.com/privacy-policy/'),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: Text(
+                'View full Privacy Policy',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.primary,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ],
