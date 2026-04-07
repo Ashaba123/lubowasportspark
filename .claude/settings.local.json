@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload -dname \"CN=Shabdee Designs, OU=Mobile, O=Shabdee Designs, L=Kampala, ST=Central, C=UG\" -storepass lubowa2024 -keypass lubowa2024)",
+      "Bash(flutter build:*)"
+    ]
+  }
+}
