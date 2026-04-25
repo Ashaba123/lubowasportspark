@@ -57,3 +57,6 @@ docs/lubowa-api-with-player-goals.php
 # Tester feedback & task plan (local only — not for repo)
 tester_feedback.md
 14day_task_plan.md
+
+# Local AI config
+CLAUDE.md
