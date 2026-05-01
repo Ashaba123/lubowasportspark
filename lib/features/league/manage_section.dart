@@ -72,7 +72,7 @@ class ManageSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        if (leagueRoles.canCreateLeague) ...[
+        ...[
           FilledButton.icon(
             onPressed: () => _showCreateLeagueDialog(context),
             icon: const Icon(Icons.add),

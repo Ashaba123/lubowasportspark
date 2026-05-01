@@ -21,6 +21,8 @@ class EventsScreen extends StatefulWidget {
   State<EventsScreen> createState() => _EventsScreenState();
 }
 
+enum _EventFilter { upcoming, past }
+
 class _EventsScreenState extends State<EventsScreen> {
   EventsRepository? _repository;
   PagesRepository? _pagesRepository;
@@ -28,6 +30,7 @@ class _EventsScreenState extends State<EventsScreen> {
   WpPage? _eventsPage;
   bool _loading = true;
   String? _error;
+  _EventFilter _filter = _EventFilter.upcoming;
 
   @override
   void didChangeDependencies() {
@@ -75,6 +78,22 @@ class _EventsScreenState extends State<EventsScreen> {
     }
   }
 
+  List<WpPost> get _filteredPosts {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (_filter == _EventFilter.upcoming) {
+      return _posts.where((p) {
+        final d = DateTime.tryParse(p.date);
+        return d == null || !d.isBefore(today);
+      }).toList();
+    } else {
+      return _posts.where((p) {
+        final d = DateTime.tryParse(p.date);
+        return d != null && d.isBefore(today);
+      }).toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,108 +126,88 @@ class _EventsScreenState extends State<EventsScreen> {
         ),
       );
     }
-    if (_posts.isEmpty && _eventsPage == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.event_busy, size: 56, color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(height: 16),
-              Text(
-                'No events right now',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Check back soon for upcoming events at Lubowa Sports Park.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh'),
-              ),
-            ],
-          ),
+    final visible = _filteredPosts;
+    return Column(
+      children: [
+        _FilterTabs(
+          selected: _filter,
+          onChanged: (f) => setState(() => _filter = f),
         ),
-      );
-    }
-    return RefreshIndicator(
-      color: Theme.of(context).colorScheme.primary,
-      onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: 1 + _posts.length,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return _buildEventsIntro();
-          }
-          final post = _posts[index - 1];
-          final title = HtmlUtils.strip(post.title);
-          final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
-          final dateText = post.date.isNotEmpty ? _formatDate(post.date) : null;
-          return FadeSlideIn(
-            delay: Duration(milliseconds: 60 * index),
-            duration: const Duration(milliseconds: 380),
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: InkWell(
-                onTap: () => Navigator.of(context).push(
-                  fadeSlideRoute(builder: (_) => EventDetailScreen(post: post)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (hasImage)
-                      Stack(
-                        children: [
-                          Image.network(
-                            post.featuredMediaUrl!,
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _eventPlaceholder(180),
-                          ),
-                          if (dateText != null)
-                            Positioned(
-                              left: 12,
-                              top: 12,
-                              child: _EventDateChip(text: dateText),
+        Expanded(
+          child: _posts.isEmpty && _eventsPage == null
+              ? _buildEmptyState(allEmpty: true)
+              : visible.isEmpty
+                  ? _buildEmptyState(allEmpty: false)
+                  : RefreshIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                      onRefresh: _load,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: 1 + visible.length,
+                        itemBuilder: (context, index) {
+                          if (index == 0) return _buildEventsIntro();
+                          final post = visible[index - 1];
+                          final title = HtmlUtils.strip(post.title);
+                          final hasImage = post.featuredMediaUrl != null && post.featuredMediaUrl!.isNotEmpty;
+                          final dateText = post.date.isNotEmpty ? _formatDate(post.date) : null;
+                          return FadeSlideIn(
+                            delay: Duration(milliseconds: 60 * index),
+                            duration: const Duration(milliseconds: 380),
+                            child: Card(
+                              clipBehavior: Clip.antiAlias,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: InkWell(
+                                onTap: () => Navigator.of(context).push(
+                                  fadeSlideRoute(builder: (_) => EventDetailScreen(post: post)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (hasImage)
+                                      Stack(
+                                        children: [
+                                          Image.network(
+                                            post.featuredMediaUrl!,
+                                            height: 180,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => _eventPlaceholder(180),
+                                          ),
+                                          if (dateText != null)
+                                            Positioned(
+                                              left: 12,
+                                              top: 12,
+                                              child: _EventDateChip(text: dateText),
+                                            ),
+                                        ],
+                                      )
+                                    else
+                                      _eventPlaceholder(140),
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            title.isEmpty ? 'Event #${post.id}' : title,
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                        ],
-                      )
-                    else
-                      _eventPlaceholder(140),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title.isEmpty ? 'Event #${post.id}' : title,
-                            style: Theme.of(context).textTheme.titleMedium,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+        ),
+      ],
     );
   }
 
@@ -248,6 +247,45 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  Widget _buildEmptyState({required bool allEmpty}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final String message = allEmpty
+        ? 'Check back soon for upcoming events at Lubowa Sports Park.'
+        : _filter == _EventFilter.upcoming
+            ? 'No upcoming events right now. Check back soon.'
+            : 'No past events to show yet.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_busy_outlined, size: 56, color: cs.onSurfaceVariant),
+            const SizedBox(height: 16),
+            Text(
+              'No events',
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   static String _formatDate(String iso) {
     try {
       final d = DateTime.parse(iso);
@@ -256,6 +294,40 @@ class _EventsScreenState extends State<EventsScreen> {
     } catch (_) {
       return iso;
     }
+  }
+}
+
+class _FilterTabs extends StatelessWidget {
+  const _FilterTabs({required this.selected, required this.onChanged});
+
+  final _EventFilter selected;
+  final ValueChanged<_EventFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: SegmentedButton<_EventFilter>(
+        segments: const [
+          ButtonSegment(value: _EventFilter.upcoming, label: Text('Upcoming'), icon: Icon(Icons.event_outlined)),
+          ButtonSegment(value: _EventFilter.past, label: Text('Past'), icon: Icon(Icons.history_outlined)),
+        ],
+        selected: {selected},
+        onSelectionChanged: (s) => onChanged(s.first),
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? cs.primaryContainer : null,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+          ),
+          iconColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
   }
 }
 

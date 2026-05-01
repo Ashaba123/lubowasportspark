@@ -456,7 +456,7 @@ class _MoreTab extends StatelessWidget {
             iconBg: cs.primary.withValues(alpha: 0.12),
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
-              fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
+              fadeSlideRoute(builder: (_) => const ProfileGateScreen()),
             ),
           ),
           const SizedBox(height: 12),

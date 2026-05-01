@@ -6,6 +6,153 @@ import 'package:lubowa_sports_park/features/settings/league_booking_rules_screen
 import 'package:lubowa_sports_park/features/settings/park_rules_screen.dart';
 import 'package:lubowa_sports_park/features/settings/privacy_policy_screen.dart';
 
+Future<void> _showFeedbackDialog(BuildContext context) async {
+  final workedCtrl = TextEditingController();
+  final didntCtrl = TextEditingController();
+  final missingCtrl = TextEditingController();
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => _FeedbackDialog(
+      workedCtrl: workedCtrl,
+      didntCtrl: didntCtrl,
+      missingCtrl: missingCtrl,
+    ),
+  );
+
+  workedCtrl.dispose();
+  didntCtrl.dispose();
+  missingCtrl.dispose();
+}
+
+class _FeedbackDialog extends StatefulWidget {
+  const _FeedbackDialog({
+    required this.workedCtrl,
+    required this.didntCtrl,
+    required this.missingCtrl,
+  });
+
+  final TextEditingController workedCtrl;
+  final TextEditingController didntCtrl;
+  final TextEditingController missingCtrl;
+
+  @override
+  State<_FeedbackDialog> createState() => _FeedbackDialogState();
+}
+
+class _FeedbackDialogState extends State<_FeedbackDialog> {
+  bool _submitted = false;
+  bool _sending = false;
+
+  Future<void> _submit() async {
+    final worked = widget.workedCtrl.text.trim();
+    final didnt = widget.didntCtrl.text.trim();
+    final missing = widget.missingCtrl.text.trim();
+    if (worked.isEmpty && didnt.isEmpty && missing.isEmpty) return;
+
+    setState(() => _sending = true);
+
+    final body = [
+      if (worked.isNotEmpty) 'What worked:\n$worked',
+      if (didnt.isNotEmpty) "What didn't work:\n$didnt",
+      if (missing.isNotEmpty) "What's missing:\n$missing",
+    ].join('\n\n');
+
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'info@lubowasportspark.com',
+      queryParameters: {
+        'subject': 'App Feedback — Lubowa Sports Park',
+        'body': body,
+      },
+    );
+
+    await launchUrl(uri);
+    if (!mounted) return;
+    setState(() {
+      _sending = false;
+      _submitted = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    if (_submitted) {
+      return AlertDialog(
+        title: const Text('Thanks!'),
+        content: const Text('Your feedback has been sent. We appreciate it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      title: const Text('Send Feedback'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Help us improve the app.',
+              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: widget.workedCtrl,
+              decoration: const InputDecoration(
+                labelText: 'What worked?',
+                hintText: 'e.g. booking flow was smooth',
+              ),
+              maxLines: 2,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: widget.didntCtrl,
+              decoration: const InputDecoration(
+                labelText: "What didn't work?",
+                hintText: 'e.g. had trouble finding events',
+              ),
+              maxLines: 2,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: widget.missingCtrl,
+              decoration: const InputDecoration(
+                labelText: "What's missing?",
+                hintText: 'e.g. notifications for bookings',
+              ),
+              maxLines: 2,
+              textInputAction: TextInputAction.done,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _sending ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _sending ? null : _submit,
+          child: _sending
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Send'),
+        ),
+      ],
+    );
+  }
+}
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -62,6 +209,24 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ParkRulesScreen()),
             ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Feedback',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsCard(
+            icon: Icons.feedback_outlined,
+            title: 'Send Feedback',
+            subtitle: 'Tell us what worked, what didn\'t, and what\'s missing',
+            iconColor: cs.primary,
+            iconBg: cs.primaryContainer.withValues(alpha: 0.5),
+            isPrimary: false,
+            onTap: () => _showFeedbackDialog(context),
           ),
           const SizedBox(height: 24),
           Text(

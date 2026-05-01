@@ -17,6 +17,48 @@ import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/public_league_view_screen.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 
+/// Shows a branded loading screen while checking login state, then replaces itself
+/// with [ProfileSettingsScreen] (logged in) or [LoginScreen] (not logged in).
+class ProfileGateScreen extends StatefulWidget {
+  const ProfileGateScreen({super.key});
+
+  @override
+  State<ProfileGateScreen> createState() => _ProfileGateScreenState();
+}
+
+class _ProfileGateScreenState extends State<ProfileGateScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _gate());
+  }
+
+  Future<void> _gate() async {
+    final tokenStorage = context.read<TokenStorage>();
+    final token = await tokenStorage.getToken();
+    if (!mounted) return;
+    if (token != null && token.isNotEmpty) {
+      await Navigator.of(context).pushReplacement(
+        fadeSlideRoute(builder: (_) => const ProfileSettingsScreen()),
+      );
+    } else {
+      await Navigator.of(context).pushReplacement(
+        fadeSlideRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: const _ProfileSkeleton(),
+      backgroundColor: cs.surface,
+    );
+  }
+}
+
 /// Tries to decode JWT payload and return a display name (user_nicename, display_name, or username).
 String? _usernameFromToken(String token) {
   try {
@@ -272,7 +314,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const _ProfileSkeleton()
           : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               child: Column(
@@ -298,6 +340,66 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final shimmer = cs.onSurfaceVariant.withValues(alpha: 0.12);
+    final shimmerDark = cs.onSurfaceVariant.withValues(alpha: 0.2);
+
+    Widget box(double w, double h, {double radius = 8}) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            color: shimmer,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        );
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 24),
+          Center(
+            child: Container(
+              width: 192,
+              height: 192,
+              decoration: BoxDecoration(color: shimmerDark, shape: BoxShape.circle),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(child: box(140, 22, radius: 6)),
+          const SizedBox(height: 8),
+          Center(child: box(80, 14, radius: 4)),
+          const SizedBox(height: 16),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  box(64, 48, radius: 12),
+                  box(64, 48, radius: 12),
+                  box(64, 48, radius: 12),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          box(double.infinity, 72, radius: 16),
+          const SizedBox(height: 12),
+          box(double.infinity, 56, radius: 16),
+        ],
+      ),
     );
   }
 }

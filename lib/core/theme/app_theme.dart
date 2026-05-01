@@ -9,7 +9,7 @@ class AppTheme {
   static const Color primary = Color(0xFF2E7D32);
   static const Color primaryLight = Color(0xFF4CAF50);
   static const Color secondary = Color(0xFF00897B);
-  static const Color accentBlue = Color(0xFF03A9F4);
+  static const Color accentGreen = Color(0xFFA5D6A7);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color background = Color(0xFFF5F5F5);
   static const Color onPrimary = Color(0xFFFFFFFF);
@@ -22,7 +22,7 @@ class AppTheme {
       primary: primary,
       primaryContainer: primaryLight,
       secondary: secondary,
-      secondaryContainer: accentBlue,
+      secondaryContainer: accentGreen,
       surface: surface,
       surfaceContainerHighest: background,
       onPrimary: onPrimary,

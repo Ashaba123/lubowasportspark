@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
@@ -570,27 +572,125 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  String _bookingSummary() {
+    final String service = _selectedService ?? 'Booking';
+    final String dateStr = _selectedDate == null
+        ? ''
+        : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}';
+    final String timeStr = _selectedTimeSlot == null ? '' : _formatTimeSlot(_selectedTimeSlot!);
+    return '🏟️ Lubowa Sports Park Booking\n📍 Service: $service\n📅 Date: $dateStr\n⏰ Time: $timeStr\n\nSee you at the park!';
+  }
+
+  Future<void> _shareBooking() async {
+    await Share.share(_bookingSummary(), subject: 'Lubowa Sports Park Booking');
+  }
+
+  String _padTwo(int v) => v.toString().padLeft(2, '0');
+  String _fmtCalDt(DateTime d) =>
+      '${d.year}${_padTwo(d.month)}${_padTwo(d.day)}T${_padTwo(d.hour)}${_padTwo(d.minute)}00';
+
+  Future<void> _addToCalendar() async {
+    if (_selectedDate == null || _selectedTimeSlot == null) return;
+    final String service = _selectedService ?? 'Lubowa Sports Park Booking';
+    final parts = _selectedTimeSlot!.split(':');
+    final int hour = int.tryParse(parts[0]) ?? 9;
+    final int minute = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
+    final DateTime start = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      hour,
+      minute,
+    );
+    final DateTime end = start.add(const Duration(hours: 1));
+
+    final Uri uri = Uri.parse(
+      'https://calendar.google.com/calendar/render?action=TEMPLATE'
+      '&text=${Uri.encodeComponent(service)}'
+      '&dates=${_fmtCalDt(start)}/${_fmtCalDt(end)}'
+      '&details=${Uri.encodeComponent('Booking at Lubowa Sports Park')}'
+      '&location=${Uri.encodeComponent('Lubowa Sports Park, Kampala')}',
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Widget _buildSuccessStep() {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme cs = theme.colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 64),
+            Icon(Icons.check_circle, color: cs.primary, size: 64),
             const SizedBox(height: 16),
-            Text('Booking submitted', style: Theme.of(context).textTheme.titleLarge),
+            Text('Booking submitted', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
               'Your booking request has been sent. We\'ll confirm with you shortly.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
+            if (_selectedService != null && _selectedDate != null && _selectedTimeSlot != null)
+              Card(
+                color: cs.primaryContainer.withValues(alpha: 0.4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(_selectedService!, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year} · ${_formatTimeSlot(_selectedTimeSlot!)}',
+                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _shareBooking,
+                    icon: const Icon(Icons.share, size: 18),
+                    label: const Text('Share'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _addToCalendar,
+                    icon: const Icon(Icons.calendar_month, size: 18),
+                    label: const Text('Calendar'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _resetFlow,
-              icon: const Icon(Icons.home),
+              icon: const Icon(Icons.add),
               label: const Text('Book another'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
             const SizedBox(height: 12),
             TextButton.icon(
