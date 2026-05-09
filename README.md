@@ -88,7 +88,5 @@ dart run flutter_launcher_icons  # regenerate app icon
 - **Build tasks:** [docs/BUILD_TASKS.md](docs/BUILD_TASKS.md)
 - **Design system:** [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)
 - **User roles:** [docs/USER_ROLES.md](docs/USER_ROLES.md)
-- **Play Store campaign:** [14day_task_plan.md](14day_task_plan.md)
-- **Tester feedback:** [tester_feedback.md](tester_feedback.md)
 
 Signing config is in `android/app/build.gradle` — do not modify without the keystore.
