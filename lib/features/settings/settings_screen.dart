@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:lubowa_sports_park/core/app_state.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/settings/league_booking_rules_screen.dart';
 import 'package:lubowa_sports_park/features/settings/park_rules_screen.dart';
@@ -208,6 +210,52 @@ class SettingsScreen extends StatelessWidget {
             isPrimary: false,
             onTap: () => Navigator.of(context).push(
               fadeSlideRoute(builder: (_) => const ParkRulesScreen()),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Appearance',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.dark_mode_outlined, color: cs.primary, size: 26),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Dark mode', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Switch between light and dark theme',
+                          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: context.watch<AppState>().isDark,
+                    onChanged: (_) => context.read<AppState>().toggleTheme(),
+                    activeThumbColor: cs.primary,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),

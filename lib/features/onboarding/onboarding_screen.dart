@@ -32,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.08),
+      backgroundColor: colorScheme.primary,
       body: SafeArea(
         child: Stack(
           children: [
@@ -80,8 +80,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(4),
                               color: isActive
-                                  ? colorScheme.primary
-                                  : colorScheme.outline.withValues(alpha: 0.4),
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.35),
                             ),
                           );
                         }),
@@ -100,6 +100,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         },
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(double.infinity, 52),
+                          backgroundColor: Colors.white,
+                          foregroundColor: colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -123,7 +125,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Text(
                     'Skip',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: Colors.white.withValues(alpha: 0.75),
                     ),
                   ),
                 ),
@@ -149,7 +151,6 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -159,27 +160,21 @@ class _OnboardingPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primary.withValues(alpha: 0.15),
-                  colorScheme.secondary.withValues(alpha: 0.1),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 64,
-              color: colorScheme.primary,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 36),
           Text(
             title,
             style: theme.textTheme.headlineMedium?.copyWith(
-              color: colorScheme.onSurface,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
@@ -187,7 +182,7 @@ class _OnboardingPage extends StatelessWidget {
           Text(
             body,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: Colors.white.withValues(alpha: 0.85),
             ),
             textAlign: TextAlign.center,
           ),
