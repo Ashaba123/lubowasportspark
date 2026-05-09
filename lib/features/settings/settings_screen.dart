@@ -252,7 +252,9 @@ class SettingsScreen extends StatelessWidget {
                   Switch(
                     value: context.watch<AppState>().isDark,
                     onChanged: (_) => context.read<AppState>().toggleTheme(),
-                    activeThumbColor: cs.primary,
+                    thumbColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected) ? cs.primary : null,
+                    ),
                   ),
                 ],
               ),

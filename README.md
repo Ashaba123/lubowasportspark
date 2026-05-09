@@ -1,6 +1,8 @@
 # Lubowa Sports Park — Mobile Application
 
-Flutter-based Android and iOS app for **Lubowa Sports Park**, Kampala. Integrates with the WordPress backend at [lubowasportspark.com](https://lubowasportspark.com/) via REST APIs. Provides booking, event viewing, and football league management.
+Flutter-based Android and iOS app for **Lubowa Sports Park**, Kampala. Integrates with the WordPress backend at [lubowasportspark.com](https://lubowasportspark.com/) via REST APIs. Provides booking, event viewing, football league management, and direct contact with the park.
+
+**Current version:** v1.6.0+10 — applying for Google Play production release.
 
 ---
 
@@ -41,11 +43,17 @@ Flutter-based Android and iOS app for **Lubowa Sports Park**, Kampala. Integrate
 - Public league entry shows **league name + team count preview** before confirming
 - **Contact the organizer** WhatsApp button on league entry screen
 
+### Contact
+
+- One-tap **Chat on WhatsApp** deep link to the park
+- **Google Maps** link for directions to Lubowa Sports Park
+
 ### Profile & Auth
 
 - **Profile gate**: tapping Profile shows a loading skeleton while checking JWT, then navigates to profile (logged in) or login screen (not logged in)
 - Profile shows career goals, leagues managed, teams led
 - Send Feedback dialog in Settings (emails `info@lubowasportspark.com`)
+- Dark mode toggle in Settings; onboarding screens use green background with white text
 
 ---
 
