@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/features/league/league_booking_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_list_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -186,10 +187,19 @@ class ManageSection extends StatelessWidget {
                 if (name.isEmpty) return;
                 Navigator.of(ctx).pop();
                 final messenger = ScaffoldMessenger.of(context);
+                final navigator = Navigator.of(context);
                 try {
-                  await repository.createLeague(name: name, legs: legs);
+                  final LeagueModel league = await repository.createLeague(name: name, legs: legs);
                   if (context.mounted) {
-                    messenger.showSnackBar(const SnackBar(content: Text('League created')));
+                    messenger.showSnackBar(SnackBar(
+                      content: const Text('League created'),
+                      action: SnackBarAction(
+                        label: 'Book pitch',
+                        onPressed: () => navigator.push(
+                          fadeSlideRoute(builder: (_) => LeagueBookingScreen(league: league)),
+                        ),
+                      ),
+                    ));
                     onRefresh();
                   }
                 } catch (e) {

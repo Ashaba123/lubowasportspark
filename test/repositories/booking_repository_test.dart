@@ -22,96 +22,102 @@ void main() {
   });
 
   group('BookingRepository', () {
-    test('submit calls POST /lubowa/v1/bookings with request body', () async {
+    test('submit calls POST /lubowa-ea/v1/bookings with request body', () async {
       const request = BookingRequest(
+        serviceId: 3,
         date: '2025-03-15',
-        timeSlot: '14:00',
+        time: '14:00',
         contactName: 'Jane',
         contactPhone: '+256700000',
-        contactEmail: 'jane@test.com',
         notes: 'Pitch A',
       );
       when(() => mockDio.post<Map<String, dynamic>>(
             any(),
             data: any(named: 'data'),
-          )).thenAnswer((_) async => response201({'id': 1, 'status': 'pending'}));
+          )).thenAnswer((_) async => response201({
+                'id': 1,
+                'date': '2025-03-15',
+                'time_slot': '14:00',
+                'contact_name': 'Jane',
+                'status': 'pending',
+              }));
 
-      await repository.submit(request);
+      final item = await repository.submit(request);
 
+      expect(item.id, 1);
+      expect(item.status, 'pending');
       verify(() => mockDio.post<Map<String, dynamic>>(
-            AppConstants.pathLubowaBookings,
+            AppConstants.pathEaBookings,
             data: request.toJson(),
           )).called(1);
     });
 
-    test('submit returns BookingSubmitResponse', () async {
+    test('submit throws SlotTakenException on 409 slot_taken', () async {
+      final options = RequestOptions(path: AppConstants.pathEaBookings);
       when(() => mockDio.post<Map<String, dynamic>>(
             any(),
             data: any(named: 'data'),
-          )).thenAnswer((_) async => response201({'id': 99, 'status': 'pending'}));
-
-      final resp = await repository.submit(const BookingRequest(
-        date: '2025-03-15',
-        timeSlot: '14:00',
-        contactName: 'A',
-        contactPhone: 'B',
-        contactEmail: 'c@d.e',
+          )).thenThrow(DioException(
+        requestOptions: options,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: options,
+          statusCode: 409,
+          data: {
+            'code': 'slot_taken',
+            'message': 'That time is no longer available.',
+            'data': {'status': 409, 'dates': ['2025-03-15']},
+          },
+        ),
       ));
 
-      expect(resp.id, 99);
-      expect(resp.status, 'pending');
+      expect(
+        () => repository.submit(const BookingRequest(
+          serviceId: 3,
+          date: '2025-03-15',
+          time: '14:00',
+          contactName: 'A',
+          contactPhone: 'B',
+        )),
+        throwsA(isA<SlotTakenException>().having((e) => e.dates, 'dates', ['2025-03-15'])),
+      );
     });
 
-    test('getByEmail calls GET /lubowa/v1/bookings with contact_email', () async {
+    test('getSlots parses available, booked and unavailable', () async {
       when(() => mockDio.get<dynamic>(
             any(),
             queryParameters: any(named: 'queryParameters'),
             options: any(named: 'options'),
-          )).thenAnswer((_) async => responseOk<dynamic>({'data': [], 'meta': {'page': 1, 'per_page': 20, 'total': 0}}));
+          )).thenAnswer((_) async => responseOk<dynamic>({
+                'date': '2025-03-15',
+                'service_id': 3,
+                'slots': [
+                  {'time': '09:00', 'status': 'unavailable'},
+                  {'time': '10:00', 'status': 'booked'},
+                  {'time': '11:00', 'status': 'available'},
+                ],
+              }));
 
-      await repository.getByEmail('user@example.com');
+      final slots = await repository.getSlots(serviceId: 3, date: '2025-03-15');
 
-      verify(() => mockDio.get<dynamic>(
-            AppConstants.pathLubowaBookings,
-            queryParameters: {
-              'contact_email': 'user@example.com',
-              'per_page': 100,
-              'sort': 'created_at',
-            },
-          )).called(1);
+      expect(slots.map((s) => s.status), [SlotStatus.unavailable, SlotStatus.booked, SlotStatus.available]);
+      expect(slots.where((s) => s.isAvailable).map((s) => s.time), ['11:00']);
     });
 
-    test('getByEmail returns empty list for empty email', () async {
-      final list = await repository.getByEmail('  ');
-      expect(list, isEmpty);
-      verifyNever(() => mockDio.get<dynamic>(any(), queryParameters: any(named: 'queryParameters')));
-    });
-
-    test('getBookedSlots calls GET /lubowa/v1/bookings/slots with date and service', () async {
+    test('getMine reads data list from GET /lubowa-ea/v1/bookings', () async {
       when(() => mockDio.get<dynamic>(
             any(),
-            queryParameters: any(named: 'queryParameters'),
-          )).thenAnswer((_) async => responseOk<dynamic>([]));
+            options: any(named: 'options'),
+          )).thenAnswer((_) async => responseOk<dynamic>({
+                'data': [
+                  {'id': 7, 'date': '2025-03-15', 'time_slot': '10:00', 'contact_name': 'A', 'status': 'approved'},
+                ],
+              }));
 
-      await repository.getBookedSlots('2025-03-15', 'Football pitch');
+      final list = await repository.getMine();
 
-      verify(() => mockDio.get<dynamic>(
-            '${AppConstants.pathLubowaBookings}/slots',
-            queryParameters: {'date': '2025-03-15', 'service': 'Football pitch'},
-          )).called(1);
-    });
-
-    test('getBookedSlots returns only pending and approved slots', () async {
-      when(() => mockDio.get<dynamic>(any(), queryParameters: any(named: 'queryParameters')))
-          .thenAnswer((_) async => responseOk<dynamic>([
-                {'time_slot': '10:00', 'status': 'pending'},
-                {'time_slot': '11:00', 'status': 'approved'},
-                {'time_slot': '12:00', 'status': 'canceled'},
-              ]));
-
-      final slots = await repository.getBookedSlots('2025-03-15', 'Padel');
-
-      expect(slots, ['10:00', '11:00']);
+      expect(list.single.id, 7);
+      expect(list.single.status, 'approved');
     });
   });
 }

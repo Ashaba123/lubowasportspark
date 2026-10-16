@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:dio/dio.dart';
+
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
+import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
@@ -11,6 +15,7 @@ import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/booking/my_bookings_entry_screen.dart';
+import 'package:lubowa_sports_park/features/league/login_screen.dart';
 
 // Converts "16:00" → "4pm", "09:30" → "9:30am"
 String _formatTimeSlot(String slot) {
@@ -45,75 +50,82 @@ class _BookingScreenState extends State<BookingScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
-  final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _notesCtrl = TextEditingController();
 
   // Focus nodes for keyboard navigation
   final FocusNode _nameFocus = FocusNode();
   final FocusNode _phoneFocus = FocusNode();
-  final FocusNode _emailFocus = FocusNode();
   final FocusNode _notesFocus = FocusNode();
 
   _BookingStep _step = _BookingStep.service;
   DateTime? _selectedDate;
   String? _selectedTimeSlot;
-  String? _selectedService;
+  BookingService? _selectedService;
   bool _submitting = false;
   String? _error;
-  List<String> _bookedSlots = <String>[];
+  List<BookingService>? _services;
+  String? _servicesError;
+  List<BookingSlot> _slots = <BookingSlot>[];
   bool _loadingSlots = false;
-
-  static const List<String> _timeSlots = <String>[
-    '09:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:00',
-    '16:00',
-    '17:00',
-    '18:00',
-  ];
-
-  static const List<String> _services = <String>[
-    'Football pitch',
-    'Event Space',
-    'Padel',
-  ];
+  String? _slotsError;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
+    if (_repository == null) {
+      _repository = BookingRepository(apiClient: context.read<ApiClient>());
+      _loadServices();
+    }
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
-    _emailCtrl.dispose();
     _notesCtrl.dispose();
     _nameFocus.dispose();
     _phoneFocus.dispose();
-    _emailFocus.dispose();
     _notesFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      final List<BookingService> list = await _repository!.getServices();
+      if (!mounted) return;
+      setState(() => _services = list);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _services = <BookingService>[];
+        _servicesError = userFriendlyApiErrorMessage(e);
+      });
+    }
+  }
+
+  Future<bool> _ensureLoggedIn() async {
+    final String? token = await context.read<TokenStorage>().getToken();
+    if (token != null && token.isNotEmpty) return true;
+    if (!mounted) return false;
+    final bool? ok = await Navigator.of(context).push<bool>(
+      fadeSlideRoute(builder: (_) => const LoginScreen()),
+    );
+    return ok == true;
   }
 
   Future<void> _submit() async {
     if (_repository == null) return;
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedDate == null) {
-      setState(() => _error = 'Please select a date.');
-      return;
-    }
-    if (_selectedTimeSlot == null) {
-      setState(() => _error = 'Please select a time slot.');
+    if (_selectedService == null || _selectedDate == null || _selectedTimeSlot == null) {
+      setState(() => _error = 'Please select a service, date and time.');
       return;
     }
     if (!await hasNetworkConnectivity()) {
       setState(() => _error = userFriendlyApiErrorMessage(NoConnectivityException()));
+      return;
+    }
+    if (!await _ensureLoggedIn()) {
+      if (mounted) setState(() => _error = 'Please log in to book.');
       return;
     }
     setState(() {
@@ -122,22 +134,36 @@ class _BookingScreenState extends State<BookingScreen> {
     });
     try {
       final String notesText = _notesCtrl.text.trim();
-      final BookingRequest request = BookingRequest(
-        date:
-            '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
-        timeSlot: _selectedTimeSlot!,
+      await _repository!.submit(BookingRequest(
+        serviceId: _selectedService!.id,
+        date: formatBookingDate(_selectedDate!),
+        time: _selectedTimeSlot!,
         contactName: _nameCtrl.text.trim(),
         contactPhone: _phoneCtrl.text.trim(),
-        contactEmail: _emailCtrl.text.trim(),
-        service: _selectedService,
         notes: notesText.isEmpty ? null : notesText,
-      );
-      await _repository!.submit(request);
+      ));
       if (!mounted) return;
       setState(() {
         _submitting = false;
         _step = _BookingStep.success;
         _error = null;
+      });
+    } on SlotTakenException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _selectedTimeSlot = null;
+        _step = _BookingStep.dateTime;
+        _error = e.toString();
+      });
+      _loadSlots();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = e.response?.statusCode == 401
+            ? 'Your session expired. Please log in again.'
+            : userFriendlyApiErrorMessage(e);
       });
     } catch (e) {
       if (!mounted) return;
@@ -148,26 +174,31 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  Future<void> _loadBookedSlots() async {
+  Future<void> _loadSlots() async {
     if (_repository == null || _selectedDate == null || _selectedService == null) return;
-    setState(() => _loadingSlots = true);
+    setState(() {
+      _loadingSlots = true;
+      _slotsError = null;
+    });
     try {
-      final String dateStr =
-          '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-      final List<String> taken = await _repository!.getBookedSlots(dateStr, _selectedService!);
+      final List<BookingSlot> slots = await _repository!.getSlots(
+        serviceId: _selectedService!.id,
+        date: formatBookingDate(_selectedDate!),
+      );
       if (!mounted) return;
       setState(() {
-        _bookedSlots = taken;
+        _slots = slots;
         _loadingSlots = false;
-        if (_selectedTimeSlot != null && taken.contains(_selectedTimeSlot)) {
-          _selectedTimeSlot = null;
-        }
+        final bool stillFree = slots.any((BookingSlot s) => s.time == _selectedTimeSlot && s.isAvailable);
+        if (!stillFree) _selectedTimeSlot = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _bookedSlots = <String>[];
+        _slots = <BookingSlot>[];
         _loadingSlots = false;
+        _selectedTimeSlot = null;
+        _slotsError = userFriendlyApiErrorMessage(e);
       });
     }
   }
@@ -179,10 +210,9 @@ class _BookingScreenState extends State<BookingScreen> {
       _selectedDate = null;
       _selectedTimeSlot = null;
       _selectedService = null;
-      _bookedSlots = <String>[];
+      _slots = <BookingSlot>[];
       _nameCtrl.clear();
       _phoneCtrl.clear();
-      _emailCtrl.clear();
       _notesCtrl.clear();
     });
   }
@@ -257,29 +287,53 @@ class _BookingScreenState extends State<BookingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          DropdownButtonFormField<String>(
-            // ignore: deprecated_member_use
-            value: _selectedService,
-            decoration: const InputDecoration(
-              labelText: 'Service',
-              hintText: 'Choose a Service',
+          if (_services == null)
+            const Center(child: FootballLoader(size: 28))
+          else if (_servicesError != null)
+            Column(
+              children: <Widget>[
+                Text(_servicesError!, style: TextStyle(color: colorScheme.error), textAlign: TextAlign.center),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _services = null;
+                      _servicesError = null;
+                    });
+                    _loadServices();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            )
+          else
+            DropdownButtonFormField<int>(
+              // ignore: deprecated_member_use
+              value: _selectedService?.id,
+              decoration: const InputDecoration(
+                labelText: 'Service',
+                hintText: 'Choose a Service',
+              ),
+              items: _services!
+                  .map(
+                    (BookingService s) => DropdownMenuItem<int>(
+                      value: s.id,
+                      child: Text(s.name, style: TextStyle(color: colorScheme.primary)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (int? id) => setState(() {
+                _selectedService = _services!.firstWhere((BookingService s) => s.id == id);
+                _selectedTimeSlot = null;
+                _slots = <BookingSlot>[];
+              }),
             ),
-            items: _services
-                .map(
-                  (String s) => DropdownMenuItem<String>(
-                    value: s,
-                    child: Text(s, style: TextStyle(color: colorScheme.primary)),
-                  ),
-                )
-                .toList(),
-            onChanged: (String? value) => setState(() => _selectedService = value),
-          ),
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _selectedService == null
                 ? null
                 : () {
                     setState(() => _step = _BookingStep.dateTime);
+                    _loadSlots();
                   },
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
@@ -342,7 +396,7 @@ class _BookingScreenState extends State<BookingScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            _selectedService ?? 'Choose date & time',
+            _selectedService?.name ?? 'Choose date & time',
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
@@ -353,11 +407,14 @@ class _BookingScreenState extends State<BookingScreen> {
                   context: context,
                   initialDate: _selectedDate ?? DateTime.now(),
                   firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  lastDate: DateTime.now().add(const Duration(days: AppConstants.bookingMaxDaysAhead)),
                 );
                 if (date != null) {
-                  setState(() => _selectedDate = date);
-                  _loadBookedSlots();
+                  setState(() {
+                    _selectedDate = date;
+                    _error = null;
+                  });
+                  _loadSlots();
                 }
               },
               borderRadius: BorderRadius.circular(12),
@@ -398,23 +455,56 @@ class _BookingScreenState extends State<BookingScreen> {
               padding: EdgeInsets.symmetric(vertical: 8),
               child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
             )
-          else ...<Widget>[
+          else if (_slotsError != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(_slotsError!, style: TextStyle(color: colorScheme.error)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(onPressed: _loadSlots, child: const Text('Retry')),
+            ),
+          ] else if (_selectedDate == null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              'Pick a date to see times.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ] else if (_slots.isEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              'Closed on this day. Please pick another date.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+          ] else ...<Widget>[
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _timeSlots.map((String slot) {
-                final bool selected = _selectedTimeSlot == slot;
-                final bool taken = _bookedSlots.contains(slot);
+              children: _slots.map((BookingSlot slot) {
+                final bool selected = _selectedTimeSlot == slot.time;
+                final bool booked = slot.status == SlotStatus.booked;
                 return FilterChip(
-                  selected: selected && !taken,
-                  label: Text(_formatTimeSlot(slot)),
-                  onSelected: taken ? null : (bool v) => setState(() => _selectedTimeSlot = v ? slot : null),
+                  selected: selected && slot.isAvailable,
+                  label: Text(
+                    booked ? '${_formatTimeSlot(slot.time)} · Booked' : _formatTimeSlot(slot.time),
+                    style: booked ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+                  ),
+                  onSelected: slot.isAvailable
+                      ? (bool v) => setState(() => _selectedTimeSlot = v ? slot.time : null)
+                      : null,
                   selectedColor: colorScheme.primaryContainer,
                   checkmarkColor: colorScheme.primary,
                   disabledColor: colorScheme.surfaceContainerHighest,
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _loadSlots,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Refresh times'),
+              ),
             ),
           ],
           if (_error != null) ...<Widget>[
@@ -472,7 +562,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     children: <Widget>[
                       if (_selectedService != null)
                         Text(
-                          _selectedService!,
+                          _selectedService!.name,
                           style: theme.textTheme.titleMedium,
                         ),
                       if (_selectedDate != null || _selectedTimeSlot != null) ...<Widget>[
@@ -480,10 +570,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         Text(
                           <String>[
                             if (_selectedDate != null && _selectedTimeSlot != null)
-                              _formatBookingDateTime(
-                                '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
-                                _selectedTimeSlot!,
-                              )
+                              _formatBookingDateTime(formatBookingDate(_selectedDate!), _selectedTimeSlot!)
                             else if (_selectedDate != null)
                               '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
                             else if (_selectedTimeSlot != null)
@@ -512,20 +599,15 @@ class _BookingScreenState extends State<BookingScreen> {
               controller: _phoneCtrl,
               focusNode: _phoneFocus,
               textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _emailFocus.requestFocus(),
+              onFieldSubmitted: (_) => _notesFocus.requestFocus(),
               decoration: const InputDecoration(labelText: 'Phone', hintText: 'Your phone'),
               keyboardType: TextInputType.phone,
               validator: (String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _emailCtrl,
-              focusNode: _emailFocus,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => _notesFocus.requestFocus(),
-              decoration: const InputDecoration(labelText: 'Email', hintText: 'your@email.com'),
-              keyboardType: TextInputType.emailAddress,
-              validator: (String? v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+            const SizedBox(height: 4),
+            Text(
+              'Confirmation is sent to your account email. You will be asked to log in if needed.',
+              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -573,7 +655,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   String _bookingSummary() {
-    final String service = _selectedService ?? 'Booking';
+    final String service = _selectedService?.name ?? 'Booking';
     final String dateStr = _selectedDate == null
         ? ''
         : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}';
@@ -591,7 +673,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _addToCalendar() async {
     if (_selectedDate == null || _selectedTimeSlot == null) return;
-    final String service = _selectedService ?? 'Lubowa Sports Park Booking';
+    final String service = _selectedService?.name ?? 'Lubowa Sports Park Booking';
     final parts = _selectedTimeSlot!.split(':');
     final int hour = int.tryParse(parts[0]) ?? 9;
     final int minute = int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
@@ -602,7 +684,8 @@ class _BookingScreenState extends State<BookingScreen> {
       hour,
       minute,
     );
-    final DateTime end = start.add(const Duration(hours: 1));
+    final int minutes = _selectedService?.duration ?? 60;
+    final DateTime end = start.add(Duration(minutes: minutes > 0 ? minutes : 60));
 
     final Uri uri = Uri.parse(
       'https://calendar.google.com/calendar/render?action=TEMPLATE'
@@ -644,7 +727,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(_selectedService!, style: theme.textTheme.titleMedium),
+                      Text(_selectedService!.name, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(
                         '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year} · ${_formatTimeSlot(_selectedTimeSlot!)}',

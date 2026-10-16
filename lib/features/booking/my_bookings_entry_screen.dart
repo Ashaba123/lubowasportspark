@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/booking/my_bookings_screen.dart';
+import 'package:lubowa_sports_park/features/league/login_screen.dart';
 
+/// Gate for My Bookings: bookings belong to the logged-in account.
 class MyBookingsEntryScreen extends StatefulWidget {
   const MyBookingsEntryScreen({super.key});
 
@@ -16,60 +19,52 @@ class MyBookingsEntryScreen extends StatefulWidget {
 }
 
 class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
-  final TextEditingController _emailCtrl = TextEditingController();
   BookingRepository? _repository;
-  bool _loading = false;
+  bool _loading = true;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _repository ??= BookingRepository(apiClient: context.read<ApiClient>());
+    if (_repository == null) {
+      _repository = BookingRepository(apiClient: context.read<ApiClient>());
+      _loadIfLoggedIn();
+    }
   }
 
-  @override
-  void dispose() {
-    _emailCtrl.dispose();
-    super.dispose();
+  Future<void> _loadIfLoggedIn() async {
+    final String? token = await context.read<TokenStorage>().getToken();
+    if (!mounted) return;
+    if (token == null || token.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
+    await _load();
+  }
+
+  Future<void> _login() async {
+    final bool? ok = await Navigator.of(context).push<bool>(
+      fadeSlideRoute(builder: (_) => const LoginScreen()),
+    );
+    if (ok == true && mounted) await _load();
   }
 
   Future<void> _load() async {
-    if (_repository == null) return;
-    final String email = _emailCtrl.text.trim();
-    if (email.isEmpty) {
-      setState(() => _error = 'Enter your email.');
-      return;
-    }
     setState(() {
       _error = null;
       _loading = true;
     });
     try {
-      final List<BookingItem> list = await _repository!.getByEmail(email, forceRefresh: true);
-
+      final List<BookingItem> list = await _repository!.getMine(forceRefresh: true);
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-      });
       Navigator.of(context).pushReplacement(
-        fadeSlideRoute(
-          builder: (_) => MyBookingsScreen(
-            initialBookings: list,
-            email: email,
-          ),
-        ),
+        fadeSlideRoute(builder: (_) => MyBookingsScreen(initialBookings: list)),
       );
-    } catch (e, stack) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error =
-            '${userFriendlyApiErrorMessage(e)}\n\nRaw error (share this if needed):\n$e\n$stack';
+        _error = userFriendlyApiErrorMessage(e);
       });
     }
   }
@@ -83,53 +78,49 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My bookings')),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    TextField(
-                      controller: _emailCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Email used when booking',
+      body: _loading
+          ? const Center(child: FootballLoader(size: 32))
+          : Padding(
+              padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Text('Log in to see your bookings', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Bookings are linked to your account.',
+                            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                          if (_error != null) ...<Widget>[
+                            const SizedBox(height: 8),
+                            Text(
+                              _error!,
+                              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _error != null ? _loadIfLoggedIn : _login,
+                            icon: Icon(_error != null ? Icons.refresh : Icons.login),
+                            label: Text(_error != null ? 'Try again' : 'Log in'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 48),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _load(),
                     ),
-                    if (_error != null) ...<Widget>[
-                      const SizedBox(height: 8),
-                      Text(
-                        _error!,
-                        style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _loading ? null : _load,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: _loading
-                          ? const FootballLoader(size: 22)
-                          : const Text('Load my bookings'),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
-

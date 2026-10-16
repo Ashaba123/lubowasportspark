@@ -18,8 +18,16 @@ class AppConstants {
   static const String pathWpCurrentUser = '/wp/v2/users/me';
   static const String pathJwtToken = '/jwt-auth/v1/token';
 
-  /// Lubowa API (bookings, leagues)
-  static const String pathLubowaBookings = '/lubowa/v1/bookings';
+  /// Bookings via Lubowa EA Bridge plugin (Easy!Appointments).
+  static const String pathEaServices = '/lubowa-ea/v1/services';
+  static const String pathEaSlots = '/lubowa-ea/v1/slots';
+  static const String pathEaBookings = '/lubowa-ea/v1/bookings';
+  static String pathEaLeagueBookings(int leagueId) => '/lubowa-ea/v1/leagues/$leagueId/bookings';
+
+  /// Bookings are bookable this many days ahead (match EA → Booking Settings).
+  static const int bookingMaxDaysAhead = 60;
+
+  /// Lubowa API (leagues, users)
   static const String pathLubowaLeagues = '/lubowa/v1/leagues';
   static const String pathLubowaPublicLeague = '/lubowa/v1/public/leagues';
   static const String pathLubowaMeRoles = '/lubowa/v1/me/league_roles';

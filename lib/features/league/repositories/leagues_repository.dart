@@ -18,13 +18,13 @@ extension LeaguesRepository on LeagueRepository {
   }
 
   /// POST /lubowa/v1/leagues
-  Future<LeagueModel> createLeague({required String name, int legs = 1, int? bookingId}) async {
+  /// Pitch bookings are made separately via the EA bridge (see LeagueBookingScreen).
+  Future<LeagueModel> createLeague({required String name, int legs = 1}) async {
     final Response<Map<String, dynamic>> response = await _dio.post<Map<String, dynamic>>(
       AppConstants.pathLubowaLeagues,
       data: <String, dynamic>{
         'name': name,
         'legs': legs,
-        if (bookingId != null) 'booking_id': bookingId,
       },
     );
     final Map<String, dynamic>? data = response.data;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/app_logo.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
@@ -10,10 +11,9 @@ import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 
 class MyBookingsScreen extends StatefulWidget {
-  const MyBookingsScreen({super.key, required this.initialBookings, required this.email});
+  const MyBookingsScreen({super.key, required this.initialBookings});
 
   final List<BookingItem> initialBookings;
-  final String email;
 
   @override
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
@@ -25,11 +25,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   Future<MyBookingsState> _loadBookings(BuildContext context) async {
     final BookingRepository repository = BookingRepository(apiClient: context.read<ApiClient>());
     try {
-      final List<BookingItem> list =
-          await repository.getByEmail(widget.email, forceRefresh: true);
+      final List<BookingItem> list = await repository.getMine(forceRefresh: true);
       return MyBookingsState(bookings: list, error: null);
     } catch (e) {
-      return MyBookingsState(bookings: const <BookingItem>[], error: e.toString());
+      return MyBookingsState(bookings: const <BookingItem>[], error: userFriendlyApiErrorMessage(e));
     }
   }
 
@@ -43,36 +42,32 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   Widget build(BuildContext context) {
     return FutureProvider<MyBookingsState>(
       key: ValueKey<int>(_reloadToken),
-      initialData: MyBookingsState(bookings: widget.initialBookings, error: null),
+      initialData: MyBookingsState(bookings: widget.initialBookings, loading: _reloadToken > 0),
       create: (BuildContext ctx) => _loadBookings(ctx),
-      child: _MyBookingsView(
-        email: widget.email,
-        onRefresh: _refresh,
-      ),
+      child: _MyBookingsView(onRefresh: _refresh),
     );
   }
 }
 
 class MyBookingsState {
-  MyBookingsState({required this.bookings, this.error});
+  MyBookingsState({required this.bookings, this.error, this.loading = false});
 
   final List<BookingItem> bookings;
   final String? error;
+  final bool loading;
 }
 
 class _MyBookingsView extends StatelessWidget {
-  const _MyBookingsView({required this.email, required this.onRefresh});
+  const _MyBookingsView({required this.onRefresh});
 
-  final String email;
   final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final MyBookingsState state = context.watch<MyBookingsState>();
     return _MyBookingsScaffold(
-      email: email,
       bookings: state.bookings,
-      loading: state.bookings.isEmpty,
+      loading: state.loading,
       error: state.error,
       onRefresh: onRefresh,
     );
@@ -81,14 +76,12 @@ class _MyBookingsView extends StatelessWidget {
 
 class _MyBookingsScaffold extends StatelessWidget {
   const _MyBookingsScaffold({
-    required this.email,
     required this.bookings,
     required this.loading,
     required this.error,
     required this.onRefresh,
   });
 
-  final String email;
   final List<BookingItem> bookings;
   final bool loading;
   final String? error;
@@ -132,13 +125,15 @@ class _MyBookingsScaffold extends StatelessWidget {
                 itemBuilder: (_, i) {
                   if (i == 0) {
                     return Align(
-                      alignment: Alignment.centerRight,
+                      alignment: bookings.isEmpty ? Alignment.center : Alignment.centerRight,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
-                          'Pull down to refresh bookings',
+                          bookings.isEmpty
+                              ? (error != null ? error! : 'No bookings yet.')
+                              : 'Pull down to refresh bookings',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
+                            color: error != null ? cs.error : cs.onSurfaceVariant,
                           ),
                         ),
                       ),

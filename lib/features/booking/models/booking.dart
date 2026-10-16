@@ -1,50 +1,84 @@
-/// Booking request payload for POST /lubowa/v1/bookings.
+/// Bookable service from GET /lubowa-ea/v1/services (Easy!Appointments).
+class BookingService {
+  const BookingService({
+    required this.id,
+    required this.name,
+    required this.duration,
+    this.price,
+    this.currency,
+    this.description = '',
+  });
+
+  final int id;
+  final String name;
+
+  /// Minutes.
+  final int duration;
+  final String? price;
+  final String? currency;
+  final String description;
+
+  factory BookingService.fromJson(Map<String, dynamic> json) => BookingService(
+        id: BookingItem._toInt(json['id']),
+        name: (json['name'] as String?) ?? '',
+        duration: BookingItem._toInt(json['duration']),
+        price: json['price']?.toString(),
+        currency: json['currency'] as String?,
+        description: (json['description'] as String?) ?? '',
+      );
+}
+
+enum SlotStatus { available, booked, unavailable }
+
+/// One start time on the slot grid from GET /lubowa-ea/v1/slots.
+class BookingSlot {
+  const BookingSlot({required this.time, required this.status});
+
+  /// "HH:MM".
+  final String time;
+  final SlotStatus status;
+
+  bool get isAvailable => status == SlotStatus.available;
+
+  factory BookingSlot.fromJson(Map<String, dynamic> json) => BookingSlot(
+        time: (json['time'] as String?) ?? '',
+        status: switch (json['status']) {
+          'available' => SlotStatus.available,
+          'booked' => SlotStatus.booked,
+          _ => SlotStatus.unavailable,
+        },
+      );
+}
+
+/// Booking request payload for POST /lubowa-ea/v1/bookings. Email comes from the logged-in account.
 class BookingRequest {
   const BookingRequest({
+    required this.serviceId,
     required this.date,
-    required this.timeSlot,
+    required this.time,
     required this.contactName,
     required this.contactPhone,
-    required this.contactEmail,
-    this.service,
     this.notes,
   });
 
+  final int serviceId;
   final String date; // YYYY-MM-DD
-  final String timeSlot;
+  final String time; // HH:MM
   final String contactName;
   final String contactPhone;
-  final String contactEmail;
-  /// Optional service being booked (e.g. football pitch, event space, padel).
-  final String? service;
   final String? notes;
 
   Map<String, dynamic> toJson() => {
+        'service_id': serviceId,
         'date': date,
-        'time_slot': timeSlot,
+        'time': time,
         'contact_name': contactName,
         'contact_phone': contactPhone,
-        'contact_email': contactEmail,
-        if (service != null && service!.isNotEmpty) 'service': service,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
       };
 }
 
-/// Response from POST /lubowa/v1/bookings (201).
-class BookingSubmitResponse {
-  const BookingSubmitResponse({required this.id, required this.status});
-
-  final int id;
-  final String status;
-
-  factory BookingSubmitResponse.fromJson(Map<String, dynamic> json) =>
-      BookingSubmitResponse(
-        id: BookingItem._toInt(json['id']),
-        status: (json['status'] as String?) ?? 'pending',
-      );
-}
-
-/// Single booking from GET /lubowa/v1/bookings?contact_email=...
+/// Single booking from GET /lubowa-ea/v1/bookings.
 class BookingItem {
   const BookingItem({
     required this.id,
@@ -52,6 +86,7 @@ class BookingItem {
     required this.timeSlot,
     required this.contactName,
     required this.status,
+    this.endTime,
     this.service,
     this.createdAt,
   });
@@ -59,9 +94,9 @@ class BookingItem {
   final int id;
   final String date;
   final String timeSlot;
+  final String? endTime;
   final String contactName;
   final String status;
-  /// Optional service name if provided by the backend.
   final String? service;
   final String? createdAt;
 
@@ -76,6 +111,7 @@ class BookingItem {
         id: _toInt(json['id']),
         date: (json['date'] as String?) ?? '',
         timeSlot: (json['time_slot'] as String?) ?? '',
+        endTime: json['end_time'] as String?,
         contactName: (json['contact_name'] as String?) ?? '',
         status: (json['status'] as String?) ?? 'pending',
         service: json['service'] as String?,
@@ -86,9 +122,37 @@ class BookingItem {
         'id': id,
         'date': date,
         'time_slot': timeSlot,
+        if (endTime != null) 'end_time': endTime,
         'contact_name': contactName,
         'status': status,
         if (service != null) 'service': service,
         if (createdAt != null) 'created_at': createdAt,
       };
+}
+
+/// One week of a league's pitch booking from /lubowa-ea/v1/leagues/{id}/bookings.
+class LeagueBookingSlot {
+  const LeagueBookingSlot({required this.appointmentId, required this.date, required this.time});
+
+  final int appointmentId;
+  final String date;
+  final String time;
+
+  factory LeagueBookingSlot.fromJson(Map<String, dynamic> json) => LeagueBookingSlot(
+        appointmentId: BookingItem._toInt(json['appointment_id']),
+        date: (json['date'] as String?) ?? '',
+        time: (json['time'] as String?) ?? '',
+      );
+}
+
+/// 409 from the bridge: the requested time (or some league weeks) are already booked.
+class SlotTakenException implements Exception {
+  const SlotTakenException(this.dates);
+
+  final List<String> dates;
+
+  @override
+  String toString() => dates.isEmpty
+      ? 'That time was just booked. Please pick another.'
+      : 'Already booked on: ${dates.join(', ')}. Please pick another time.';
 }

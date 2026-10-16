@@ -5,6 +5,7 @@ import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/features/league/fixtures_polling_notifier.dart';
 import 'package:lubowa_sports_park/features/league/fixtures_screen.dart';
+import 'package:lubowa_sports_park/features/league/league_booking_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/team_detail_screen.dart';
@@ -139,6 +140,19 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                               color: colorScheme.onSurfaceVariant),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.event_available, color: colorScheme.primary),
+                    title: const Text('Book pitch'),
+                    subtitle: const Text('Reserve a weekly match slot'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      fadeSlideRoute(builder: (_) => LeagueBookingScreen(league: widget.league)),
                     ),
                   ),
                 ),

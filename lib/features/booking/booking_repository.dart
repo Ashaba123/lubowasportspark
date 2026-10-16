@@ -4,68 +4,112 @@ import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 
-/// Bookings via POST/GET /lubowa/v1/bookings. No auth for submit; list by contact_email.
+/// Bookings via the Lubowa EA Bridge (/lubowa-ea/v1), backed by Easy!Appointments.
+/// Creating and listing bookings require JWT login.
 class BookingRepository {
   BookingRepository({ApiClient? apiClient})
       : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.apiBaseUrl).dio;
 
   final Dio _dio;
 
-  /// POST /lubowa/v1/bookings. Returns created booking or throws.
-  Future<BookingSubmitResponse> submit(BookingRequest request) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      AppConstants.pathLubowaBookings,
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
-    return BookingSubmitResponse.fromJson(data);
+  Future<List<BookingService>> getServices() async {
+    final response = await _dio.get<dynamic>(AppConstants.pathEaServices);
+    final raw = response.data;
+    if (raw is! List) return [];
+    return raw.whereType<Map<String, dynamic>>().map(BookingService.fromJson).toList();
   }
 
-  /// GET /lubowa/v1/bookings/slots?date=...&service=... — returns list of { time_slot, status } for that date+service.
-  /// Slots with status pending or approved are considered taken.
-  Future<List<String>> getBookedSlots(String date, String service) async {
+  /// Full grid for the date: available, booked and unavailable start times.
+  Future<List<BookingSlot>> getSlots({required int serviceId, required String date}) async {
     final response = await _dio.get<dynamic>(
-      '${AppConstants.pathLubowaBookings}/slots',
-      queryParameters: {'date': date, 'service': service},
+      AppConstants.pathEaSlots,
+      queryParameters: {'service_id': serviceId, 'date': date},
+      options: Options(extra: {'dio_cache_force_refresh': true}),
     );
     final raw = response.data;
-    if (raw is! List || raw.isEmpty) return [];
-    final taken = <String>[];
-    for (final e in raw) {
-      if (e is Map<String, dynamic>) {
-        final status = e['status'] as String?;
-        if (status == 'pending' || status == 'approved') {
-          final slot = e['time_slot'] as String?;
-          if (slot != null && slot.isNotEmpty) taken.add(slot);
-        }
-      }
-    }
-    return taken;
+    final list = raw is Map ? raw['slots'] : null;
+    if (list is! List) return [];
+    return list.whereType<Map<String, dynamic>>().map(BookingSlot.fromJson).toList();
   }
 
-  /// GET /lubowa/v1/bookings?contact_email=... — list bookings (paginated: response has data + meta).
+  /// Throws [SlotTakenException] when the slot was booked in the meantime.
+  Future<BookingItem> submit(BookingRequest request) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        AppConstants.pathEaBookings,
+        data: request.toJson(),
+      );
+      final data = response.data;
+      if (data == null) throw DioException(requestOptions: response.requestOptions, message: 'Empty response');
+      return BookingItem.fromJson(data);
+    } on DioException catch (e) {
+      throw _slotTakenOr(e);
+    }
+  }
+
+  /// Bookings of the logged-in user.
   /// [forceRefresh] when true passes dio_cache_force_refresh so cache is bypassed (e.g. after creating a booking).
-  Future<List<BookingItem>> getByEmail(String contactEmail, {bool forceRefresh = false}) async {
-    if (contactEmail.trim().isEmpty) return [];
+  Future<List<BookingItem>> getMine({bool forceRefresh = false}) async {
     final response = await _dio.get<dynamic>(
-      AppConstants.pathLubowaBookings,
-      queryParameters: {
-        'contact_email': contactEmail.trim(),
-        'per_page': 100,
-        'sort': 'created_at',
-      },
+      AppConstants.pathEaBookings,
       options: forceRefresh ? Options(extra: {'dio_cache_force_refresh': true}) : null,
     );
-    final raw = response.data;
-    if (raw == null) return [];
-    final list = _listFromPaginated(raw);
-    return list.map((e) => BookingItem.fromJson(e as Map<String, dynamic>)).toList();
+    return _dataList(response.data).whereType<Map<String, dynamic>>().map(BookingItem.fromJson).toList();
   }
 
-  static List<dynamic> _listFromPaginated(dynamic raw) {
-    if (raw is Map && raw.containsKey('data')) return raw['data'] as List<dynamic>? ?? [];
+  Future<List<LeagueBookingSlot>> getLeagueBookings(int leagueId) async {
+    final response = await _dio.get<dynamic>(
+      AppConstants.pathEaLeagueBookings(leagueId),
+      options: Options(extra: {'dio_cache_force_refresh': true}),
+    );
+    return _dataList(response.data).whereType<Map<String, dynamic>>().map(LeagueBookingSlot.fromJson).toList();
+  }
+
+  /// Books the same time weekly for [weeks] weeks. All-or-nothing; throws [SlotTakenException]
+  /// listing clashing dates.
+  Future<List<LeagueBookingSlot>> bookLeague({
+    required int leagueId,
+    required int serviceId,
+    required String date,
+    required String time,
+    required int weeks,
+    String? contactPhone,
+  }) async {
+    try {
+      final response = await _dio.post<dynamic>(
+        AppConstants.pathEaLeagueBookings(leagueId),
+        data: {
+          'service_id': serviceId,
+          'date': date,
+          'time': time,
+          'weeks': weeks,
+          if (contactPhone != null && contactPhone.isNotEmpty) 'contact_phone': contactPhone,
+        },
+      );
+      return _dataList(response.data).whereType<Map<String, dynamic>>().map(LeagueBookingSlot.fromJson).toList();
+    } on DioException catch (e) {
+      throw _slotTakenOr(e);
+    }
+  }
+
+  static Object _slotTakenOr(DioException e) {
+    final body = e.response?.data;
+    if (e.response?.statusCode == 409 && body is Map && body['code'] == 'slot_taken') {
+      final data = body['data'];
+      final dates = data is Map && data['dates'] is List
+          ? (data['dates'] as List).map((d) => d.toString()).toList()
+          : <String>[];
+      return SlotTakenException(dates);
+    }
+    return e;
+  }
+
+  static List<dynamic> _dataList(dynamic raw) {
+    if (raw is Map && raw['data'] is List) return raw['data'] as List<dynamic>;
     if (raw is List) return raw;
     return [];
   }
 }
+
+String formatBookingDate(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
