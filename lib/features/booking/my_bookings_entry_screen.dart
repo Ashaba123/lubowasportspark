@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
@@ -51,7 +50,7 @@ class _MyBookingsEntryScreenState extends State<MyBookingsEntryScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('My bookings')),
       body: _error == null
-          ? const Center(child: FootballLoader(size: 32))
+          ? const MyBookingsSkeleton()
           : ScrollableCenter(
               padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: 16),
               child: Card(

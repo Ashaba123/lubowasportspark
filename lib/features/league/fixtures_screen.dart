@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/fixtures_polling_notifier.dart';
 import 'package:lubowa_sports_park/features/league/fixture_edit_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
@@ -31,7 +31,26 @@ class FixturesScreen extends StatelessWidget {
       appBar: AppBar(title: Text('${league.name} — Fixtures')),
       backgroundColor: colorScheme.surface,
       body: loading && fixtures.isEmpty
-          ? const Center(child: FootballLoader())
+          ? AppSkeleton(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Column(
+                      children: List<Widget>.generate(
+                        6,
+                        (_) => ListTile(
+                          title: Text('Home team vs Away team', style: theme.textTheme.bodyMedium),
+                          subtitle: const Text('0 – 0'),
+                          trailing: const Icon(Icons.edit_outlined),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: () => context.read<FixturesPollingNotifier>().refresh(),
               child: ListView(

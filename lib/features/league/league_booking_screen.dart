@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -183,7 +183,33 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> with WidgetsB
     return Scaffold(
       appBar: AppBar(title: const Text('Book pitch')),
       body: _services == null
-          ? const Center(child: FootballLoader())
+          ? AppSkeleton(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
+                children: <Widget>[
+                  Text(widget.league.name, style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Books the same day and time every week. If any week is taken, nothing is booked.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 24),
+                  const InputDecorator(
+                    decoration: InputDecoration(labelText: 'Service'),
+                    child: Text('Service name'),
+                  ),
+                  const SizedBox(height: 12),
+                  const Card(
+                    child: ListTile(
+                      leading: Icon(Icons.calendar_today),
+                      title: Text('First match date'),
+                      trailing: Icon(Icons.chevron_right),
+                    ),
+                  ),
+                ],
+              ),
+            )
           : ListView(
               padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
               children: <Widget>[
@@ -244,7 +270,16 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> with WidgetsB
                 ),
                 const SizedBox(height: 12),
                 if (_loadingSlots)
-                  const Center(child: FootballLoader(size: 24))
+                  AppSkeleton(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: List<Widget>.generate(
+                        8,
+                        (_) => FilterChip(label: const Text('00:00am'), onSelected: (_) {}),
+                      ),
+                    ),
+                  )
                 else if (_date != null && _slots.isEmpty)
                   Text('Closed on this day.', style: theme.textTheme.bodyMedium)
                 else
@@ -287,12 +322,13 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> with WidgetsB
                   Text(_error!, style: TextStyle(color: cs.error)),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _submitting || _time == null ? null : _book,
-                  style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-                  child: _submitting
-                      ? const FootballLoader(size: 22)
-                      : Text('Book $_weeks week${_weeks == 1 ? '' : 's'}'),
+                ButtonShimmer(
+                  active: _submitting,
+                  child: FilledButton(
+                    onPressed: _time == null ? null : _book,
+                    style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+                    child: Text(_submitting ? 'Booking…' : 'Book $_weeks week${_weeks == 1 ? '' : 's'}'),
+                  ),
                 ),
               ],
             ),

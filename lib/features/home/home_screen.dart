@@ -5,8 +5,8 @@ import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/app_logo.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/public_league_screen.dart';
 
@@ -325,6 +325,7 @@ class _PublicLeagueStatsSectionState extends State<_PublicLeagueStatsSection> {
   }
 
   Future<void> _loadByCode() async {
+    if (_loading) return;
     final code = _codeController.text.trim();
     if (code.isEmpty) {
       setState(() => _error = 'Enter a league code.');
@@ -407,16 +408,17 @@ class _PublicLeagueStatsSectionState extends State<_PublicLeagueStatsSection> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                FilledButton.tonal(
-                  onPressed: _loading ? null : _loadByCode,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(88, 48),
-                    foregroundColor: cs.primary,
-                    backgroundColor: cs.surface.withValues(alpha: 0.9),
+                ButtonShimmer(
+                  active: _loading,
+                  child: FilledButton.tonal(
+                    onPressed: _loadByCode,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(88, 48),
+                      foregroundColor: cs.primary,
+                      backgroundColor: cs.surface.withValues(alpha: 0.9),
+                    ),
+                    child: Text(_loading ? 'Loading…' : 'View'),
                   ),
-                  child: _loading
-                      ? const FootballLoader(size: 22)
-                      : const Text('View'),
                 ),
               ],
             ),

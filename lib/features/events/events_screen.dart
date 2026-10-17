@@ -10,6 +10,7 @@ import 'package:lubowa_sports_park/core/models/wp_page.dart';
 import 'package:lubowa_sports_park/core/utils/html_utils.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/events/event_detail_screen.dart';
 import 'package:lubowa_sports_park/features/events/events_repository.dart';
 import 'package:lubowa_sports_park/features/events/models/wp_post.dart';
@@ -106,7 +107,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildBody() {
     if (_loading && _posts.isEmpty) {
-      return _EventsSkeleton(theme: Theme.of(context));
+      return const _EventsSkeleton();
     }
     if (_error != null && _posts.isEmpty) {
       return ScrollableCenter(
@@ -328,60 +329,35 @@ class _FilterTabs extends StatelessWidget {
   }
 }
 
-/// Skeleton loading state using theme colors. No per-frame rebuilds.
 class _EventsSkeleton extends StatelessWidget {
-  const _EventsSkeleton({required this.theme});
-
-  final ThemeData theme;
+  const _EventsSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final cs = theme.colorScheme;
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomScrollInset(context)),
-      itemCount: 4,
-      itemBuilder: (context, index) {
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 140,
-                width: double.infinity,
-                color: cs.surfaceContainerHighest,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: theme.textTheme.titleMedium?.fontSize ?? 20,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: theme.textTheme.bodyMedium?.fontSize ?? 16,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
+    final theme = Theme.of(context);
+    return AppSkeleton(
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, bottomScrollInset(context)),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return Card(
+            clipBehavior: Clip.antiAlias,
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Bone(height: 140, width: double.infinity),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Upcoming event title here', style: theme.textTheme.titleMedium),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

@@ -3,8 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/player_view_screen.dart';
@@ -135,10 +135,52 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       body: FutureBuilder<List<PlayerModel>>(
         future: _playersFuture,
         builder: (context, snapshot) {
-          // Full-screen loader only on the very first load (no data yet)
+          // Skeleton only on the very first load (no data yet)
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
-            return const Center(child: FootballLoader());
+            return AppSkeleton(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.groups, size: 32),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_teamName, style: theme.textTheme.titleLarge),
+                                Text('0/8 players', style: theme.textTheme.bodySmall),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Players', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Column(
+                      children: List<Widget>.generate(
+                        5,
+                        (_) => ListTile(
+                          leading: const CircleAvatar(child: Text('0')),
+                          title: Text('Player name', style: theme.textTheme.bodyLarge),
+                          subtitle: const Text('0 goals'),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           final players = snapshot.data ?? [];

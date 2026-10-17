@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:lubowa_sports_park/core/app_state.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/settings/league_booking_rules_screen.dart';
 import 'package:lubowa_sports_park/features/settings/park_rules_screen.dart';
 import 'package:lubowa_sports_park/features/settings/privacy_policy_screen.dart';
@@ -144,11 +145,12 @@ class _FeedbackDialogState extends State<_FeedbackDialog> {
           onPressed: _sending ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _sending ? null : _submit,
-          child: _sending
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Send'),
+        ButtonShimmer(
+          active: _sending,
+          child: FilledButton(
+            onPressed: _submit,
+            child: Text(_sending ? 'Sending…' : 'Send'),
+          ),
         ),
       ],
     );

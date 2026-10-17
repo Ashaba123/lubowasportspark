@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/fixtures_polling_notifier.dart';
 import 'package:lubowa_sports_park/features/league/fixtures_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_booking_screen.dart';
@@ -108,10 +108,45 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       body: FutureBuilder<List<TeamModel>>(
         future: _teamsFuture,
         builder: (context, snapshot) {
-          // Show full-screen loader only on the very first load (no data yet).
+          // Skeleton only on the very first load (no data yet).
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
-            return const Center(child: FootballLoader());
+            return AppSkeleton(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_leagueName, style: theme.textTheme.titleLarge),
+                          const SizedBox(height: 4),
+                          Text('Code: ${widget.league.code}', style: theme.textTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Teams (0)', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Column(
+                      children: List<Widget>.generate(
+                        4,
+                        (_) => ListTile(
+                          leading: const Icon(Icons.groups_outlined),
+                          title: Text('Team name here', style: theme.textTheme.bodyLarge),
+                          trailing: const Icon(Icons.chevron_right),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           final teams = snapshot.data ?? [];

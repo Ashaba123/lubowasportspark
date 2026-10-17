@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/fixture_goals_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
+
+enum _FixtureAction { start, save, fullTime }
 
 class FixtureEditScreen extends StatefulWidget {
   const FixtureEditScreen({
@@ -30,6 +32,7 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
   late final TextEditingController _awayCtrl;
   late bool _started;
   bool _saving = false;
+  _FixtureAction? _action;
 
   @override
   void initState() {
@@ -54,7 +57,10 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
     final h = _homeGoals;
     final a = _awayGoals;
     final messenger = ScaffoldMessenger.of(context);
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _action = _FixtureAction.save;
+    });
     try {
       final updated = await widget.repository.updateFixture(
         widget.fixture.id,
@@ -89,7 +95,10 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
     }
     final h = _homeGoals;
     final a = _awayGoals;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _action = _FixtureAction.fullTime;
+    });
     try {
       final updated = await widget.repository.updateFixture(
         widget.fixture.id,
@@ -117,7 +126,10 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
   Future<void> _startMatch() async {
     if (_started || widget.fixture.isFullTime) return;
     final messenger = ScaffoldMessenger.of(context);
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _action = _FixtureAction.start;
+    });
     try {
       final updated = await widget.repository.updateFixture(
         widget.fixture.id,
@@ -147,6 +159,12 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
       ),
     );
   }
+
+  bool _busy(_FixtureAction action) => _saving && _action == action;
+
+  /// The busy button stays enabled (its shimmer blocks taps); the others are disabled.
+  VoidCallback? _enabledFor(_FixtureAction action, VoidCallback onPressed) =>
+      !_saving || _action == action ? onPressed : null;
 
   @override
   Widget build(BuildContext context) {
@@ -224,13 +242,14 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
           if (!widget.fixture.isFullTime) ...[
             const SizedBox(height: 24),
             if (!_started) ...[
-              FilledButton.tonal(
-                onPressed: _saving ? null : _startMatch,
-                style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48)),
-                child: _saving
-                    ? const FootballLoader(size: 22)
-                    : const Text('Start match'),
+              ButtonShimmer(
+                active: _busy(_FixtureAction.start),
+                child: FilledButton.tonal(
+                  onPressed: _enabledFor(_FixtureAction.start, _startMatch),
+                  style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48)),
+                  child: Text(_busy(_FixtureAction.start) ? 'Starting…' : 'Start match'),
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -274,20 +293,24 @@ class _FixtureEditScreenState extends State<FixtureEditScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48)),
-              child: _saving
-                  ? const FootballLoader(size: 22)
-                  : const Text('Save score'),
+            ButtonShimmer(
+              active: _busy(_FixtureAction.save),
+              child: FilledButton(
+                onPressed: _enabledFor(_FixtureAction.save, _save),
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48)),
+                child: Text(_busy(_FixtureAction.save) ? 'Saving…' : 'Save score'),
+              ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: _saving ? null : _markFullTime,
-              style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48)),
-              child: const Text('Mark full time'),
+            ButtonShimmer(
+              active: _busy(_FixtureAction.fullTime),
+              child: OutlinedButton(
+                onPressed: _enabledFor(_FixtureAction.fullTime, _markFullTime),
+                style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48)),
+                child: Text(_busy(_FixtureAction.fullTime) ? 'Saving…' : 'Mark full time'),
+              ),
             ),
           ],
         ],
@@ -468,9 +491,21 @@ class _AssignGoalsDialogState extends State<_AssignGoalsDialog> {
     return AlertDialog(
       title: const Text('Record who scored? (optional)'),
       content: _loading
-          ? const SizedBox(
-              height: 80,
-              child: Center(child: FootballLoader(size: 32)),
+          ? AppSkeleton(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Home team (1 goal)', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add goal'),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 40)),
+                  ),
+                ],
+              ),
             )
           : SingleChildScrollView(
               child: Column(

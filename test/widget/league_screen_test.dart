@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/league/league_screen.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 
 import '../helpers/test_api_helpers.dart';
 
@@ -32,6 +35,27 @@ void main() {
     expect(find.text('Leagues'), findsOneWidget);
     expect(find.text('Login to manage a league'), findsOneWidget);
     expect(find.text('Manage leagues'), findsOneWidget);
+  });
+
+  testWidgets('Manage leagues shows skeleton while roles load', (WidgetTester tester) async {
+    final tokenStorage = TestTokenStorage();
+    await tokenStorage.setToken('test-token');
+    when(() => mockDio.get<Map<String, dynamic>>(any(), options: any(named: 'options')))
+        .thenAnswer((_) => Completer<Response<Map<String, dynamic>>>().future);
+
+    await tester.pumpWidget(
+      wrapWithAppProviders(
+        apiClient: createTestApiClient(dio: mockDio),
+        tokenStorage: tokenStorage,
+        child: const LeagueScreen(),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Manage leagues'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(AppSkeleton), findsOneWidget);
   });
 
   // Public league stats have moved to the Home screen; LeagueScreen now only

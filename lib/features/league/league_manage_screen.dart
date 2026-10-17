@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/manage_section.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -61,8 +61,33 @@ class _LeagueManageScreenState extends State<LeagueManageScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Manage leagues')),
       backgroundColor: colorScheme.surface,
-      body: _loading
-          ? const Center(child: FootballLoader())
+      body: _loading && _leagueRoles == null
+          ? AppSkeleton(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text('Manage your leagues', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Create leagues, add teams and players, generate fixtures, and record scores.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  ...List<Widget>.generate(
+                    3,
+                    (_) => const Card(
+                      child: ListTile(
+                        leading: Icon(Icons.emoji_events_outlined),
+                        title: Text('League section title'),
+                        subtitle: Text('Short description line'),
+                        trailing: Icon(Icons.chevron_right),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _loadManageContent,
               child: ListView(

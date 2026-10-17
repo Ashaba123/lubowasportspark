@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/events/events_screen.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 
 import '../helpers/test_api_helpers.dart';
 
@@ -66,9 +66,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump();
     final hasEvents = find.text('Events').evaluate().isNotEmpty;
-    final hasSpinner = find.byType(FootballLoader).evaluate().isNotEmpty;
-    final hasSkeleton = find.byType(Card).evaluate().length >= 4;
-    final hasLoading = hasSpinner || hasSkeleton;
+    final hasLoading = find.byType(AppSkeleton).evaluate().isNotEmpty;
     final hasRetry = find.text('Retry').evaluate().isNotEmpty;
     final hasEventOrEmpty = find.text('Test Event').evaluate().isNotEmpty ||
         find.text('No events right now').evaluate().isNotEmpty ||
@@ -97,7 +95,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byType(FootballLoader), findsNothing);
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(AppSkeleton), findsOneWidget);
+    expect(find.bySemanticsLabel('Loading'), findsOneWidget);
   });
 }

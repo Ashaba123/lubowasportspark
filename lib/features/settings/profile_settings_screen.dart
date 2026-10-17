@@ -16,6 +16,7 @@ import 'package:lubowa_sports_park/features/league/login_screen.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/public_league_view_screen.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 
 /// Shows a branded loading screen while checking login state, then replaces itself
 /// with [ProfileSettingsScreen] (logged in) or [LoginScreen] (not logged in).
@@ -349,56 +350,30 @@ class _ProfileSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final shimmer = cs.onSurfaceVariant.withValues(alpha: 0.12);
-    final shimmerDark = cs.onSurfaceVariant.withValues(alpha: 0.2);
-
-    Widget box(double w, double h, {double radius = 8}) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(
-            color: shimmer,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-        );
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Center(
-            child: Container(
-              width: 192,
-              height: 192,
-              decoration: BoxDecoration(color: shimmerDark, shape: BoxShape.circle),
+    return AppSkeleton(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ProfileHeader(
+              user: null,
+              usernameFallback: 'Player Name',
+              mePlayer: null,
+              roles: null,
+              avatarFile: null,
+              onEditAvatar: () {},
             ),
-          ),
-          const SizedBox(height: 16),
-          Center(child: box(140, 22, radius: 6)),
-          const SizedBox(height: 8),
-          Center(child: box(80, 14, radius: 4)),
-          const SizedBox(height: 16),
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  box(64, 48, radius: 12),
-                  box(64, 48, radius: 12),
-                  box(64, 48, radius: 12),
-                ],
-              ),
+            const SizedBox(height: 16),
+            _SettingsSection(
+              hasToken: true,
+              leagueUserSummary: 'Manager of 1 league',
+              onLogin: () {},
+              onLogout: () {},
             ),
-          ),
-          const SizedBox(height: 24),
-          box(double.infinity, 72, radius: 16),
-          const SizedBox(height: 12),
-          box(double.infinity, 56, radius: 16),
-        ],
+          ],
+        ),
       ),
     );
   }

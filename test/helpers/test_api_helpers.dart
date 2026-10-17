@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
@@ -72,5 +74,13 @@ Response<Map<String, dynamic>> response201(Map<String, dynamic> data, {String pa
     data: data,
     statusCode: 201,
     requestOptions: RequestOptions(path: path),
+  );
+}
+
+/// Makes connectivity_plus report wifi so screens get past their offline check.
+void mockConnectivityOnline() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    const MethodChannel('dev.fluttercommunity.plus/connectivity'),
+    (MethodCall call) async => call.method == 'check' ? <String>['wifi'] : null,
   );
 }

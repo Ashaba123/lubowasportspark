@@ -6,7 +6,7 @@ import 'package:lubowa_sports_park/core/auth/auth_repository.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -42,6 +42,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _submit() async {
+    if (_loading) return;
     if (!_formKey.currentState!.validate()) return;
     if (!await hasNetworkConnectivity()) {
       setState(() => _error = userFriendlyApiErrorMessage(NoConnectivityException()));
@@ -143,9 +144,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading ? const FootballLoader(size: 22) : const Text('Create account'),
+              ButtonShimmer(
+                active: _loading,
+                child: FilledButton(
+                  onPressed: _submit,
+                  child: Text(_loading ? 'Creating…' : 'Create account'),
+                ),
               ),
             ],
           ),

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lubowa_sports_park/main.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_api_helpers.dart';
@@ -19,7 +19,7 @@ void main() {
 
     final hasTagline = find.text('Sports • Fitness • Community').evaluate().isNotEmpty;
     final hasRetry = find.text('Retry').evaluate().isNotEmpty;
-    final hasLoading = find.byType(FootballLoader).evaluate().isNotEmpty;
+    final hasLoading = find.byType(AppSkeleton).evaluate().isNotEmpty;
     expect(hasTagline || hasRetry || hasLoading, true);
   });
 }

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lubowa_sports_park/core/cache/local_cache.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 
@@ -326,7 +326,36 @@ class _FixtureGoalsScreenState extends State<FixtureGoalsScreen> {
         appBar: AppBar(
           title: const Text('Goal log'),
         ),
-        body: const Center(child: FootballLoader()),
+        body: AppSkeleton(
+          child: ListView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    '${widget.fixture.homeTeamName ?? "Home"} vs ${widget.fixture.awayTeamName ?? "Away"}',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Column(
+                  children: List<Widget>.generate(
+                    4,
+                    (_) => const ListTile(
+                      title: Text('Player name'),
+                      subtitle: Text('0 goals'),
+                      trailing: Icon(Icons.edit_outlined),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
     return Scaffold(

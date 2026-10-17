@@ -5,8 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/public_league_screen.dart';
@@ -35,6 +35,7 @@ class _PublicLeagueViewScreenState extends State<PublicLeagueViewScreen> {
   }
 
   Future<void> _loadByCode() async {
+    if (_loading) return;
     final code = _codeController.text.trim();
     if (code.isEmpty) {
       setState(() => _error = 'Enter the league code shared by your organizer.');
@@ -120,12 +121,13 @@ class _PublicLeagueViewScreenState extends State<PublicLeagueViewScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        FilledButton(
-                          onPressed: _loading ? null : _loadByCode,
-                          style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
-                          child: _loading
-                              ? const FootballLoader(size: 22)
-                              : const Text('View'),
+                        ButtonShimmer(
+                          active: _loading,
+                          child: FilledButton(
+                            onPressed: _loadByCode,
+                            style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
+                            child: Text(_loading ? 'Loading…' : 'View'),
+                          ),
                         ),
                       ],
                     ),

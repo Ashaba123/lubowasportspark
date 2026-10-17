@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 
 class PublicLeagueContent extends StatelessWidget {
@@ -177,7 +176,11 @@ class PublicLeagueContent extends StatelessWidget {
         ],
         if (data.standings.isEmpty && data.fixtures.isEmpty && data.topScorers.isEmpty) ...[
           const SizedBox(height: 32),
-          const Center(child: FootballLoader()),
+          Text(
+            'No standings or fixtures yet.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
         ],
       ],
     );

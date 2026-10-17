@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
 import 'package:lubowa_sports_park/features/league/team_detail_screen.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 
 import '../helpers/test_api_helpers.dart';
 
@@ -88,5 +91,27 @@ void main() {
           '/lubowa/v1/players/20',
           data: {'goals': 1},
         )).called(1);
+  });
+
+  testWidgets('TeamDetail shows skeleton while players load', (WidgetTester tester) async {
+    when(() => mockDio.get<dynamic>(
+          '/lubowa/v1/teams/10/players',
+          queryParameters: any(named: 'queryParameters'),
+          options: any(named: 'options'),
+        )).thenAnswer((_) => Completer<Response<dynamic>>().future);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TeamDetailScreen(
+          league: const LeagueModel(id: 1, name: 'League', code: 'L1'),
+          team: const TeamModel(id: 10, name: 'Vipers'),
+          repository: repository,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(AppSkeleton), findsOneWidget);
+    expect(find.bySemanticsLabel('Loading'), findsOneWidget);
   });
 }

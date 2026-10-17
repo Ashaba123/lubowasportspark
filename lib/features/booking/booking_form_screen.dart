@@ -13,9 +13,9 @@ import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/booking/booking_device_store.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
@@ -475,7 +475,12 @@ class _BookingScreenState extends State<BookingScreen> with WidgetsBindingObserv
           ),
           const SizedBox(height: 32),
           if (_services == null)
-            const Center(child: FootballLoader(size: 28))
+            const AppSkeleton(
+              child: InputDecorator(
+                decoration: InputDecoration(labelText: 'Service'),
+                child: Text('Choose a Service'),
+              ),
+            )
           else if (_servicesError != null)
             Column(
               children: <Widget>[
@@ -643,12 +648,19 @@ class _BookingScreenState extends State<BookingScreen> with WidgetsBindingObserv
           ),
           const SizedBox(height: 16),
           Text('Time slot', style: theme.textTheme.labelLarge),
-          if (_loadingSlots)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else if (_slotsError != null) ...<Widget>[
+          if (_loadingSlots) ...<Widget>[
+            const SizedBox(height: 8),
+            AppSkeleton(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List<Widget>.generate(
+                  8,
+                  (_) => FilterChip(label: const Text('00:00 AM'), onSelected: (_) {}),
+                ),
+              ),
+            ),
+          ] else if (_slotsError != null) ...<Widget>[
             const SizedBox(height: 8),
             Text(_slotsError!, style: TextStyle(color: colorScheme.error)),
             Align(
@@ -891,15 +903,16 @@ class _BookingScreenState extends State<BookingScreen> with WidgetsBindingObserv
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton(
-                    onPressed: _submitting ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: ButtonShimmer(
+                    active: _submitting,
+                    child: FilledButton(
+                      onPressed: _submit,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Text(_submitting ? 'Booking…' : 'Submit'),
                     ),
-                    child: _submitting
-                        ? const FootballLoader(size: 22)
-                        : const Text('Submit'),
                   ),
                 ),
               ],

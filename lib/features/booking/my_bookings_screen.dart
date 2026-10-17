@@ -3,10 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
-import 'package:lubowa_sports_park/shared/app_logo.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/booking/booking_card.dart';
 import 'package:lubowa_sports_park/features/booking/booking_device_store.dart';
 import 'package:lubowa_sports_park/features/booking/booking_detail_screen.dart';
@@ -119,22 +118,7 @@ class _MyBookingsScaffold extends StatelessWidget {
         title: const Text('My bookings'),
       ),
       body: isEmptyAndLoading
-          ? ScrollableCenter(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const AppLogo(size: 120),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Loading your bookings...',
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  const FootballLoader(size: 32),
-                ],
-              ),
-            )
+          ? const MyBookingsSkeleton()
           : RefreshIndicator(
               color: cs.primary,
               onRefresh: onRefresh,
@@ -172,6 +156,32 @@ class _MyBookingsScaffold extends StatelessWidget {
                 },
               ),
             ),
+    );
+  }
+}
+
+class MyBookingsSkeleton extends StatelessWidget {
+  const MyBookingsSkeleton({super.key});
+
+  static const BookingItem _fake = BookingItem(
+    id: 0,
+    date: '2026-01-01',
+    timeSlot: '10:00',
+    contactName: 'Guest name',
+    status: 'pending',
+    service: 'Futsal pitch booking',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeleton(
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
+        itemCount: 5,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (_, __) => BookingCard(booking: _fake, onViewDetails: () {}),
+      ),
     );
   }
 }

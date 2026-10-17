@@ -14,6 +14,7 @@ import 'package:lubowa_sports_park/core/theme/app_theme.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
 import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/activities/activities_screen.dart';
 import 'package:lubowa_sports_park/features/about/about_screen.dart';
 import 'package:lubowa_sports_park/features/booking/booking_form_screen.dart';
@@ -75,8 +76,10 @@ class _LubowaSportsParkAppState extends State<LubowaSportsParkApp> {
               Widget? child,
             ) => _ConnectivityPopupHost(
               navigatorKey: _navigatorKey,
-              child: ResponsiveAppFrame(
-                child: child ?? const SizedBox.shrink(),
+              child: AppSkeletonTheme(
+                child: ResponsiveAppFrame(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             ),
             home: const _AppRoot(),

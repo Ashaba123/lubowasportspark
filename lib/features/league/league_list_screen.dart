@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lubowa_sports_park/core/cache/local_cache.dart';
-import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/skeleton.dart';
 import 'package:lubowa_sports_park/features/league/league_detail_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -133,6 +133,8 @@ class _LeagueListScaffold extends StatefulWidget {
 }
 
 class _LeagueListScaffoldState extends State<_LeagueListScaffold> {
+  static const LeagueModel _fakeLeague = LeagueModel(id: 0, name: 'Sunday futsal league', code: 'L000AA');
+
   Future<bool> _confirmDeleteLeague(LeagueModel league) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -168,6 +170,50 @@ class _LeagueListScaffoldState extends State<_LeagueListScaffold> {
     }
   }
 
+  Widget _leagueCard(LeagueModel l) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: widget.repository)),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.emoji_events, color: colorScheme.primary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.name, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Code: ${l.code}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -180,7 +226,14 @@ class _LeagueListScaffoldState extends State<_LeagueListScaffold> {
     if (widget.loading && allLeagues.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: Text(widget.title)),
-        body: const Center(child: FootballLoader()),
+        body: AppSkeleton(
+          child: ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: 5,
+            itemBuilder: (_, __) => _leagueCard(_fakeLeague),
+          ),
+        ),
       );
     }
 
@@ -215,45 +268,7 @@ class _LeagueListScaffoldState extends State<_LeagueListScaffold> {
                 itemCount: filteredLeagues.length,
                 itemBuilder: (_, i) {
                   final l = filteredLeagues[i];
-                  final card = Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).push(
-                        fadeSlideRoute(builder: (_) => LeagueDetailScreen(league: l, repository: widget.repository)),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(Icons.emoji_events, color: colorScheme.primary, size: 28),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(l.name, style: theme.textTheme.titleMedium),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Code: ${l.code}',
-                                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
+                  final card = _leagueCard(l);
                   if (!widget.filterManaged) {
                     return card;
                   }
