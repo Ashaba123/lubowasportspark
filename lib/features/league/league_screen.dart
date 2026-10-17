@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/league/league_manage_screen.dart';
 import 'package:lubowa_sports_park/features/league/league_repository.dart';
 import 'package:lubowa_sports_park/features/league/login_screen.dart';
@@ -28,7 +29,7 @@ class _LeagueScreenState extends State<LeagueScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Leagues')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

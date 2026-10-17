@@ -9,6 +9,7 @@ import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/core/models/wp_page.dart';
 import 'package:lubowa_sports_park/core/utils/html_utils.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/events/event_detail_screen.dart';
 import 'package:lubowa_sports_park/features/events/events_repository.dart';
 import 'package:lubowa_sports_park/features/events/models/wp_post.dart';
@@ -108,21 +109,19 @@ class _EventsScreenState extends State<EventsScreen> {
       return _EventsSkeleton(theme: Theme.of(context));
     }
     if (_error != null && _posts.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(_error!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
+      return ScrollableCenter(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
         ),
       );
     }
@@ -142,7 +141,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                       onRefresh: _load,
                       child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, bottomScrollInset(context)),
                         itemCount: 1 + visible.length,
                         itemBuilder: (context, index) {
                           if (index == 0) return _buildEventsIntro();
@@ -255,33 +254,31 @@ class _EventsScreenState extends State<EventsScreen> {
         : _filter == _EventFilter.upcoming
             ? 'No upcoming events right now. Check back soon.'
             : 'No past events to show yet.';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_busy_outlined, size: 56, color: cs.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              'No events',
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: _load,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
-            ),
-          ],
-        ),
+    return ScrollableCenter(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.event_busy_outlined, size: 56, color: cs.onSurfaceVariant),
+          const SizedBox(height: 16),
+          Text(
+            'No events',
+            style: theme.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh'),
+          ),
+        ],
       ),
     );
   }
@@ -341,7 +338,7 @@ class _EventsSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = theme.colorScheme;
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomScrollInset(context)),
       itemCount: 4,
       itemBuilder: (context, index) {
         return Card(

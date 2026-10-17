@@ -1,14 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
+import 'package:lubowa_sports_park/core/auth/token_storage.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/app_logo.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/booking/booking_card.dart';
+import 'package:lubowa_sports_park/features/booking/booking_device_store.dart';
 import 'package:lubowa_sports_park/features/booking/booking_detail_screen.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
+
+/// Bookings made on this device (any user, via guest tokens) plus the account's bookings when logged in,
+/// newest first.
+Future<List<BookingItem>> loadMyBookings(BuildContext context) async {
+  final BookingRepository repository = BookingRepository(apiClient: context.read<ApiClient>());
+  final TokenStorage tokenStorage = context.read<TokenStorage>();
+  final String? token = await tokenStorage.getToken();
+  final BookingDeviceStore store = await BookingDeviceStore.open();
+  final List<List<BookingItem>> lists = await Future.wait(<Future<List<BookingItem>>>[
+    repository.getGuestBookings(store.guestTokens),
+    if (token != null && token.isNotEmpty) repository.getMine(forceRefresh: true),
+  ]);
+  final Map<int, BookingItem> byId = <int, BookingItem>{};
+  for (final BookingItem b in lists.expand((List<BookingItem> l) => l)) {
+    byId.putIfAbsent(b.id, () => b);
+  }
+  return byId.values.toList()
+    ..sort((BookingItem a, BookingItem b) => '${b.date}${b.timeSlot}'.compareTo('${a.date}${a.timeSlot}'));
+}
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key, required this.initialBookings});
@@ -23,9 +45,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   int _reloadToken = 0;
 
   Future<MyBookingsState> _loadBookings(BuildContext context) async {
-    final BookingRepository repository = BookingRepository(apiClient: context.read<ApiClient>());
     try {
-      final List<BookingItem> list = await repository.getMine(forceRefresh: true);
+      final List<BookingItem> list = await loadMyBookings(context);
       return MyBookingsState(bookings: list, error: null);
     } catch (e) {
       return MyBookingsState(bookings: const <BookingItem>[], error: userFriendlyApiErrorMessage(e));
@@ -98,7 +119,7 @@ class _MyBookingsScaffold extends StatelessWidget {
         title: const Text('My bookings'),
       ),
       body: isEmptyAndLoading
-          ? Center(
+          ? ScrollableCenter(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -118,8 +139,8 @@ class _MyBookingsScaffold extends StatelessWidget {
               color: cs.primary,
               onRefresh: onRefresh,
               child: ListView.separated(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
                 itemCount: bookings.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
                 itemBuilder: (_, i) {

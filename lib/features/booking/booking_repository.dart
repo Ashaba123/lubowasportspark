@@ -5,7 +5,7 @@ import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 
 /// Bookings via the Lubowa EA Bridge (/lubowa-ea/v1), backed by Easy!Appointments.
-/// Creating and listing bookings require JWT login.
+/// Booking is open to guests; only [getMine] and league bookings need JWT login.
 class BookingRepository {
   BookingRepository({ApiClient? apiClient})
       : _dio = apiClient?.dio ?? ApiClient(baseUrl: AppConstants.apiBaseUrl).dio;
@@ -19,17 +19,51 @@ class BookingRepository {
     return raw.whereType<Map<String, dynamic>>().map(BookingService.fromJson).toList();
   }
 
-  /// Full grid for the date: available, booked and unavailable start times.
-  Future<List<BookingSlot>> getSlots({required int serviceId, required String date}) async {
+  /// Full grid for the date. Pass [deviceId] so this device's own hold comes back as [SlotStatus.mine].
+  Future<List<BookingSlot>> getSlots({required int serviceId, required String date, String? deviceId}) async {
     final response = await _dio.get<dynamic>(
       AppConstants.pathEaSlots,
-      queryParameters: {'service_id': serviceId, 'date': date},
+      queryParameters: {'service_id': serviceId, 'date': date, if (deviceId != null) 'device_id': deviceId},
       options: Options(extra: {'dio_cache_force_refresh': true}),
     );
     final raw = response.data;
     final list = raw is Map ? raw['slots'] : null;
     if (list is! List) return [];
     return list.whereType<Map<String, dynamic>>().map(BookingSlot.fromJson).toList();
+  }
+
+  /// Holds the slot for this device (replacing any other hold it has), or extends the hold if it is
+  /// the same slot. Throws [SlotTakenException] when someone else has it.
+  Future<SlotHold> hold({
+    required String deviceId,
+    required int serviceId,
+    required String date,
+    required String time,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        AppConstants.pathEaHolds,
+        data: {'device_id': deviceId, 'service_id': serviceId, 'date': date, 'time': time},
+      );
+      return SlotHold.fromJson(response.data ?? const <String, dynamic>{});
+    } on DioException catch (e) {
+      throw _slotTakenOr(e);
+    }
+  }
+
+  Future<void> releaseHold(String deviceId) async {
+    await _dio.delete<dynamic>(AppConstants.pathEaHolds, queryParameters: {'device_id': deviceId});
+  }
+
+  /// Bookings made on this device, by the tokens returned when they were created.
+  Future<List<BookingItem>> getGuestBookings(List<String> tokens) async {
+    if (tokens.isEmpty) return [];
+    final response = await _dio.get<dynamic>(
+      AppConstants.pathEaGuestBookings,
+      queryParameters: {'tokens': tokens.join(',')},
+      options: Options(extra: {'dio_cache_force_refresh': true}),
+    );
+    return _dataList(response.data).whereType<Map<String, dynamic>>().map(BookingItem.fromJson).toList();
   }
 
   /// Throws [SlotTakenException] when the slot was booked in the meantime.

@@ -104,6 +104,90 @@ void main() {
       expect(slots.where((s) => s.isAvailable).map((s) => s.time), ['11:00']);
     });
 
+    test('getSlots parses held and mine; mine is selectable, held is not', () async {
+      when(() => mockDio.get<dynamic>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          )).thenAnswer((_) async => responseOk<dynamic>({
+                'slots': [
+                  {'time': '16:00', 'status': 'held'},
+                  {'time': '17:00', 'status': 'mine'},
+                ],
+              }));
+
+      final slots = await repository.getSlots(serviceId: 3, date: '2025-03-15', deviceId: 'abc');
+
+      expect(slots.map((s) => s.status), [SlotStatus.held, SlotStatus.mine]);
+      expect(slots.where((s) => s.isAvailable).map((s) => s.time), ['17:00']);
+      verify(() => mockDio.get<dynamic>(
+            AppConstants.pathEaSlots,
+            queryParameters: {'service_id': 3, 'date': '2025-03-15', 'device_id': 'abc'},
+            options: any(named: 'options'),
+          )).called(1);
+    });
+
+    test('hold posts the slot and reads expires_in', () async {
+      when(() => mockDio.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+          )).thenAnswer((_) async => response201({'expires_in': 300}));
+
+      final hold = await repository.hold(deviceId: 'abc', serviceId: 3, date: '2025-03-15', time: '17:00');
+
+      expect(hold.expiresIn, const Duration(minutes: 5));
+      verify(() => mockDio.post<Map<String, dynamic>>(
+            AppConstants.pathEaHolds,
+            data: {'device_id': 'abc', 'service_id': 3, 'date': '2025-03-15', 'time': '17:00'},
+          )).called(1);
+    });
+
+    test('hold throws SlotTakenException when someone else holds the slot', () async {
+      final options = RequestOptions(path: AppConstants.pathEaHolds);
+      when(() => mockDio.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+          )).thenThrow(DioException(
+        requestOptions: options,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: options,
+          statusCode: 409,
+          data: {'code': 'slot_taken', 'data': {'status': 409, 'dates': []}},
+        ),
+      ));
+
+      expect(
+        () => repository.hold(deviceId: 'abc', serviceId: 3, date: '2025-03-15', time: '17:00'),
+        throwsA(isA<SlotTakenException>()),
+      );
+    });
+
+    test('getGuestBookings skips the request with no tokens and parses guest_token', () async {
+      expect(await repository.getGuestBookings(const []), isEmpty);
+      verifyNever(() => mockDio.get<dynamic>(any(),
+          queryParameters: any(named: 'queryParameters'), options: any(named: 'options')));
+
+      when(() => mockDio.get<dynamic>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          )).thenAnswer((_) async => responseOk<dynamic>({
+                'data': [
+                  {'id': 9, 'date': '2025-03-15', 'time_slot': '17:00', 'status': 'pending', 'guest_token': 't1'},
+                ],
+              }));
+
+      final list = await repository.getGuestBookings(const ['t1', 't2']);
+
+      expect(list.single.guestToken, 't1');
+      verify(() => mockDio.get<dynamic>(
+            AppConstants.pathEaGuestBookings,
+            queryParameters: {'tokens': 't1,t2'},
+            options: any(named: 'options'),
+          )).called(1);
+    });
+
     test('getMine reads data list from GET /lubowa-ea/v1/bookings', () async {
       when(() => mockDio.get<dynamic>(
             any(),

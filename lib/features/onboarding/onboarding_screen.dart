@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
+
 /// Onboarding flow: 3 pages with dots, Continue / Skip / Get started.
 /// Calls [onDone] when user taps Get started or Skip (after persisting completion).
 class OnboardingScreen extends StatefulWidget {
@@ -152,10 +154,10 @@ class _OnboardingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
+    return ScrollableCenter(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(28),

@@ -13,6 +13,7 @@ import 'package:lubowa_sports_park/core/app_state.dart';
 import 'package:lubowa_sports_park/core/theme/app_theme.dart';
 import 'package:lubowa_sports_park/core/utils/app_connectivity.dart';
 import 'package:lubowa_sports_park/shared/page_transitions.dart';
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/activities/activities_screen.dart';
 import 'package:lubowa_sports_park/features/about/about_screen.dart';
 import 'package:lubowa_sports_park/features/booking/booking_form_screen.dart';
@@ -438,7 +439,7 @@ class _MoreTab extends StatelessWidget {
       backgroundColor: cs.surface,
       appBar: AppBar(title: const Text('More')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
         children: [
           Text(
             'Quick links',

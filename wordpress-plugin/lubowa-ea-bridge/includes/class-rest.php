@@ -34,7 +34,26 @@ class Lubowa_EA_Rest {
             array(
                 'methods'             => 'POST',
                 'callback'            => array(__CLASS__, 'create_booking'),
-                'permission_callback' => array(__CLASS__, 'require_login'),
+                'permission_callback' => array(__CLASS__, 'allow_guest'),
+            ),
+        ));
+
+        register_rest_route(self::NS, '/bookings/guest', array(
+            'methods'             => 'GET',
+            'callback'            => array(__CLASS__, 'get_guest_bookings'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route(self::NS, '/holds', array(
+            array(
+                'methods'             => 'POST',
+                'callback'            => array(__CLASS__, 'create_hold'),
+                'permission_callback' => '__return_true',
+            ),
+            array(
+                'methods'             => 'DELETE',
+                'callback'            => array(__CLASS__, 'delete_hold'),
+                'permission_callback' => '__return_true',
             ),
         ));
 
@@ -64,6 +83,23 @@ class Lubowa_EA_Rest {
         return true;
     }
 
+    /** Booking is open to guests; a logged-in but blocked account is still refused. */
+    public static function allow_guest() {
+        return is_user_logged_in() ? self::require_login() : true;
+    }
+
+    /** Fixed-window limit per client IP. */
+    private static function rate_limit($bucket, $max, $window) {
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+        $key = 'lubowa_ea_rl_' . md5($bucket . '|' . $ip);
+        $count = (int) get_transient($key);
+        if ($count >= $max) {
+            return new WP_Error('rate_limited', 'Too many requests. Please try again later.', array('status' => 429));
+        }
+        set_transient($key, $count + 1, $window);
+        return true;
+    }
+
     public static function get_services() {
         $services = Lubowa_EA_Booking_Service::list_services();
         return is_wp_error($services) ? $services : rest_ensure_response($services);
@@ -74,15 +110,105 @@ class Lubowa_EA_Rest {
         if (is_wp_error($date)) {
             return $date;
         }
-        $slots = Lubowa_EA_Booking_Service::slots((int) $request->get_param('service_id'), $date);
+        $slots = Lubowa_EA_Booking_Service::slots(
+            (int) $request->get_param('service_id'),
+            $date,
+            Lubowa_EA_Holds::valid_device_id($request->get_param('device_id'))
+        );
         if (is_wp_error($slots)) {
             return $slots;
         }
-        return rest_ensure_response(array(
+        $response = rest_ensure_response(array(
             'date'       => $date,
             'service_id' => (int) $request->get_param('service_id'),
             'slots'      => $slots,
         ));
+        $response->header('Cache-Control', 'no-store');
+        return $response;
+    }
+
+    public static function create_hold(WP_REST_Request $request) {
+        $limited = self::rate_limit('hold', 60, 600);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+        $device_id = Lubowa_EA_Holds::valid_device_id($request->get_param('device_id'));
+        if ($device_id === null) {
+            return new WP_Error('invalid_device', 'Invalid device.', array('status' => 400));
+        }
+        $date = self::valid_date($request->get_param('date'));
+        if (is_wp_error($date)) {
+            return $date;
+        }
+        $time = self::valid_time($request->get_param('time'));
+        if (is_wp_error($time)) {
+            return $time;
+        }
+        $service_id = (int) $request->get_param('service_id');
+        if ($service_id <= 0) {
+            return new WP_Error('invalid_service', 'Please select a service.', array('status' => 400));
+        }
+        $hold = Lubowa_EA_Holds::place($device_id, $service_id, $date, $time);
+        return is_wp_error($hold) ? $hold : new WP_REST_Response($hold, 201);
+    }
+
+    public static function delete_hold(WP_REST_Request $request) {
+        $device_id = Lubowa_EA_Holds::valid_device_id($request->get_param('device_id'));
+        if ($device_id === null) {
+            return new WP_Error('invalid_device', 'Invalid device.', array('status' => 400));
+        }
+        $released = Lubowa_EA_Holds::release($device_id);
+        return is_wp_error($released) ? $released : new WP_REST_Response(null, 204);
+    }
+
+    /** Status of bookings this device made, by the tokens returned at creation. No contact details. */
+    public static function get_guest_bookings(WP_REST_Request $request) {
+        global $wpdb;
+        $limited = self::rate_limit('guest', 120, 600);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+        $tokens = array_slice(array_filter(array_map(function ($t) {
+            $t = strtolower(trim($t));
+            return preg_match('/^[a-f0-9]{32}$/', $t) ? $t : null;
+        }, explode(',', (string) $request->get_param('tokens')))), 0, 50);
+
+        $table = $wpdb->prefix . 'lubowa_ea_guest_tokens';
+        $items = array();
+        foreach (array_unique($tokens) as $token) {
+            $row = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE token_hash = %s",
+                hash('sha256', $token)
+            ), ARRAY_A);
+            if (!$row) {
+                continue;
+            }
+            $appointment = Lubowa_EA_Client::get_appointment((int) $row['ea_appointment_id']);
+            if (is_wp_error($appointment)) {
+                $data = $appointment->get_error_data();
+                if (!is_array($data) || (int) ($data['ea_status'] ?? 0) !== 404) {
+                    return $appointment;
+                }
+                $service = Lubowa_EA_Booking_Service::find_service($row['service_id']);
+                $item = array(
+                    'id'           => (int) $row['ea_appointment_id'],
+                    'date'         => substr($row['start_datetime'], 0, 10),
+                    'time_slot'    => substr($row['start_datetime'], 11, 5),
+                    'contact_name' => '',
+                    'status'       => 'cancelled',
+                    'service'      => is_wp_error($service) ? null : (string) $service['name'],
+                    'service_id'   => (int) $row['service_id'],
+                );
+            } else {
+                $item = Lubowa_EA_Booking_Service::to_booking_item($appointment);
+            }
+            $item['guest_token'] = $token;
+            $items[] = $item;
+        }
+
+        $response = rest_ensure_response(array('data' => $items));
+        $response->header('Cache-Control', 'no-store');
+        return $response;
     }
 
     public static function get_my_bookings() {
@@ -111,15 +237,33 @@ class Lubowa_EA_Rest {
             return new WP_Error('invalid_service', 'Please select a service.', array('status' => 400));
         }
 
-        $user = wp_get_current_user();
         $name = sanitize_text_field((string) $request->get_param('contact_name'));
-        $contact = array(
-            'name'  => $name !== '' ? $name : $user->display_name,
-            'email' => $user->user_email,
-            'phone' => sanitize_text_field((string) $request->get_param('contact_phone')),
-        );
+        if ($name === '') {
+            return new WP_Error('invalid_name', 'Please enter your name.', array('status' => 400));
+        }
+        $phone = Lubowa_EA_Booking_Service::normalize_phone($request->get_param('contact_phone'));
+        if ($phone === null) {
+            return new WP_Error('invalid_phone', 'Please enter a valid phone number.', array('status' => 400));
+        }
+
+        $limited = self::rate_limit('book', 5, HOUR_IN_SECONDS);
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+
+        // Logged-in: the account email. Guest: their email if given, else one derived from the phone,
+        // so the same phone always maps to the same EA customer. Guests never overwrite an existing
+        // customer's details.
+        $logged_in = is_user_logged_in();
+        $email = sanitize_email((string) $request->get_param('contact_email'));
+        if ($logged_in) {
+            $email = wp_get_current_user()->user_email;
+        } elseif ($email === '' || !is_email($email)) {
+            $email = $phone . '@' . Lubowa_EA_Settings::get('guest_email_domain');
+        }
+        $contact = array('name' => $name, 'email' => $email, 'phone' => '+' . $phone);
         $notes = sanitize_textarea_field((string) $request->get_param('notes'));
-        $notes = trim('Booked via app. ' . $notes);
+        $notes = trim('Booked via app' . ($logged_in ? '' : ' (guest)') . '. ' . $notes);
 
         $created = Lubowa_EA_Booking_Service::book(
             $service_id,
@@ -127,14 +271,30 @@ class Lubowa_EA_Rest {
             $time,
             $contact,
             $notes,
-            Lubowa_EA_Settings::get('status_pending')
+            Lubowa_EA_Settings::get('status_pending'),
+            Lubowa_EA_Holds::valid_device_id($request->get_param('device_id')),
+            $logged_in
         );
         if (is_wp_error($created)) {
             return $created;
         }
 
         $item = Lubowa_EA_Booking_Service::to_booking_item($created[0], $contact['name']);
+        $item['guest_token'] = self::issue_guest_token($created[0], $service_id);
         return new WP_REST_Response($item, 201);
+    }
+
+    private static function issue_guest_token(array $appointment, $service_id) {
+        global $wpdb;
+        $token = bin2hex(random_bytes(16));
+        $wpdb->insert($wpdb->prefix . 'lubowa_ea_guest_tokens', array(
+            'token_hash'        => hash('sha256', $token),
+            'ea_appointment_id' => (int) $appointment['id'],
+            'service_id'        => (int) $service_id,
+            'start_datetime'    => (string) $appointment['start'],
+            'created_at'        => current_time('mysql'),
+        ));
+        return $token;
     }
 
     public static function get_league_bookings(WP_REST_Request $request) {

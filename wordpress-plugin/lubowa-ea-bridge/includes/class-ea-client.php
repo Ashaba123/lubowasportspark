@@ -105,6 +105,14 @@ class Lubowa_EA_Client {
         return self::request('POST', 'appointments', array(), $appointment);
     }
 
+    public static function get_appointment($id) {
+        return self::request('GET', 'appointments/' . (int) $id);
+    }
+
+    public static function update_appointment($id, array $appointment) {
+        return self::request('PUT', 'appointments/' . (int) $id, array(), $appointment);
+    }
+
     public static function delete_appointment($id) {
         return self::request('DELETE', 'appointments/' . (int) $id);
     }

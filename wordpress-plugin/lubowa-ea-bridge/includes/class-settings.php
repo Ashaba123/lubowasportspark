@@ -15,6 +15,9 @@ class Lubowa_EA_Settings {
             'slot_step'        => 60,
             'status_pending'   => 'Pending',
             'status_approved'  => 'Approved',
+            'status_hold'      => 'Hold',
+            'hold_minutes'     => 5,
+            'guest_email_domain' => 'guest.lubowasportspark.com',
             'intercept_legacy' => 0,
         );
     }

@@ -30,6 +30,8 @@ class Lubowa_EA_Admin {
             'slot_step'        => max(5, (int) ($_POST['slot_step'] ?? 60)),
             'status_pending'   => sanitize_text_field(wp_unslash($_POST['status_pending'] ?? '')),
             'status_approved'  => sanitize_text_field(wp_unslash($_POST['status_approved'] ?? '')),
+            'status_hold'      => sanitize_text_field(wp_unslash($_POST['status_hold'] ?? '')),
+            'hold_minutes'     => max(1, (int) ($_POST['hold_minutes'] ?? 5)),
             'intercept_legacy' => empty($_POST['intercept_legacy']) ? 0 : 1,
         );
         $token = trim(wp_unslash($_POST['token'] ?? ''));
@@ -99,12 +101,21 @@ class Lubowa_EA_Admin {
                     <tr>
                         <th scope="row"><label for="status_pending">New booking status</label></th>
                         <td><input name="status_pending" id="status_pending" type="text" value="<?php echo esc_attr($s['status_pending']); ?>">
-                            <p class="description">Must match a status in EA → Booking Settings.</p></td>
+                            <p class="description">Must match a status in EA → Settings → Business Logic → Appointment Status Options.</p></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="status_approved">Approved status</label></th>
                         <td><input name="status_approved" id="status_approved" type="text" value="<?php echo esc_attr($s['status_approved']); ?>">
                             <p class="description">Used when migrating legacy approved bookings.</p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="status_hold">Hold status</label></th>
+                        <td><input name="status_hold" id="status_hold" type="text" value="<?php echo esc_attr($s['status_hold']); ?>">
+                            <p class="description">Placeholder appointment while an app user fills in details. Must match a status in EA → Settings → Business Logic → Appointment Status Options.</p></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="hold_minutes">Hold length (minutes)</label></th>
+                        <td><input name="hold_minutes" id="hold_minutes" type="number" min="1" value="<?php echo esc_attr($s['hold_minutes']); ?>"></td>
                     </tr>
                     <tr>
                         <th scope="row">Legacy app routes</th>
@@ -160,6 +171,10 @@ class Lubowa_EA_Admin {
         if (is_wp_error($services)) {
             echo '<div class="notice notice-error inline"><p>' . esc_html($services->get_error_message()) . '</p></div>';
             return;
+        }
+        $pitch = Lubowa_EA_Booking_Service::pitch_check();
+        if (is_wp_error($pitch)) {
+            echo '<div class="notice notice-error inline"><p>' . esc_html($pitch->get_error_message()) . '</p></div>';
         }
         echo '<p>Connected. Bookable services (with a provider):</p><ul>';
         foreach ($services as $service) {

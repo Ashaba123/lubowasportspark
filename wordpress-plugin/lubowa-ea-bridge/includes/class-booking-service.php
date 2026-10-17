@@ -91,8 +91,41 @@ class Lubowa_EA_Booking_Service {
         return $matches[0];
     }
 
-    /** Full slot grid for a date: each slot is available, booked or unavailable. */
-    public static function slots($service_id, $date) {
+    /**
+     * There is one pitch: every bookable service must share one EA provider, or a 1h and a 2h
+     * booking could overlap. Returns WP_Error when they are split.
+     */
+    public static function pitch_check() {
+        $services = Lubowa_EA_Client::services();
+        if (is_wp_error($services)) {
+            return $services;
+        }
+        $providers = Lubowa_EA_Client::providers();
+        if (is_wp_error($providers)) {
+            return $providers;
+        }
+        $ids = array();
+        foreach ((array) $services as $service) {
+            if (!empty($service['isPrivate'])) {
+                continue;
+            }
+            $provider = self::provider_for_service((int) $service['id'], $providers);
+            if ($provider !== null) {
+                $ids[(int) $provider['id']] = true;
+            }
+        }
+        if (count($ids) > 1) {
+            return new WP_Error('setup_error', 'Booking setup error: all services must use the same pitch (EA provider).', array('status' => 503));
+        }
+        return true;
+    }
+
+    /** @return array|WP_Error [service, provider] */
+    private static function resolve($service_id) {
+        $check = self::pitch_check();
+        if (is_wp_error($check)) {
+            return $check;
+        }
         $service = self::find_service($service_id);
         if (is_wp_error($service)) {
             return $service;
@@ -104,6 +137,40 @@ class Lubowa_EA_Booking_Service {
         if ($provider === null) {
             return new WP_Error('no_provider', 'No resource is set up for this service.', array('status' => 409));
         }
+        return array($service, $provider);
+    }
+
+    public static function with_lock($provider_id, callable $fn) {
+        $lock = self::lock_name($provider_id);
+        if (!self::acquire($lock)) {
+            return new WP_Error('busy', 'Booking system busy, please try again.', array('status' => 503));
+        }
+        try {
+            return $fn();
+        } finally {
+            self::release($lock);
+        }
+    }
+
+    public static function is_hold(array $appointment) {
+        return isset($appointment['status'])
+            && strcasecmp(trim((string) $appointment['status']), (string) Lubowa_EA_Settings::get('status_hold')) === 0;
+    }
+
+    /**
+     * Full slot grid for a date: available, booked, held (someone else is booking it),
+     * mine (held by this device) or unavailable.
+     */
+    public static function slots($service_id, $date, $device_id = null) {
+        Lubowa_EA_Holds::purge_expired();
+        $resolved = self::resolve($service_id);
+        if (is_wp_error($resolved)) {
+            return $resolved;
+        }
+        list($service, $provider) = $resolved;
+
+        $own = Lubowa_EA_Holds::find_by_device($device_id);
+        $own_id = $own === null ? 0 : (int) $own['ea_appointment_id'];
 
         $duration = max(1, (int) $service['duration']);
         $plan = self::working_day($provider, $date);
@@ -127,82 +194,169 @@ class Lubowa_EA_Booking_Service {
 
         for ($t = $start; $t + $duration <= $end; $t += $step) {
             $time = self::hhmm($t);
-            if (in_array($time, $free, true)) {
-                $status = 'available';
-            } elseif (self::overlaps_any($t, $t + $duration, $appointments)) {
-                $status = 'booked';
-            } else {
-                $status = 'unavailable';
-            }
-            $slots[] = array('time' => $time, 'status' => $status);
+            $slots[] = array(
+                'time'   => $time,
+                'status' => in_array($time, $free, true) && !self::overlaps_any($t, $t + $duration, $appointments)
+                    ? 'available'
+                    : self::taken_status($t, $t + $duration, $appointments, $own_id, $date . ' ' . $time . ':00', (int) $service_id),
+            );
         }
 
         return $slots;
     }
 
     /**
+     * EA's free list alone is not enough: a service with more than one attendant lets EA offer a
+     * time that is already booked. One pitch means any overlap is a clash.
+     */
+    private static function is_free($service, $provider, $service_id, $date, $time) {
+        $free = Lubowa_EA_Client::availabilities($provider['id'], $service_id, $date);
+        if (is_wp_error($free)) {
+            return $free;
+        }
+        if (!in_array($time, $free, true)) {
+            return false;
+        }
+        $appointments = self::provider_appointments_on($provider['id'], $date);
+        if (is_wp_error($appointments)) {
+            return $appointments;
+        }
+        $start = self::minutes($time);
+        return !self::overlaps_any($start, $start + max(1, (int) $service['duration']), $appointments);
+    }
+
+    private static function taken_status($start_min, $end_min, array $appointments, $own_id, $start, $service_id) {
+        $overlapping = array_filter($appointments, function ($a) use ($start_min, $end_min) {
+            return self::overlaps_any($start_min, $end_min, array($a));
+        });
+        if (empty($overlapping)) {
+            return 'unavailable';
+        }
+        foreach ($overlapping as $a) {
+            if (!self::is_hold($a)) {
+                return 'booked';
+            }
+        }
+        if (count($overlapping) === 1) {
+            $a = reset($overlapping);
+            if ($own_id > 0 && (int) $a['id'] === $own_id
+                && (string) $a['start'] === $start && (int) $a['serviceId'] === $service_id) {
+                return 'mine';
+            }
+        }
+        return 'held';
+    }
+
+    /** Creates a hold appointment if the slot is free. @return array|WP_Error {appointment, provider_id} */
+    public static function create_hold($service_id, $date, $time) {
+        $resolved = self::resolve($service_id);
+        if (is_wp_error($resolved)) {
+            return $resolved;
+        }
+        list($service, $provider) = $resolved;
+
+        return self::with_lock($provider['id'], function () use ($service, $provider, $service_id, $date, $time) {
+            $free = self::is_free($service, $provider, $service_id, $date, $time);
+            if (is_wp_error($free)) {
+                return $free;
+            }
+            if (!$free) {
+                return new WP_Error('slot_taken', 'That time is no longer available.', array('status' => 409, 'dates' => array()));
+            }
+            $customer_id = self::upsert_customer(array(
+                'name'  => 'App Hold',
+                'email' => 'hold@' . Lubowa_EA_Settings::get('guest_email_domain'),
+                // EA can require a phone on every customer.
+                'phone' => '+256000000000',
+            ), false);
+            if (is_wp_error($customer_id)) {
+                return $customer_id;
+            }
+            $appointment = self::new_appointment($service, $provider, $service_id, $date, $time, $customer_id,
+                'App hold: someone is completing this booking.', Lubowa_EA_Settings::get('status_hold'));
+            $created = Lubowa_EA_Client::create_appointment($appointment);
+            if (is_wp_error($created)) {
+                return $created;
+            }
+            return array('appointment' => $created, 'provider_id' => (int) $provider['id']);
+        });
+    }
+
+    private static function new_appointment($service, $provider, $service_id, $date, $time, $customer_id, $notes, $status) {
+        $tz = Lubowa_EA_Settings::timezone();
+        $start = new DateTime($date . ' ' . $time . ':00', $tz);
+        $end = clone $start;
+        $end->modify('+' . (int) $service['duration'] . ' minutes');
+        return array(
+            'book'       => (new DateTime('now', $tz))->format('Y-m-d H:i:s'),
+            'start'      => $start->format('Y-m-d H:i:s'),
+            'end'        => $end->format('Y-m-d H:i:s'),
+            'status'     => $status,
+            'notes'      => (string) $notes,
+            'customerId' => (int) $customer_id,
+            'providerId' => (int) $provider['id'],
+            'serviceId'  => (int) $service_id,
+        );
+    }
+
+    /**
      * Create one appointment, or a series (league), under a provider lock.
      * All-or-nothing: every requested start must be free or nothing is created.
      *
+     * A single-date booking from a device that holds that exact slot converts the hold
+     * appointment instead of creating a new one.
+     *
      * @param string[] $dates  Y-m-d dates, same start time on each.
+     * @param bool $update_existing  Overwrite name/phone of an existing EA customer with this email.
      * @return array|WP_Error  Created EA appointments.
      */
-    public static function book($service_id, array $dates, $time, array $contact, $notes, $status) {
-        $service = self::find_service($service_id);
-        if (is_wp_error($service)) {
-            return $service;
+    public static function book($service_id, array $dates, $time, array $contact, $notes, $status, $device_id = null, $update_existing = true) {
+        Lubowa_EA_Holds::purge_expired();
+        $resolved = self::resolve($service_id);
+        if (is_wp_error($resolved)) {
+            return $resolved;
         }
-        $provider = self::provider_for_service($service_id);
-        if (is_wp_error($provider)) {
-            return $provider;
-        }
-        if ($provider === null) {
-            return new WP_Error('no_provider', 'No resource is set up for this service.', array('status' => 409));
-        }
+        list($service, $provider) = $resolved;
 
-        $lock = self::lock_name($provider['id']);
-        if (!self::acquire($lock)) {
-            return new WP_Error('busy', 'Booking system busy, please try again.', array('status' => 503));
-        }
+        return self::with_lock($provider['id'], function () use ($service, $provider, $service_id, $dates, $time, $contact, $notes, $status, $device_id, $update_existing) {
+            $hold = count($dates) === 1 ? Lubowa_EA_Holds::claimable($device_id, $service_id, $dates[0], $time) : null;
 
-        try {
-            $taken = array();
-            foreach ($dates as $date) {
-                $free = Lubowa_EA_Client::availabilities($provider['id'], $service_id, $date);
-                if (is_wp_error($free)) {
-                    return $free;
+            if ($hold === null) {
+                $taken = array();
+                foreach ($dates as $date) {
+                    $free = self::is_free($service, $provider, $service_id, $date, $time);
+                    if (is_wp_error($free)) {
+                        return $free;
+                    }
+                    if (!$free) {
+                        $taken[] = $date;
+                    }
                 }
-                if (!in_array($time, $free, true)) {
-                    $taken[] = $date;
+                if (!empty($taken)) {
+                    return new WP_Error('slot_taken', 'That time is no longer available.', array('status' => 409, 'dates' => $taken));
                 }
             }
-            if (!empty($taken)) {
-                return new WP_Error('slot_taken', 'That time is no longer available.', array('status' => 409, 'dates' => $taken));
-            }
 
-            $customer_id = self::upsert_customer($contact);
+            $customer_id = self::upsert_customer($contact, $update_existing);
             if (is_wp_error($customer_id)) {
                 return $customer_id;
             }
 
+            if ($hold !== null) {
+                $appointment = self::new_appointment($service, $provider, $service_id, $dates[0], $time, $customer_id, $notes, $status);
+                $result = Lubowa_EA_Client::update_appointment((int) $hold['ea_appointment_id'], $appointment);
+                if (is_wp_error($result)) {
+                    return $result;
+                }
+                Lubowa_EA_Holds::forget($hold);
+                return array($result);
+            }
+
             $created = array();
-            $now = new DateTime('now', Lubowa_EA_Settings::timezone());
             foreach ($dates as $date) {
-                $start = new DateTime($date . ' ' . $time . ':00', Lubowa_EA_Settings::timezone());
-                $end = clone $start;
-                $end->modify('+' . (int) $service['duration'] . ' minutes');
-
-                $result = Lubowa_EA_Client::create_appointment(array(
-                    'book'       => $now->format('Y-m-d H:i:s'),
-                    'start'      => $start->format('Y-m-d H:i:s'),
-                    'end'        => $end->format('Y-m-d H:i:s'),
-                    'status'     => $status,
-                    'notes'      => (string) $notes,
-                    'customerId' => (int) $customer_id,
-                    'providerId' => (int) $provider['id'],
-                    'serviceId'  => (int) $service_id,
-                ));
-
+                $result = Lubowa_EA_Client::create_appointment(
+                    self::new_appointment($service, $provider, $service_id, $date, $time, $customer_id, $notes, $status)
+                );
                 if (is_wp_error($result)) {
                     foreach ($created as $done) {
                         Lubowa_EA_Client::delete_appointment($done['id']);
@@ -211,11 +365,20 @@ class Lubowa_EA_Booking_Service {
                 }
                 $created[] = $result;
             }
-
             return $created;
-        } finally {
-            self::release($lock);
+        });
+    }
+
+    /** "0772 123456", "772123456", "+256 772 123456" → "256772123456"; null if not a phone number. */
+    public static function normalize_phone($raw) {
+        $digits = preg_replace('/\D/', '', (string) $raw);
+        if (strlen($digits) === 10 && $digits[0] === '0') {
+            $digits = '256' . substr($digits, 1);
+        } elseif (strlen($digits) === 9 && $digits[0] === '7') {
+            $digits = '256' . $digits;
         }
+        $len = strlen($digits);
+        return ($len >= 10 && $len <= 15) ? $digits : null;
     }
 
     public static function customer_appointments($email) {
@@ -260,7 +423,7 @@ class Lubowa_EA_Booking_Service {
         );
     }
 
-    private static function upsert_customer(array $contact) {
+    private static function upsert_customer(array $contact, $update_existing = true) {
         $email = sanitize_email($contact['email']);
         if ($email === '' || !is_email($email)) {
             return new WP_Error('invalid_email', 'A valid email is required.', array('status' => 400));
@@ -286,8 +449,8 @@ class Lubowa_EA_Booking_Service {
             return is_wp_error($created) ? $created : (int) $created['id'];
         }
 
-        $changed = $existing['firstName'] !== $first || $existing['lastName'] !== $last
-            || ($phone !== '' && (string) $existing['phone'] !== $phone);
+        $changed = $update_existing && ($existing['firstName'] !== $first || $existing['lastName'] !== $last
+            || ($phone !== '' && (string) $existing['phone'] !== $phone));
         if ($changed) {
             $existing['firstName'] = $first;
             $existing['lastName'] = $last;

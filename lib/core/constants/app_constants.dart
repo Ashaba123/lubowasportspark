@@ -22,6 +22,11 @@ class AppConstants {
   static const String pathEaServices = '/lubowa-ea/v1/services';
   static const String pathEaSlots = '/lubowa-ea/v1/slots';
   static const String pathEaBookings = '/lubowa-ea/v1/bookings';
+  static const String pathEaGuestBookings = '/lubowa-ea/v1/bookings/guest';
+  static const String pathEaHolds = '/lubowa-ea/v1/holds';
+
+  /// How often open slot pickers re-fetch so holds and bookings by others show up.
+  static const Duration slotRefreshInterval = Duration(seconds: 15);
   static String pathEaLeagueBookings(int leagueId) => '/lubowa-ea/v1/leagues/$leagueId/bookings';
 
   /// Bookings are bookable this many days ahead (match EA → Booking Settings).

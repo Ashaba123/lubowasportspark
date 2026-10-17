@@ -39,8 +39,10 @@ class BookingDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const DetailRow(label: 'Duration', value: '1 hour'),
-                    const SizedBox(height: 12),
-                    DetailRow(label: 'Contact', value: booking.contactName),
+                    if (booking.contactName.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 12),
+                      DetailRow(label: 'Contact', value: booking.contactName),
+                    ],
                     if (booking.status.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 12),
                       DetailRow(label: 'Status', value: booking.status),

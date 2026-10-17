@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:lubowa_sports_park/core/api/api_client.dart';
 import 'package:lubowa_sports_park/core/constants/app_constants.dart';
 import 'package:lubowa_sports_park/core/utils/api_error_message.dart';
 import 'package:lubowa_sports_park/shared/football_loader.dart';
+import 'package:lubowa_sports_park/shared/scroll_insets.dart';
 import 'package:lubowa_sports_park/features/booking/booking_repository.dart';
 import 'package:lubowa_sports_park/features/booking/models/booking.dart';
 import 'package:lubowa_sports_park/features/league/models/league.dart';
@@ -18,8 +21,9 @@ class LeagueBookingScreen extends StatefulWidget {
   State<LeagueBookingScreen> createState() => _LeagueBookingScreenState();
 }
 
-class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
+class _LeagueBookingScreenState extends State<LeagueBookingScreen> with WidgetsBindingObserver {
   static const int _maxWeeks = 12;
+  Timer? _pollTimer;
 
   BookingRepository? _repository;
   final TextEditingController _phoneCtrl = TextEditingController();
@@ -36,6 +40,13 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _pollTimer = Timer.periodic(AppConstants.slotRefreshInterval, (_) => _loadSlots(silent: true));
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_repository == null) {
@@ -46,8 +57,15 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _pollTimer?.cancel();
     _phoneCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadSlots(silent: true);
   }
 
   Future<void> _loadInitial() async {
@@ -70,22 +88,32 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
     }
   }
 
-  Future<void> _loadSlots() async {
-    if (_service == null || _date == null) return;
-    setState(() {
-      _loadingSlots = true;
-      _time = null;
-    });
+  /// [silent] refreshes keep the selection unless that time was taken meanwhile.
+  Future<void> _loadSlots({bool silent = false}) async {
+    if (_service == null || _date == null || _submitting) return;
+    if (!silent) {
+      setState(() {
+        _loadingSlots = true;
+        _time = null;
+      });
+    }
+    final DateTime date = _date!;
+    final int serviceId = _service!.id;
     try {
       final List<BookingSlot> slots =
-          await _repository!.getSlots(serviceId: _service!.id, date: formatBookingDate(_date!));
-      if (!mounted) return;
+          await _repository!.getSlots(serviceId: serviceId, date: formatBookingDate(date));
+      if (!mounted || _date != date || _service?.id != serviceId) return;
       setState(() {
         _slots = slots;
         _loadingSlots = false;
+        final String? selected = _time;
+        if (selected != null && !slots.any((BookingSlot s) => s.time == selected && s.isAvailable)) {
+          _time = null;
+          _error = '${_formatTime(selected)} was just taken. Please pick another time.';
+        }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || silent) return;
       setState(() {
         _slots = <BookingSlot>[];
         _loadingSlots = false;
@@ -157,7 +185,7 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
       body: _services == null
           ? const Center(child: FootballLoader())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, bottomScrollInset(context)),
               children: <Widget>[
                 Text(widget.league.name, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 4),
@@ -224,10 +252,14 @@ class _LeagueBookingScreenState extends State<LeagueBookingScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _slots.map((BookingSlot slot) {
-                      final bool booked = slot.status == SlotStatus.booked;
+                      final String? tag = switch (slot.status) {
+                        SlotStatus.booked => 'Booked',
+                        SlotStatus.held => 'On hold',
+                        _ => null,
+                      };
                       return FilterChip(
                         selected: _time == slot.time && slot.isAvailable,
-                        label: Text(booked ? '${_formatTime(slot.time)} · Booked' : _formatTime(slot.time)),
+                        label: Text(tag == null ? _formatTime(slot.time) : '${_formatTime(slot.time)} · $tag'),
                         onSelected: slot.isAvailable
                             ? (bool v) => setState(() => _time = v ? slot.time : null)
                             : null,

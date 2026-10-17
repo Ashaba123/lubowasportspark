@@ -28,7 +28,8 @@ class BookingService {
       );
 }
 
-enum SlotStatus { available, booked, unavailable }
+/// [held]: someone else is completing a booking for it. [mine]: held by this device.
+enum SlotStatus { available, booked, held, mine, unavailable }
 
 /// One start time on the slot grid from GET /lubowa-ea/v1/slots.
 class BookingSlot {
@@ -38,19 +39,22 @@ class BookingSlot {
   final String time;
   final SlotStatus status;
 
-  bool get isAvailable => status == SlotStatus.available;
+  bool get isAvailable => status == SlotStatus.available || status == SlotStatus.mine;
 
   factory BookingSlot.fromJson(Map<String, dynamic> json) => BookingSlot(
         time: (json['time'] as String?) ?? '',
         status: switch (json['status']) {
           'available' => SlotStatus.available,
           'booked' => SlotStatus.booked,
+          'held' => SlotStatus.held,
+          'mine' => SlotStatus.mine,
           _ => SlotStatus.unavailable,
         },
       );
 }
 
-/// Booking request payload for POST /lubowa-ea/v1/bookings. Email comes from the logged-in account.
+/// Booking request payload for POST /lubowa-ea/v1/bookings. Guests allowed; when logged in the
+/// bridge uses the account email instead of [contactEmail].
 class BookingRequest {
   const BookingRequest({
     required this.serviceId,
@@ -58,7 +62,9 @@ class BookingRequest {
     required this.time,
     required this.contactName,
     required this.contactPhone,
+    this.contactEmail,
     this.notes,
+    this.deviceId,
   });
 
   final int serviceId;
@@ -66,7 +72,11 @@ class BookingRequest {
   final String time; // HH:MM
   final String contactName;
   final String contactPhone;
+  final String? contactEmail;
   final String? notes;
+
+  /// Lets the bridge convert this device's hold on the slot into the booking.
+  final String? deviceId;
 
   Map<String, dynamic> toJson() => {
         'service_id': serviceId,
@@ -74,8 +84,20 @@ class BookingRequest {
         'time': time,
         'contact_name': contactName,
         'contact_phone': contactPhone,
+        if (contactEmail != null && contactEmail!.isNotEmpty) 'contact_email': contactEmail,
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
+        if (deviceId != null) 'device_id': deviceId,
       };
+}
+
+/// Hold on a slot from POST /lubowa-ea/v1/holds.
+class SlotHold {
+  const SlotHold({required this.expiresIn});
+
+  final Duration expiresIn;
+
+  factory SlotHold.fromJson(Map<String, dynamic> json) =>
+      SlotHold(expiresIn: Duration(seconds: BookingItem._toInt(json['expires_in'])));
 }
 
 /// Single booking from GET /lubowa-ea/v1/bookings.
@@ -89,6 +111,7 @@ class BookingItem {
     this.endTime,
     this.service,
     this.createdAt,
+    this.guestToken,
   });
 
   final int id;
@@ -99,6 +122,9 @@ class BookingItem {
   final String status;
   final String? service;
   final String? createdAt;
+
+  /// Returned on create; lets this device read the booking's status without logging in.
+  final String? guestToken;
 
   static int _toInt(dynamic v) {
     if (v == null) return 0;
@@ -116,6 +142,7 @@ class BookingItem {
         status: (json['status'] as String?) ?? 'pending',
         service: json['service'] as String?,
         createdAt: json['created_at'] as String?,
+        guestToken: json['guest_token'] as String?,
       );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
